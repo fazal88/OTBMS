@@ -18,14 +18,27 @@ class FirestoreAidRepository(
 
     override fun getDistributions(): Flow<List<AidDistribution>> {
         return collection.snapshots().map { snapshot ->
-            snapshot.documents.map { it.data(AidDistribution.serializer()) }
+            snapshot.documents.mapNotNull { 
+                try {
+                    it.data(AidDistribution.serializer())
+                } catch (e: Exception) {
+                    println("FIRESTORE_ERROR: Failed to decode distribution ${it.id}: ${e.message}")
+                    null
+                }
+            }
         }
     }
 
     override fun getDistributionsByBeneficiary(beneficiaryId: String): Flow<List<AidDistribution>> {
         return collection.snapshots().map { snapshot ->
-            snapshot.documents.map { it.data(AidDistribution.serializer()) }
-                .filter { it.beneficiaryId == beneficiaryId }
+            snapshot.documents.mapNotNull { 
+                try {
+                    it.data(AidDistribution.serializer())
+                } catch (e: Exception) {
+                    println("FIRESTORE_ERROR: Failed to decode distribution ${it.id}: ${e.message}")
+                    null
+                }
+            }.filter { it.beneficiaryId == beneficiaryId }
         }
     }
 

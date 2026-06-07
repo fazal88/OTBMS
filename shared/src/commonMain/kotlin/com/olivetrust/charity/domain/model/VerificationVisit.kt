@@ -4,13 +4,13 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class VerificationVisit(
-    val visitId: String,
-    val date: Long,
-    val latitude: Double,
-    val longitude: Double,
-    val employeeId: String,
-    val beneficiaryId: String,
-    val visitStatus: VisitStatus,
+    val visitId: String = "",
+    val date: Long = 0,
+    val latitude: Double = 0.0,
+    val longitude: Double = 0.0,
+    val employeeId: String = "",
+    val beneficiaryId: String = "",
+    val visitStatus: VisitStatus = VisitStatus.SUCCESSFUL,
     val misuseReport: MisuseReport? = null,
     val editRequest: EditRequest? = null,
     val reapprovalReason: String? = null
@@ -26,12 +26,12 @@ enum class VisitStatus {
 
 @Serializable
 data class MisuseReport(
-    val description: String,
-    val photoEvidenceUrl: String
+    val description: String = "",
+    val photoEvidenceUrl: String = ""
 )
 
 @Serializable
 data class EditRequest(
-    val requestedChange: String,
-    val supportingNotes: String
+    val requestedChange: String = "",
+    val supportingNotes: String = ""
 )

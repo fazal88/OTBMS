@@ -19,13 +19,25 @@ class FirestoreBeneficiaryRepository(
 
     override fun getBeneficiaries(): Flow<List<Beneficiary>> {
         return collection.snapshots().map { snapshot ->
-            snapshot.documents.map { it.data(Beneficiary.serializer()) }
+            snapshot.documents.mapNotNull { 
+                try {
+                    it.data(Beneficiary.serializer())
+                } catch (e: Exception) {
+                    println("FIRESTORE_ERROR: Failed to decode beneficiary ${it.id}: ${e.message}")
+                    null
+                }
+            }
         }
     }
 
     override fun getBeneficiaryById(id: String): Flow<Beneficiary?> {
         return collection.document(id).snapshots().map { 
-            if (it.exists) it.data(Beneficiary.serializer()) else null 
+            try {
+                if (it.exists) it.data(Beneficiary.serializer()) else null 
+            } catch (e: Exception) {
+                println("FIRESTORE_ERROR: Failed to decode beneficiary $id: ${e.message}")
+                null
+            }
         }
     }
 
@@ -118,6 +130,15 @@ class FirestoreBeneficiaryRepository(
             val beneficiary = doc.data(Beneficiary.serializer())
             val updated = beneficiary.copy(status = status)
             collection.document(id).set(Beneficiary.serializer(), updated)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun deleteBeneficiary(id: String): Result<Unit> {
+        return try {
+            collection.document(id).delete()
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)

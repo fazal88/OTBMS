@@ -18,14 +18,27 @@ class FirestoreVisitRepository(
 
     override fun getVisits(): Flow<List<VerificationVisit>> {
         return collection.snapshots().map { snapshot ->
-            snapshot.documents.map { it.data(VerificationVisit.serializer()) }
+            snapshot.documents.mapNotNull { 
+                try {
+                    it.data(VerificationVisit.serializer())
+                } catch (e: Exception) {
+                    println("FIRESTORE_ERROR: Failed to decode visit ${it.id}: ${e.message}")
+                    null
+                }
+            }
         }
     }
 
     override fun getVisitsByEmployee(employeeId: String): Flow<List<VerificationVisit>> {
         return collection.snapshots().map { snapshot ->
-            snapshot.documents.map { it.data(VerificationVisit.serializer()) }
-                .filter { it.employeeId == employeeId }
+            snapshot.documents.mapNotNull { 
+                try {
+                    it.data(VerificationVisit.serializer())
+                } catch (e: Exception) {
+                    println("FIRESTORE_ERROR: Failed to decode visit ${it.id}: ${e.message}")
+                    null
+                }
+            }.filter { it.employeeId == employeeId }
         }
     }
 

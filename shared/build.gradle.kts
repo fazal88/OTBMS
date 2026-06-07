@@ -59,6 +59,7 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtimeCompose)
             
             // Icons
+            implementation(libs.compose.materialIconsCore)
             // implementation(libs.compose.materialIconsExtended) // Skipping due to sync error
 
             // Firebase
@@ -86,6 +87,9 @@ kotlin {
             // Multiplatform Settings
             implementation("com.russhwolf:multiplatform-settings-no-arg:1.3.0")
             implementation("com.russhwolf:multiplatform-settings-coroutines:1.3.0")
+
+            // Crypto
+            implementation(libs.kotlinCrypto.hash.sha2)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

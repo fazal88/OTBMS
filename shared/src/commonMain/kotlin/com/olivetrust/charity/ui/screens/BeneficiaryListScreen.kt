@@ -29,6 +29,9 @@ class BeneficiaryListScreen : Screen {
             LazyColumn(modifier = Modifier.padding(padding).fillMaxSize()) {
                 items(beneficiaries) { beneficiary ->
                     ListItem(
+                        modifier = Modifier.clickable {
+                            navigator.push(BeneficiaryDetailScreen(beneficiary.id))
+                        },
                         headlineContent = { Text(beneficiary.headName) },
                         supportingContent = { Text(beneficiary.phoneNumber) },
                         trailingContent = {

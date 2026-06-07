@@ -29,12 +29,12 @@ class LoginViewModel(
         screenModelScope.launch {
             _state.value = LoginState.Loading
             val result = authRepository.login(
-                username = username,
-                passwordHash = HashUtil.hashPassword(password),
+                username = username.trim(),
+                passwordHash = HashUtil.hashPassword(password.trim()),
                 deviceId = deviceInfo.id,
                 deviceModel = deviceInfo.model
             )
-            
+
             result.fold(
                 onSuccess = { _state.value = LoginState.Success },
                 onFailure = { _state.value = LoginState.Error(it.message ?: "Unknown error") }

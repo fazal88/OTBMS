@@ -6,6 +6,8 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,11 +22,10 @@ import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.olivetrust.charity.domain.model.Beneficiary
-import com.olivetrust.charity.domain.model.BeneficiaryStatus
 import com.olivetrust.charity.domain.model.FamilyMember
-import kotlin.time.Clock
+import com.olivetrust.charity.domain.model.BeneficiaryStatus
 
-class OnboardingScreen : Screen {
+class EditBeneficiaryScreen(private val initialBeneficiary: Beneficiary) : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
@@ -33,21 +34,21 @@ class OnboardingScreen : Screen {
         val navigator = LocalNavigator.currentOrThrow
         val focusManager = LocalFocusManager.current
 
-        // Main Beneficiary State
-        var headName by remember { mutableStateOf("") }
-        var headAge by remember { mutableStateOf("") }
-        var headGender by remember { mutableStateOf("") }
-        var headOccupation by remember { mutableStateOf("") }
-        var headEducation by remember { mutableStateOf("") }
-        var phoneNumber by remember { mutableStateOf("") }
-        var address by remember { mutableStateOf("") }
-        var incomeSource by remember { mutableStateOf("") }
-        var areaCode by remember { mutableStateOf("") }
-        var natureOfAddress by remember { mutableStateOf("") }
-        var natureOfRent by remember { mutableStateOf("") }
-        var diseaseInability by remember { mutableStateOf("") }
-        var reasonForAid by remember { mutableStateOf("") }
-        var numberOfDependants by remember { mutableStateOf("0") }
+        // State initialized with existing beneficiary data
+        var headName by remember { mutableStateOf(initialBeneficiary.headName) }
+        var headAge by remember { mutableStateOf(initialBeneficiary.headAge.toString()) }
+        var headGender by remember { mutableStateOf(initialBeneficiary.headGender) }
+        var headOccupation by remember { mutableStateOf(initialBeneficiary.headOccupation) }
+        var headEducation by remember { mutableStateOf(initialBeneficiary.headEducation) }
+        var phoneNumber by remember { mutableStateOf(initialBeneficiary.phoneNumber) }
+        var address by remember { mutableStateOf(initialBeneficiary.address) }
+        var incomeSource by remember { mutableStateOf(initialBeneficiary.incomeSource) }
+        var areaCode by remember { mutableStateOf(initialBeneficiary.areaCode) }
+        var natureOfAddress by remember { mutableStateOf(initialBeneficiary.natureOfAddress) }
+        var natureOfRent by remember { mutableStateOf(initialBeneficiary.natureOfRent ?: "") }
+        var diseaseInability by remember { mutableStateOf(initialBeneficiary.diseaseInability ?: "") }
+        var reasonForAid by remember { mutableStateOf(initialBeneficiary.reasonForAid) }
+        var numberOfDependants by remember { mutableStateOf(initialBeneficiary.numberOfDependants.toString()) }
 
         // Dropdowns
         var isAreaDropDownExpanded by remember { mutableStateOf(false) }
@@ -59,7 +60,7 @@ class OnboardingScreen : Screen {
         val genderOptions = listOf("Male", "Female", "Other")
 
         // Family Members State
-        val familyMembers = remember { mutableStateListOf<FamilyMember>() }
+        val familyMembers = remember { mutableStateListOf<FamilyMember>().apply { addAll(initialBeneficiary.familyMembers) } }
         val familyMemberGenderExpanded = remember { mutableStateMapOf<Int, Boolean>() }
 
         LaunchedEffect(state) {
@@ -70,7 +71,14 @@ class OnboardingScreen : Screen {
 
         Scaffold(
             topBar = {
-                TopAppBar(title = { Text("New Beneficiary") })
+                TopAppBar(
+                    title = { Text("Edit Beneficiary") },
+                    navigationIcon = {
+                        IconButton(onClick = { navigator.pop() }) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        }
+                    }
+                )
             }
         ) { padding ->
             LazyColumn(modifier = Modifier.padding(padding).padding(16.dp)) {
@@ -391,9 +399,7 @@ class OnboardingScreen : Screen {
                     } else {
                         Button(
                             onClick = {
-                                val now = Clock.System.now().toEpochMilliseconds()
-                                val beneficiary = Beneficiary(
-                                    id = "B_$now",
+                                val updatedBeneficiary = initialBeneficiary.copy(
                                     headName = headName,
                                     headAge = headAge.toIntOrNull() ?: 0,
                                     headGender = headGender,
@@ -408,21 +414,14 @@ class OnboardingScreen : Screen {
                                     diseaseInability = diseaseInability,
                                     reasonForAid = reasonForAid,
                                     numberOfDependants = numberOfDependants.toIntOrNull() ?: 0,
-                                    familyMembers = familyMembers.toList(),
-                                    photoUrl = "", 
-                                    onboardingDate = now,
-                                    onboardedBy = "", 
-                                    latitude = 0.0,
-                                    longitude = 0.0,
-                                    deviceUsed = "",
-                                    status = BeneficiaryStatus.PENDING_APPROVAL
+                                    familyMembers = familyMembers.toList()
                                 )
-                                viewModel.submit(beneficiary)
+                                viewModel.submit(updatedBeneficiary)
                             },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(8.dp)
                         ) {
-                            Text("Submit Application")
+                            Text("Save Changes")
                         }
                     }
 

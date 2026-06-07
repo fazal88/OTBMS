@@ -2,6 +2,7 @@ package com.olivetrust.charity.ui.screens
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
+import com.olivetrust.charity.LocationService
 import com.olivetrust.charity.domain.model.Beneficiary
 import com.olivetrust.charity.domain.repository.AuthRepository
 import com.olivetrust.charity.domain.repository.BeneficiaryRepository
@@ -13,7 +14,8 @@ import kotlin.time.Clock
 
 class OnboardingViewModel(
     private val authRepository: AuthRepository,
-    private val beneficiaryRepository: BeneficiaryRepository
+    private val beneficiaryRepository: BeneficiaryRepository,
+    private val locationService: LocationService
 ) : ScreenModel {
 
     private val _state = MutableStateFlow<OnboardingState>(OnboardingState.Idle)
@@ -28,10 +30,14 @@ class OnboardingViewModel(
                 return@launch
             }
 
+            val location = locationService.getCurrentLocation()
+
             val finalBeneficiary = beneficiary.copy(
                 onboardingDate = Clock.System.now().toEpochMilliseconds(),
                 onboardedBy = user.userId,
-                deviceUsed = user.deviceId ?: "unknown"
+                deviceUsed = user.deviceId ?: "unknown",
+                latitude = location?.latitude ?: 0.0,
+                longitude = location?.longitude ?: 0.0
             )
 
             val result = beneficiaryRepository.createBeneficiary(finalBeneficiary)

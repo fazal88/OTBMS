@@ -14,26 +14,30 @@ enum class BeneficiaryStatus {
 
 @Serializable
 data class Beneficiary(
-    val id: String,
-    val headName: String,
-    val photoUrl: String,
-    val phoneNumber: String,
-    val incomeSource: String,
-    val address: String,
-    val areaCode: String,
-    val natureOfAddress: String,
+    val id: String = "",
+    val headName: String = "",
+    val headAge: Int = 0,
+    val headGender: String = "",
+    val headOccupation: String = "",
+    val headEducation: String = "",
+    val photoUrl: String = "",
+    val phoneNumber: String = "",
+    val incomeSource: String = "",
+    val address: String = "",
+    val areaCode: String = "",
+    val natureOfAddress: String = "",
     val natureOfRent: String? = null,
     val diseaseInability: String? = null,
-    val reasonForAid: String,
-    val numberOfDependants: Int,
+    val reasonForAid: String = "",
+    val numberOfDependants: Int = 0,
     val familyMembers: List<FamilyMember> = emptyList(),
     
     // Metadata
-    val onboardingDate: Long,
-    val onboardedBy: String, // userId
-    val latitude: Double,
-    val longitude: Double,
-    val deviceUsed: String,
+    val onboardingDate: Long = 0,
+    val onboardedBy: String = "", // userId
+    val latitude: Double = 0.0,
+    val longitude: Double = 0.0,
+    val deviceUsed: String = "",
     val status: BeneficiaryStatus = BeneficiaryStatus.PENDING_APPROVAL,
     
     // Approval Details
@@ -54,10 +58,11 @@ data class Beneficiary(
 
 @Serializable
 data class FamilyMember(
-    val name: String,
-    val age: Int,
-    val gender: String,
-    val occupation: String,
-    val education: String,
+    val relation: String = "",
+    val name: String = "",
+    val age: Int = 0,
+    val gender: String = "",
+    val occupation: String = "",
+    val education: String = "",
     val diseaseInability: String? = null
 )

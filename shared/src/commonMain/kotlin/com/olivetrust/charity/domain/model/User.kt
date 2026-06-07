@@ -19,13 +19,13 @@ enum class UserStatus {
 
 @Serializable
 data class User(
-    val userId: String,
+    val userId: String = "",
     val employeeCode: String? = null,
-    val username: String,
-    val fullName: String,
-    val mobileNumber: String,
-    val passwordHash: String,
-    val role: UserRole,
+    val username: String = "",
+    val fullName: String = "",
+    val mobileNumber: String = "",
+    val passwordHash: String = "",
+    val role: UserRole = UserRole.EMPLOYEE,
     val status: UserStatus = UserStatus.ACTIVE,
     val deviceId: String? = null,
     val deviceModel: String? = null,

@@ -49,11 +49,20 @@ class FirestoreAuthRepository(
         return try {
             val snapshot = usersCollection.get()
             val userDoc = snapshot.documents.find { 
-                val u = it.data(User.serializer())
-                u.username == username 
+                try {
+                    val u = it.data(User.serializer())
+                    u.username == username
+                } catch (e: Exception) {
+                    println("FIRESTORE_ERROR: Failed to decode user in list ${it.id}: ${e.message}")
+                    false
+                }
             } ?: return Result.failure(Exception("User not found"))
             
-            val user = userDoc.data(User.serializer())
+            val user = try {
+                userDoc.data(User.serializer())
+            } catch (e: Exception) {
+                return Result.failure(Exception("Failed to decode user data: ${e.message}"))
+            }
             
             if (user.passwordHash != passwordHash) {
                 return Result.failure(Exception("Invalid password"))

@@ -6,6 +6,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
@@ -21,6 +22,8 @@ class LoginScreen : Screen {
         
         var username by remember { mutableStateOf("") }
         var password by remember { mutableStateOf("") }
+        var passwordVisible by remember { mutableStateOf(false) }
+        var loginType by remember { mutableStateOf("User") } // "User" or "Beneficiary"
 
         LaunchedEffect(state) {
             if (state is LoginState.Success) {
@@ -35,11 +38,30 @@ class LoginScreen : Screen {
         ) {
             Text("Olive Trust", style = MaterialTheme.typography.headlineLarge)
             Spacer(modifier = Modifier.height(32.dp))
+
+            SingleChoiceSegmentedButtonRow(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)
+            ) {
+                SegmentedButton(
+                    selected = loginType == "User",
+                    onClick = { loginType = "User" },
+                    shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2)
+                ) {
+                    Text("User")
+                }
+                SegmentedButton(
+                    selected = loginType == "Beneficiary",
+                    onClick = { loginType = "Beneficiary" },
+                    shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
+                ) {
+                    Text("Beneficiary")
+                }
+            }
             
             OutlinedTextField(
                 value = username,
                 onValueChange = { username = it },
-                label = { Text("Username") },
+                label = { Text(if (loginType == "User") "Username" else "Beneficiary ID") },
                 modifier = Modifier.fillMaxWidth()
             )
             
@@ -49,7 +71,12 @@ class LoginScreen : Screen {
                 value = password,
                 onValueChange = { password = it },
                 label = { Text("Password") },
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                trailingIcon = {
+                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        Text(if (passwordVisible) "Hide" else "Show")
+                    }
+                },
                 modifier = Modifier.fillMaxWidth()
             )
             

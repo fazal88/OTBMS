@@ -12,6 +12,7 @@ import org.koin.dsl.module
 val appModule = module {
     single { Settings() }
     single { getDeviceInfo() }
+    single { getLocationService() }
     singleOf(::FirestoreAuthRepository) bind AuthRepository::class
     singleOf(::FirestoreBeneficiaryRepository) bind BeneficiaryRepository::class
     singleOf(::FirestoreAidRepository) bind AidRepository::class
@@ -21,9 +22,10 @@ val appModule = module {
     
     factory { LoginViewModel(get(), get()) }
     factory { DashboardViewModel(get(), get()) }
-    factory { OnboardingViewModel(get(), get()) }
+    factory { OnboardingViewModel(get(), get(), get()) }
     factory { AidDistributionViewModel(get(), get()) }
     factory { VerificationVisitViewModel(get(), get()) }
     factory { BeneficiaryListViewModel(get()) }
+    factory { BeneficiaryDetailViewModel(get()) }
     factory { EmployeeManagementViewModel(get()) }
 }

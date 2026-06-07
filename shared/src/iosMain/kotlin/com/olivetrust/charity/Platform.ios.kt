@@ -14,3 +14,12 @@ class IOSDeviceInfo : DeviceInfo {
 }
 
 actual fun getDeviceInfo(): DeviceInfo = IOSDeviceInfo()
+
+class IOSLocationService : LocationService {
+    override suspend fun getCurrentLocation(): Location? {
+        // In a real app, use CoreLocation.
+        return Location(31.5204, 74.3587)
+    }
+}
+
+actual fun getLocationService(): LocationService = IOSLocationService()
