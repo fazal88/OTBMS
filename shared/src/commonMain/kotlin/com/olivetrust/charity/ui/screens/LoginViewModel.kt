@@ -3,6 +3,7 @@ package com.olivetrust.charity.ui.screens
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.olivetrust.charity.DeviceInfo
+import com.olivetrust.charity.data.util.HashUtil
 import com.olivetrust.charity.domain.repository.AuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,10 +28,9 @@ class LoginViewModel(
     fun login(username: String, password: String) {
         screenModelScope.launch {
             _state.value = LoginState.Loading
-            // In a real app, we'd hash the password and get actual device info
             val result = authRepository.login(
                 username = username,
-                passwordHash = password,
+                passwordHash = HashUtil.hashPassword(password),
                 deviceId = deviceInfo.id,
                 deviceModel = deviceInfo.model
             )

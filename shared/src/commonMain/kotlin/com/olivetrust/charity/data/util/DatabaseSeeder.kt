@@ -28,6 +28,7 @@ object DatabaseSeeder {
 
     private suspend fun seedUsers(now: Long) {
         val usersCollection = firestore.collection("users")
+        val defaultPasswordHash = HashUtil.hashPassword("Password@12")
 
         val users = listOf(
             User(
@@ -36,7 +37,7 @@ object DatabaseSeeder {
                 username = "admin",
                 fullName = "System Administrator",
                 mobileNumber = "+1234567890",
-                passwordHash = "admin123",
+                passwordHash = defaultPasswordHash,
                 role = UserRole.SUPER_ADMIN,
                 status = UserStatus.ACTIVE,
                 createdAt = now
@@ -47,7 +48,7 @@ object DatabaseSeeder {
                 username = "approver",
                 fullName = "Main Approver",
                 mobileNumber = "+1234567891",
-                passwordHash = "approver123",
+                passwordHash = defaultPasswordHash,
                 role = UserRole.APPROVER,
                 status = UserStatus.ACTIVE,
                 createdAt = now
@@ -58,7 +59,7 @@ object DatabaseSeeder {
                 username = "employee",
                 fullName = "Field Worker",
                 mobileNumber = "+1234567892",
-                passwordHash = "employee123",
+                passwordHash = defaultPasswordHash,
                 role = UserRole.EMPLOYEE,
                 status = UserStatus.ACTIVE,
                 createdAt = now
