@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "209645934251",
+    "project_id": "otbms-69641",
+    "storage_bucket": "otbms-69641.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:209645934251:android:c37d887011ac9946e849ee",
+        "android_client_info": {
+          "package_name": "com.olivetrust.charity"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA3eOs3q5qNLRdTln6TJT6MKt-cW_-AhoY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
