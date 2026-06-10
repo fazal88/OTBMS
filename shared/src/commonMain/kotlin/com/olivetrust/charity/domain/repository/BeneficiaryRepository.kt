@@ -21,6 +21,7 @@ interface BeneficiaryRepository {
         monitorId: String
     ): Result<Unit>
     suspend fun rejectBeneficiary(id: String, rejectedBy: String, reason: String): Result<Unit>
+    suspend fun requestEdit(id: String, notes: String): Result<Unit>
     suspend fun updateStatus(id: String, status: BeneficiaryStatus): Result<Unit>
     suspend fun deleteBeneficiary(id: String): Result<Unit>
 }

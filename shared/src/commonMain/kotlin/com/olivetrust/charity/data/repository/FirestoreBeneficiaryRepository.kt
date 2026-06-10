@@ -124,6 +124,21 @@ class FirestoreBeneficiaryRepository(
         }
     }
 
+    override suspend fun requestEdit(id: String, notes: String): Result<Unit> {
+        return try {
+            val doc = collection.document(id).get()
+            val beneficiary = doc.data(Beneficiary.serializer())
+            val updated = beneficiary.copy(
+                status = BeneficiaryStatus.EDIT_REQUESTED,
+                editRequestNotes = notes
+            )
+            collection.document(id).set(Beneficiary.serializer(), updated)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     override suspend fun updateStatus(id: String, status: BeneficiaryStatus): Result<Unit> {
         return try {
             val doc = collection.document(id).get()

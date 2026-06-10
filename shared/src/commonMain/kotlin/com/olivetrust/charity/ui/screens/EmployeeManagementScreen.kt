@@ -7,45 +7,76 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
+import com.olivetrust.charity.domain.model.User
 import com.olivetrust.charity.domain.model.UserStatus
+import com.olivetrust.charity.ui.previews.PreviewMocks
 
 class EmployeeManagementScreen : Screen {
-    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
         val viewModel = koinScreenModel<EmployeeManagementViewModel>()
         val employees by viewModel.employees.collectAsState()
 
-        Scaffold(
-            topBar = {
-                TopAppBar(title = { Text("Employee Management") })
-            }
-        ) { padding ->
-            LazyColumn(modifier = Modifier.padding(padding).fillMaxSize()) {
-                items(employees) { employee ->
-                    ListItem(
-                        headlineContent = { Text(employee.fullName) },
-                        supportingContent = { Text("${employee.role} - ${employee.status}") },
-                        trailingContent = {
-                            Row {
-                                if (employee.status != UserStatus.ACTIVE) {
-                                    IconButton(onClick = { viewModel.updateStatus(employee.userId, UserStatus.ACTIVE) }) {
-                                        Text("A") // Activate
-                                    }
+        EmployeeManagementContent(
+            employees = employees,
+            onUpdateStatus = { userId, status -> viewModel.updateStatus(userId, status) }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EmployeeManagementContent(
+    employees: List<User>,
+    onUpdateStatus: (String, UserStatus) -> Unit
+) {
+    Scaffold(
+        topBar = {
+            TopAppBar(title = { Text("Employee Management") })
+        }
+    ) { padding ->
+        LazyColumn(modifier = Modifier.padding(padding).fillMaxSize()) {
+            items(employees) { employee ->
+                ListItem(
+                    headlineContent = { Text(employee.fullName) },
+                    supportingContent = { Text("${employee.role} - ${employee.status}") },
+                    trailingContent = {
+                        Row {
+                            if (employee.status != UserStatus.ACTIVE) {
+                                Button(
+                                    onClick = { onUpdateStatus(employee.userId, UserStatus.ACTIVE) },
+                                    modifier = Modifier.padding(end = 4.dp)
+                                ) {
+                                    Text("Activate")
                                 }
-                                if (employee.status != UserStatus.DISABLED) {
-                                    IconButton(onClick = { viewModel.updateStatus(employee.userId, UserStatus.DISABLED) }) {
-                                        Text("D") // Disable
-                                    }
+                            }
+                            if (employee.status != UserStatus.DISABLED) {
+                                OutlinedButton(onClick = { onUpdateStatus(employee.userId, UserStatus.DISABLED) }) {
+                                    Text("Disable")
                                 }
                             }
                         }
-                    )
-                    HorizontalDivider()
-                }
+                    }
+                )
+                HorizontalDivider()
             }
         }
+    }
+}
+
+@Preview
+@Composable
+fun EmployeeManagementContentPreview() {
+    MaterialTheme {
+        EmployeeManagementContent(
+            employees = listOf(
+                PreviewMocks.mockUser,
+                PreviewMocks.mockUser.copy(userId = "2", fullName = "Jane Smith", status = UserStatus.DISABLED)
+            ),
+            onUpdateStatus = { _, _ -> }
+        )
     }
 }

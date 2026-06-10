@@ -9,7 +9,9 @@ enum class BeneficiaryStatus {
     APPROVED,
     REJECTED,
     DEACTIVATED,
-    REAPPROVAL_PENDING
+    REAPPROVAL_PENDING,
+    MISUSE_REPORTED,
+    EDIT_REQUESTED
 }
 
 @Serializable
@@ -53,7 +55,10 @@ data class Beneficiary(
     // Rejection Details
     val rejectionReason: String? = null,
     val rejectedBy: String? = null,
-    val rejectionDate: Long? = null
+    val rejectionDate: Long? = null,
+
+    // Edit Request Details
+    val editRequestNotes: String? = null
 )
 
 @Serializable

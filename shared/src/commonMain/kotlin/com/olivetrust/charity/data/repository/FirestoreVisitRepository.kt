@@ -44,6 +44,7 @@ class FirestoreVisitRepository(
 
     override suspend fun recordVisit(visit: VerificationVisit): Result<String> {
         return try {
+            println("FIRESTORE: Recording visit ${visit.visitId} for ${visit.beneficiaryId}")
             collection.document(visit.visitId).set(VerificationVisit.serializer(), visit)
             val now = Clock.System.now().toEpochMilliseconds()
             auditRepository.logAction(AuditLog(
@@ -56,8 +57,10 @@ class FirestoreVisitRepository(
                 timestamp = now,
                 deviceId = ""
             ))
+            println("FIRESTORE: Visit recorded successfully")
             Result.success(visit.visitId)
         } catch (e: Exception) {
+            println("FIRESTORE_ERROR: Failed to record visit: ${e.message}")
             Result.failure(e)
         }
     }

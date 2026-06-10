@@ -44,6 +44,7 @@ class FirestoreAidRepository(
 
     override suspend fun recordDistribution(distribution: AidDistribution): Result<String> {
         return try {
+            println("FIRESTORE: Recording distribution ${distribution.distributionId} for ${distribution.beneficiaryId}")
             collection.document(distribution.distributionId).set(AidDistribution.serializer(), distribution)
             val now = Clock.System.now().toEpochMilliseconds()
             auditRepository.logAction(AuditLog(
@@ -56,8 +57,10 @@ class FirestoreAidRepository(
                 timestamp = now,
                 deviceId = ""
             ))
+            println("FIRESTORE: Distribution recorded successfully")
             Result.success(distribution.distributionId)
         } catch (e: Exception) {
+            println("FIRESTORE_ERROR: Failed to record distribution: ${e.message}")
             Result.failure(e)
         }
     }
