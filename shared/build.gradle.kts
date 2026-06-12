@@ -6,17 +6,29 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinSerialization)
+    kotlin("native.cocoapods")
 }
 
 kotlin {
-    listOf(
-        iosArm64(),
-        iosSimulatorArm64()
-    ).forEach { iosTarget ->
-        iosTarget.binaries.framework {
+    iosArm64()
+    iosSimulatorArm64()
+
+    cocoapods {
+        summary = "Shared module for OliveTrustCharity"
+        homepage = "https://github.com/olivetrust"
+        version = "1.0"
+        ios.deploymentTarget = "15.0"
+        podfile = project.file("../iosApp/Podfile")
+        framework {
             baseName = "Shared"
             isStatic = true
         }
+        pod("FirebaseCore") { moduleName = "FirebaseCore" }
+        pod("FirebaseFirestore") { moduleName = "FirebaseFirestore" }
+        pod("FirebaseAuth") { moduleName = "FirebaseAuth" }
+        pod("FirebaseStorage") { moduleName = "FirebaseStorage" }
+        pod("FirebaseFunctions") { moduleName = "FirebaseFunctions" }
+        pod("FirebaseMessaging") { moduleName = "FirebaseMessaging" }
     }
     
     androidLibrary {
