@@ -41,6 +41,7 @@ data class Beneficiary(
     val longitude: Double = 0.0,
     val deviceUsed: String = "",
     val status: BeneficiaryStatus = BeneficiaryStatus.PENDING_APPROVAL,
+    val lastUpdated: Long = 0,
     
     // Approval Details
     val approvalNotes: String? = null,

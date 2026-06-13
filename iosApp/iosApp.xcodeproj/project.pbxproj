@@ -18,7 +18,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		3179D313958D62248E2C3178 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		3179D313958D62248E2C3178 /* Exceptions for "iosApp" folder in "iosApp" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -38,7 +38,7 @@
 		DFA752CFAA329DC2AD3123BD /* iosApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				3179D313958D62248E2C3178 /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
+				3179D313958D62248E2C3178 /* Exceptions for "iosApp" folder in "iosApp" target */,
 			);
 			path = iosApp;
 			sourceTree = "<group>";
@@ -106,7 +106,6 @@
 				D86C0CD8BE5C83C42D6F434D /* Sources */,
 				ECAA1A07CE1F8865CD952201 /* Frameworks */,
 				E0CF2809C8183C40BB458563 /* Resources */,
-				0172FD9C7391B8B5093E9638 /* [CP] Embed Pods Frameworks */,
 				8A1BE58F6EAE5B66667DE293 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
@@ -166,23 +165,6 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		0172FD9C7391B8B5093E9638 /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-iosApp/Pods-iosApp-frameworks-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-iosApp/Pods-iosApp-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-iosApp/Pods-iosApp-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
 		42AF4DA133CE15A213DC87D6 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
