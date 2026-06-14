@@ -10,6 +10,8 @@ data class VerificationVisit(
     val longitude: Double = 0.0,
     val employeeId: String = "",
     val beneficiaryId: String = "",
+    val beneficiaryName: String = "",
+    val areaCode: String = "",
     val visitStatus: VisitStatus = VisitStatus.SUCCESSFUL,
     val misuseReport: MisuseReport? = null,
     val editRequest: EditRequest? = null,

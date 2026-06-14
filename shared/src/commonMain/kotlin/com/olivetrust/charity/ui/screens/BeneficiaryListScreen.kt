@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -36,7 +37,7 @@ import com.olivetrust.charity.domain.model.Beneficiary
 import com.olivetrust.charity.domain.model.BeneficiaryStatus
 import com.olivetrust.charity.ui.previews.PreviewMocks
 
-class BeneficiaryListScreen : Screen {
+class BeneficiaryListScreen(private val initialFilters: BeneficiaryFilters = BeneficiaryFilters()) : Screen {
     @Composable
     override fun Content() {
         val viewModel = koinScreenModel<BeneficiaryListViewModel>()
@@ -45,7 +46,14 @@ class BeneficiaryListScreen : Screen {
         val searchQuery by viewModel.searchQuery.collectAsState()
         val sortOrder by viewModel.sortOrder.collectAsState()
         val filters by viewModel.filters.collectAsState()
+        val error by viewModel.error.collectAsState()
         val navigator = LocalNavigator.currentOrThrow
+
+        LaunchedEffect(Unit) {
+            if (initialFilters != BeneficiaryFilters()) {
+                viewModel.updateFilters(initialFilters)
+            }
+        }
 
         BeneficiaryListContent(
             beneficiaries = beneficiaries,
@@ -57,6 +65,9 @@ class BeneficiaryListScreen : Screen {
             filters = filters,
             onFiltersChange = viewModel::updateFilters,
             onResetFilters = viewModel::resetFilters,
+            onBack = { navigator.pop() },
+            error = error,
+            onDismissError = { viewModel.clearError() },
             onBeneficiaryClick = { id -> navigator.push(BeneficiaryDetailScreen(id)) },
             onAidClick = { id, name -> navigator.push(AidDistributionScreen(id, name)) },
             onVisitClick = { id, name -> navigator.push(VerificationVisitScreen(id, name)) }
@@ -76,6 +87,9 @@ fun BeneficiaryListContent(
     filters: BeneficiaryFilters,
     onFiltersChange: (BeneficiaryFilters) -> Unit,
     onResetFilters: () -> Unit,
+    onBack: () -> Unit,
+    error: String?,
+    onDismissError: () -> Unit,
     onBeneficiaryClick: (String) -> Unit,
     onAidClick: (String, String) -> Unit,
     onVisitClick: (String, String) -> Unit
@@ -87,16 +101,31 @@ fun BeneficiaryListContent(
 
     val isFilterApplied = filters != BeneficiaryFilters() || searchQuery.isNotEmpty()
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    
+    LaunchedEffect(error) {
+        error?.let {
+            snackbarHostState.showSnackbar(it)
+            onDismissError()
+        }
+    }
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             Column(modifier = Modifier.background(MaterialTheme.colorScheme.primaryContainer)) {
                 TopAppBar(
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
+                    },
                     title = {
                         if (isSearchActive) {
                             TextField(
                                 value = searchQuery,
                                 onValueChange = onSearchQueryChange,
-                                placeholder = { Text("Search by name, address, member...") },
+                                placeholder = { Text("Search...") },
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true,
                                 colors = TextFieldDefaults.colors(
@@ -137,50 +166,6 @@ fun BeneficiaryListContent(
                         if (!isSearchActive) {
                             IconButton(onClick = { isSearchActive = true }) {
                                 Icon(Icons.Default.Search, contentDescription = "Search")
-                            }
-                        }
-                        IconButton(onClick = { showFilterSheet = true }) {
-                            BadgedBox(
-                                badge = {
-                                    if (filters != BeneficiaryFilters()) {
-                                        Badge { Text("!", modifier = Modifier.padding(2.dp)) }
-                                    }
-                                }
-                            ) {
-                                Icon(Icons.Default.Settings, contentDescription = "Filter")
-                            }
-                        }
-                        Box {
-                            IconButton(onClick = { isSortMenuExpanded = true }) {
-                                Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Sort")
-                            }
-                            DropdownMenu(
-                                expanded = isSortMenuExpanded,
-                                onDismissRequest = { isSortMenuExpanded = false }
-                            ) {
-                                SortOrder.entries.forEach { order ->
-                                    DropdownMenuItem(
-                                        text = { 
-                                            Text(when(order) {
-                                                SortOrder.NAME_ASC -> "Name (A-Z)"
-                                                SortOrder.NAME_DESC -> "Name (Z-A)"
-                                                SortOrder.DATE_ADDED_ASC -> "Date Added (Oldest)"
-                                                SortOrder.DATE_ADDED_DESC -> "Date Added (Newest)"
-                                                SortOrder.DATE_UPDATED_ASC -> "Date Updated (Oldest)"
-                                                SortOrder.DATE_UPDATED_DESC -> "Date Updated (Newest)"
-                                            })
-                                        },
-                                        onClick = {
-                                            onSortOrderChange(order)
-                                            isSortMenuExpanded = false
-                                        },
-                                        leadingIcon = {
-                                            if (sortOrder == order) {
-                                                Icon(Icons.Default.Check, contentDescription = null)
-                                            }
-                                        }
-                                    )
-                                }
                             }
                         }
                     },
@@ -261,6 +246,85 @@ fun BeneficiaryListContent(
                     }
                 }
             }
+        },
+        bottomBar = {
+            Surface(
+                tonalElevation = 8.dp,
+                shadowElevation = 8.dp,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                        .navigationBarsPadding(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Button(
+                        onClick = { showFilterSheet = true },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    ) {
+                        BadgedBox(
+                            badge = {
+                                if (filters != BeneficiaryFilters()) {
+                                    Badge { Text("!", modifier = Modifier.padding(2.dp)) }
+                                }
+                            }
+                        ) {
+                            Icon(Icons.Default.List, null, modifier = Modifier.size(18.dp))
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Text("Filter")
+                    }
+
+                    Button(
+                        onClick = { isSortMenuExpanded = true },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                        )
+                    ) {
+                        Icon(Icons.Default.Refresh, null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Sort")
+                        
+                        DropdownMenu(
+                            expanded = isSortMenuExpanded,
+                            onDismissRequest = { isSortMenuExpanded = false }
+                        ) {
+                            SortOrder.entries.forEach { order ->
+                                DropdownMenuItem(
+                                    text = { 
+                                        Text(when(order) {
+                                            SortOrder.NAME_ASC -> "Name (A-Z)"
+                                            SortOrder.NAME_DESC -> "Name (Z-A)"
+                                            SortOrder.DATE_ADDED_ASC -> "Date Added (Oldest)"
+                                            SortOrder.DATE_ADDED_DESC -> "Date Added (Newest)"
+                                            SortOrder.DATE_UPDATED_ASC -> "Date Updated (Oldest)"
+                                            SortOrder.DATE_UPDATED_DESC -> "Date Updated (Newest)"
+                                        })
+                                    },
+                                    onClick = {
+                                        onSortOrderChange(order)
+                                        isSortMenuExpanded = false
+                                    },
+                                    leadingIcon = {
+                                        if (sortOrder == order) {
+                                            Icon(Icons.Default.Check, contentDescription = null)
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
     ) { padding ->
         if (beneficiaries.isEmpty()) {
@@ -285,7 +349,7 @@ fun BeneficiaryListContent(
                     .padding(padding)
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
-                contentPadding = PaddingValues(bottom = 80.dp),
+                contentPadding = PaddingValues(bottom = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 item { Spacer(Modifier.height(4.dp)) }
@@ -403,7 +467,7 @@ fun BeneficiaryCard(
                     InfoItem(Icons.AutoMirrored.Filled.List, "Packets", beneficiary.packetCount?.toString() ?: "—")
                 }
                 Column(modifier = Modifier.weight(1f)) {
-                    InfoItem(Icons.Default.CheckCircle, "Monetary", beneficiary.monetaryAidAmount?.let { "₹ $it" } ?: "—")
+                    InfoItem(Icons.Default.CheckCircle, "Monetary", beneficiary.monetaryAidAmount?.let { "PKR $it" } ?: "—")
                     InfoItem(Icons.Default.Info, "Reason", beneficiary.reasonForAid, maxLines = 1)
                 }
             }
@@ -549,8 +613,17 @@ fun FilterBottomSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("Filters", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                TextButton(onClick = { tempFilters = BeneficiaryFilters() }) {
-                    Text("Reset")
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(onClick = { tempFilters = BeneficiaryFilters() }) {
+                        Text("Reset")
+                    }
+                    Button(
+                        onClick = { onApply(tempFilters) },
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                    ) {
+                        Text("Apply")
+                    }
                 }
             }
 
@@ -656,16 +729,6 @@ fun FilterBottomSheet(
                 shape = RoundedCornerShape(12.dp)
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
-
-            Button(
-                onClick = { onApply(tempFilters) },
-                modifier = Modifier.fillMaxWidth().height(50.dp),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text("Apply Filters")
-            }
-
             Spacer(modifier = Modifier.height(40.dp))
         }
     }
@@ -702,6 +765,9 @@ fun BeneficiaryListContentPreview() {
             filters = BeneficiaryFilters(),
             onFiltersChange = {},
             onResetFilters = {},
+            onBack = {},
+            error = null,
+            onDismissError = {},
             onBeneficiaryClick = {},
             onAidClick = { _, _ -> },
             onVisitClick = { _, _ -> }

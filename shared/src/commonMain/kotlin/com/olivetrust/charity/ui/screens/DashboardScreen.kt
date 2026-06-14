@@ -4,11 +4,14 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -20,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.tooling.preview.Preview
 import com.olivetrust.charity.ui.previews.PreviewMocks
 import cafe.adriel.voyager.core.screen.Screen
@@ -28,6 +32,8 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.olivetrust.charity.domain.model.UserRole
 import com.olivetrust.charity.domain.model.User
+import com.olivetrust.charity.domain.model.BeneficiaryStatus
+import kotlinx.datetime.*
 
 class DashboardScreen : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -94,95 +100,128 @@ class DashboardScreen : Screen {
                 onRefresh = { viewModel.refresh() },
                 modifier = Modifier.padding(padding)
             ) {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 20.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    item {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Column {
-                            Text(
-                                text = "Hello,",
-                                style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = user?.fullName ?: "User",
-                                style = MaterialTheme.typography.headlineMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
+                    item(span = { GridItemSpan(2) }) {
+                        WelcomeHeader(user?.fullName ?: "User")
                     }
 
+                    // View All Buttons
+                    item(span = { GridItemSpan(2) }) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            FilledTonalButton(
+                                onClick = { navigator.push(BeneficiaryListScreen()) },
+                                modifier = Modifier.weight(1f),
+                                contentPadding = PaddingValues(horizontal = 4.dp)
+                            ) {
+                                Icon(Icons.Default.Face, null, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("Beneficiaries", fontSize = 10.sp)
+                            }
+                            OutlinedButton(
+                                onClick = { navigator.push(VisitListScreen()) },
+                                modifier = Modifier.weight(1f),
+                                contentPadding = PaddingValues(horizontal = 4.dp)
+                            ) {
+                                Icon(Icons.Default.LocationOn, null, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("Visits", fontSize = 10.sp)
+                            }
+                            OutlinedButton(
+                                onClick = { navigator.push(AidListScreen()) },
+                                modifier = Modifier.weight(1f),
+                                contentPadding = PaddingValues(horizontal = 4.dp)
+                            ) {
+                                Icon(Icons.AutoMirrored.Filled.List, null, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("Aid", fontSize = 10.sp)
+                            }
+                        }
+                    }
+
+                    item(span = { GridItemSpan(2) }) {
+                        SectionLabel("Key Metrics")
+                    }
                     item {
-                        StatCard(
-                            label = "Total Beneficiaries",
-                            value = stats.total.toString(),
-                            icon = Icons.Default.Face,
-                            color = MaterialTheme.colorScheme.primary,
-                            onClick = { navigator.push(BeneficiaryListScreen()) }
+                        MainStatCard(
+                            label = "Approved",
+                            value = stats.approvedBeneficiaries.toString(),
+                            icon = Icons.Default.CheckCircle,
+                            color = Color(0xFF4CAF50),
+                            onClick = { navigator.push(BeneficiaryListScreen(BeneficiaryFilters(status = BeneficiaryStatus.APPROVED))) }
+                        )
+                    }
+                    item {
+                        MainStatCard(
+                            label = "Visits",
+                            value = stats.totalVisits.toString(),
+                            icon = Icons.Default.LocationOn,
+                            color = Color(0xFF2196F3),
+                            onClick = { navigator.push(VisitListScreen()) }
+                        )
+                    }
+                    item(span = { GridItemSpan(2) }) {
+                        WideStatCard(
+                            label = "Monthly Aid Distributions",
+                            value = stats.monthlyAidDistributed.toString(),
+                            icon = Icons.AutoMirrored.Filled.List,
+                            color = MaterialTheme.colorScheme.tertiary,
+                            subtitle = "For ${getCurrentMonthName()}",
+                            onClick = { navigator.push(AidListScreen()) }
                         )
                     }
 
-                    item {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            SmallStatCard(
-                                label = "Approved",
-                                value = stats.active.toString(),
-                                icon = Icons.Default.CheckCircle,
-                                color = Color(0xFF4CAF50), // Green
-                                modifier = Modifier.weight(1f)
-                            )
-                            SmallStatCard(
-                                label = "Pending",
-                                value = stats.pending.toString(),
-                                icon = Icons.Default.Info,
-                                color = Color(0xFFFF9800), // Orange
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
+                    item(span = { GridItemSpan(2) }) {
+                        SectionLabel("Attention Required")
                     }
-
+                    
                     item {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            SmallStatCard(
-                                label = "Reapproval",
-                                value = stats.reapproval.toString(),
-                                icon = Icons.Default.Refresh,
-                                color = Color(0xFF2196F3), // Blue
-                                modifier = Modifier.weight(1f)
-                            )
-                            SmallStatCard(
-                                label = "Edit Request",
-                                value = stats.editRequested.toString(),
-                                icon = Icons.Default.Edit,
-                                color = Color(0xFF9C27B0), // Purple
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
+                        PendingCard(
+                            label = "Onboarding",
+                            value = stats.pendingOnboarding.toString(),
+                            icon = Icons.Default.Person,
+                            color = Color(0xFFFF9800),
+                            onClick = { navigator.push(BeneficiaryListScreen(BeneficiaryFilters(status = BeneficiaryStatus.PENDING_APPROVAL))) }
+                        )
                     }
-
                     item {
-                        SmallStatCard(
-                            label = "Rejected",
-                            value = stats.rejected.toString(),
-                            icon = Icons.Default.Close,
-                            color = Color(0xFFF44336) // Red
+                        PendingCard(
+                            label = "Edit Requests",
+                            value = stats.pendingEdits.toString(),
+                            icon = Icons.Default.Edit,
+                            color = Color(0xFF9C27B0),
+                            onClick = { navigator.push(BeneficiaryListScreen(BeneficiaryFilters(status = BeneficiaryStatus.EDIT_REQUESTED))) }
+                        )
+                    }
+                    item {
+                        PendingCard(
+                            label = "Misuse Reports",
+                            value = stats.misuseReports.toString(),
+                            icon = Icons.Default.Warning,
+                            color = Color(0xFFF44336),
+                            onClick = { navigator.push(BeneficiaryListScreen(BeneficiaryFilters(status = BeneficiaryStatus.MISUSE_REPORTED))) }
+                        )
+                    }
+                    item {
+                        PendingCard(
+                            label = "Reapprovals",
+                            value = stats.pendingReapprovals.toString(),
+                            icon = Icons.Default.Refresh,
+                            color = Color(0xFF607D8B),
+                            onClick = { navigator.push(BeneficiaryListScreen(BeneficiaryFilters(status = BeneficiaryStatus.REAPPROVAL_PENDING))) }
                         )
                     }
 
-                    item {
-                        Spacer(modifier = Modifier.height(80.dp))
+                    item(span = { GridItemSpan(2) }) {
+                        Spacer(Modifier.height(80.dp))
                     }
                 }
             }
@@ -205,7 +244,35 @@ class DashboardScreen : Screen {
 }
 
 @Composable
-internal fun StatCard(
+fun WelcomeHeader(name: String) {
+    Column(modifier = Modifier.padding(bottom = 8.dp)) {
+        Text(
+            text = "Welcome back,",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = name,
+            style = MaterialTheme.typography.headlineLarge,
+            fontWeight = FontWeight.ExtraBold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
+@Composable
+fun SectionLabel(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelLarge,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(top = 8.dp)
+    )
+}
+
+@Composable
+fun MainStatCard(
     label: String,
     value: String,
     icon: ImageVector,
@@ -217,84 +284,89 @@ internal fun StatCard(
             .fillMaxWidth()
             .clickable { onClick() },
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.08f)),
-        border = BorderStroke(1.dp, color.copy(alpha = 0.12f))
+        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.1f)),
+        border = BorderStroke(1.dp, color.copy(alpha = 0.2f))
     ) {
-        Row(
-            modifier = Modifier.padding(24.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = value,
-                    style = MaterialTheme.typography.displaySmall,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = color
-                )
-            }
-            Surface(
-                color = color,
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.size(56.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        icon,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(28.dp)
-                    )
-                }
-            }
+        Column(modifier = Modifier.padding(16.dp)) {
+            Icon(icon, null, modifier = Modifier.size(24.dp), tint = color)
+            Spacer(Modifier.height(12.dp))
+            Text(value, style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Black, color = color)
+            Text(label, style = MaterialTheme.typography.labelMedium, color = color.copy(alpha = 0.8f))
         }
     }
 }
 
 @Composable
-internal fun SmallStatCard(
+fun WideStatCard(
     label: String,
     value: String,
     icon: ImageVector,
     color: Color,
-    modifier: Modifier = Modifier
+    subtitle: String,
+    onClick: () -> Unit
 ) {
     Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        modifier = Modifier.fillMaxWidth().clickable { onClick() },
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.1f)),
+        border = BorderStroke(1.dp, color.copy(alpha = 0.2f))
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(
-                    icon,
-                    contentDescription = null,
-                    tint = color,
-                    modifier = Modifier.size(20.dp)
-                )
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+        Row(
+            modifier = Modifier.padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = color)
+                Text(subtitle, style = MaterialTheme.typography.labelSmall, color = color.copy(alpha = 0.6f))
+                Spacer(Modifier.height(4.dp))
+                Text(value, style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Black, color = color)
             }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = value,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            Icon(icon, null, modifier = Modifier.size(48.dp), tint = color.copy(alpha = 0.3f))
         }
     }
+}
+
+@Composable
+fun PendingCard(
+    label: String,
+    value: String,
+    icon: ImageVector,
+    color: Color,
+    onClick: () -> Unit
+) {
+    OutlinedCard(
+        modifier = Modifier.fillMaxWidth().clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, if (value != "0") color.copy(alpha = 0.5f) else MaterialTheme.colorScheme.outlineVariant),
+        colors = CardDefaults.outlinedCardColors(
+            containerColor = if (value != "0") color.copy(alpha = 0.05f) else Color.Transparent
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .background(if (value != "0") color.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, null, modifier = Modifier.size(16.dp), tint = if (value != "0") color else MaterialTheme.colorScheme.outline)
+            }
+            Column {
+                Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = if (value != "0") color else MaterialTheme.colorScheme.onSurface)
+                Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+            }
+        }
+    }
+}
+
+private fun getCurrentMonthName(): String {
+    val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+    return now.month.name.lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
 }
 
 @Composable
@@ -421,28 +493,5 @@ private fun ProfileInfoRow(icon: ImageVector, label: String, value: String) {
             Text(text = label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(text = value, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
         }
-    }
-}
-
-@Preview
-@Composable
-fun StatCardPreview() {
-    MaterialTheme {
-        Box(Modifier.padding(16.dp)) {
-            StatCard("Total Beneficiaries", "125", Icons.Default.Face, MaterialTheme.colorScheme.primary, {})
-        }
-    }
-}
-
-@Preview
-@Composable
-fun ProfileDialogPreview() {
-    MaterialTheme {
-        ProfileDialog(
-            user = PreviewMocks.mockUser,
-            onDismiss = {},
-            onLogout = {},
-            onUpdateProfile = { _, _ -> }
-        )
     }
 }

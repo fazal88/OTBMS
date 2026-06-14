@@ -21,7 +21,7 @@ val appModule = module {
     singleOf(::FirestoreAuditRepository) bind AuditRepository::class
     
     factory { LoginViewModel(get(), get()) }
-    factory { DashboardViewModel(get(), get()) }
+    factory { DashboardViewModel(get(), get(), get(), get()) }
     factory { OnboardingViewModel(get(), get(), get()) }
     factory { AidDistributionViewModel(get(), get(), get(), get()) }
     factory { VerificationVisitViewModel(get(), get(), get(), get()) }
@@ -29,4 +29,6 @@ val appModule = module {
     factory { BeneficiaryDetailViewModel(get(), get(), get(), get()) }
     factory { EmployeeManagementViewModel(get()) }
     factory { ApproveBeneficiaryViewModel(get(), get(), get()) }
+    factory { VisitListViewModel(get()) }
+    factory { AidListViewModel(get()) }
 }

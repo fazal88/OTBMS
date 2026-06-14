@@ -38,7 +38,12 @@ class BeneficiaryListViewModel(
     private val _filters = MutableStateFlow(BeneficiaryFilters())
     val filters = _filters.asStateFlow()
 
+    private val _error = MutableStateFlow<String?>(null)
+    val error = _error.asStateFlow()
+
     private val allBeneficiariesFlow = beneficiaryRepository.getBeneficiaries()
+        .onEach { _error.value = null }
+        .catch { _error.value = "Failed to load beneficiaries: ${it.message}" }
         .stateIn(screenModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val totalCount: StateFlow<Int> = allBeneficiariesFlow
@@ -133,5 +138,9 @@ class BeneficiaryListViewModel(
     
     fun resetFilters() {
         _filters.value = BeneficiaryFilters()
+    }
+
+    fun clearError() {
+        _error.value = null
     }
 }

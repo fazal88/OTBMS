@@ -142,6 +142,8 @@ object DatabaseSeeder {
                     longitude = b.longitude + (random.nextDouble() - 0.5) * 0.01,
                     employeeId = "John Staff",
                     beneficiaryId = b.id,
+                    beneficiaryName = b.headName,
+                    areaCode = b.areaCode,
                     visitStatus = status,
                     reapprovalReason = if (status == VisitStatus.REAPPROVAL_REQUIRED) "Living conditions improved slightly." else null
                 )

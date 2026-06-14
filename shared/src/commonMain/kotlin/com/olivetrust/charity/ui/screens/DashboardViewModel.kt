@@ -1,22 +1,22 @@
 package com.olivetrust.charity.ui.screens
 
 import cafe.adriel.voyager.core.model.ScreenModel
+import cafe.adriel.voyager.core.model.screenModelScope
+import com.olivetrust.charity.domain.model.BeneficiaryStatus
+import com.olivetrust.charity.domain.repository.AidRepository
 import com.olivetrust.charity.domain.repository.AuthRepository
 import com.olivetrust.charity.domain.repository.BeneficiaryRepository
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
-import cafe.adriel.voyager.core.model.screenModelScope
+import com.olivetrust.charity.domain.repository.VisitRepository
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.delay
+import kotlinx.datetime.*
 
 class DashboardViewModel(
     private val authRepository: AuthRepository,
-    private val beneficiaryRepository: BeneficiaryRepository
+    private val beneficiaryRepository: BeneficiaryRepository,
+    private val visitRepository: VisitRepository,
+    private val aidRepository: AidRepository
 ) : ScreenModel {
 
     private val _isRefreshing = MutableStateFlow(false)
@@ -34,9 +34,6 @@ class DashboardViewModel(
     fun refresh() {
         screenModelScope.launch {
             _isRefreshing.value = true
-            // Since we use real-time snapshots, a manual "refresh" isn't strictly necessary 
-            // for the data to update, but we'll simulate a delay for UX feedback 
-            // and the data will be fresh anyway.
             delay(1000)
             _isRefreshing.value = false
         }
@@ -51,27 +48,40 @@ class DashboardViewModel(
         }
     }
 
-    val stats: StateFlow<DashboardStats> = beneficiaryRepository.getBeneficiaries()
-        .map { beneficiaries ->
-            DashboardStats(
-                total = beneficiaries.size,
-                active = beneficiaries.count { it.status == com.olivetrust.charity.domain.model.BeneficiaryStatus.APPROVED },
-                pending = beneficiaries.count { it.status == com.olivetrust.charity.domain.model.BeneficiaryStatus.PENDING_APPROVAL },
-                reapproval = beneficiaries.count { 
-                    it.status == com.olivetrust.charity.domain.model.BeneficiaryStatus.REAPPROVAL_PENDING ||
-                    it.status == com.olivetrust.charity.domain.model.BeneficiaryStatus.MISUSE_REPORTED
-                },
-                editRequested = beneficiaries.count { it.status == com.olivetrust.charity.domain.model.BeneficiaryStatus.EDIT_REQUESTED },
-                rejected = beneficiaries.count { it.status == com.olivetrust.charity.domain.model.BeneficiaryStatus.REJECTED }
-            )
-        }.stateIn(screenModelScope, SharingStarted.WhileSubscribed(5000), DashboardStats())
+    val stats: StateFlow<DashboardStats> = combine(
+        beneficiaryRepository.getBeneficiaries(),
+        visitRepository.getVisits(),
+        aidRepository.getDistributions()
+    ) { beneficiaries, visits, distributions ->
+        val now = kotlinx.datetime.Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+        val currentMonth = now.month
+        val currentYear = now.year
+
+        val monthlyDistributions = distributions.count { dist ->
+            val distDate = kotlinx.datetime.Instant.fromEpochMilliseconds(dist.date).toLocalDateTime(TimeZone.currentSystemDefault())
+            distDate.month == currentMonth && distDate.year == currentYear
+        }
+
+        DashboardStats(
+            approvedBeneficiaries = beneficiaries.count { it.status == BeneficiaryStatus.APPROVED },
+            monthlyAidDistributed = monthlyDistributions,
+            totalVisits = visits.size,
+            pendingOnboarding = beneficiaries.count { it.status == BeneficiaryStatus.PENDING_APPROVAL },
+            pendingEdits = beneficiaries.count { it.status == BeneficiaryStatus.EDIT_REQUESTED },
+            pendingReapprovals = beneficiaries.count { it.status == BeneficiaryStatus.REAPPROVAL_PENDING },
+            misuseReports = beneficiaries.count { it.status == BeneficiaryStatus.MISUSE_REPORTED },
+            totalBeneficiaries = beneficiaries.size
+        )
+    }.stateIn(screenModelScope, SharingStarted.WhileSubscribed(5000), DashboardStats())
 }
 
 data class DashboardStats(
-    val total: Int = 0,
-    val active: Int = 0,
-    val pending: Int = 0,
-    val reapproval: Int = 0,
-    val rejected: Int = 0,
-    val editRequested: Int = 0
+    val approvedBeneficiaries: Int = 0,
+    val monthlyAidDistributed: Int = 0,
+    val totalVisits: Int = 0,
+    val pendingOnboarding: Int = 0,
+    val pendingEdits: Int = 0,
+    val pendingReapprovals: Int = 0,
+    val misuseReports: Int = 0,
+    val totalBeneficiaries: Int = 0
 )
