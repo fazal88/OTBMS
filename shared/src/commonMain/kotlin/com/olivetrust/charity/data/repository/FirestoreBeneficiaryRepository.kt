@@ -97,18 +97,25 @@ class FirestoreBeneficiaryRepository(
         monthlyRation: String?,
         packetCount: Int?,
         monetaryAidAmount: Double?,
-        monitorId: String
+        monitorId: String,
+        expiryMonth: Int?,
+        expiryYear: Int?
     ): Result<Unit> {
+        if (id.isBlank()) return Result.failure(Exception("Beneficiary ID cannot be blank"))
         return try {
             val doc = collection.document(id).get()
             val beneficiary = doc.data(Beneficiary.serializer())
             
-            // Try to get names for the record
-            val approverDoc = usersCollection.document(approverId).get()
-            val approverName = if (approverDoc.exists) approverDoc.data(User.serializer()).fullName else "Unknown Approver"
+            // Try to get names for the record safely
+            val approverName = if (approverId.isNotBlank()) {
+                val approverDoc = usersCollection.document(approverId).get()
+                if (approverDoc.exists) approverDoc.data(User.serializer()).fullName else "Unknown Approver"
+            } else "Unknown Approver"
             
-            val monitorDoc = usersCollection.document(monitorId).get()
-            val monitorName = if (monitorDoc.exists) monitorDoc.data(User.serializer()).fullName else "Unknown Monitor"
+            val monitorName = if (monitorId.isNotBlank()) {
+                val monitorDoc = usersCollection.document(monitorId).get()
+                if (monitorDoc.exists) monitorDoc.data(User.serializer()).fullName else "Unknown Monitor"
+            } else "Unknown Monitor"
 
             val now = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
             
@@ -123,7 +130,9 @@ class FirestoreBeneficiaryRepository(
                 approvedBy = approverId,
                 assignedMonitor = monitorId,
                 approvalDate = now,
-                lastUpdated = now
+                lastUpdated = now,
+                expiryMonth = expiryMonth,
+                expiryYear = expiryYear
             )
             collection.document(id).set(Beneficiary.serializer(), updated)
             
@@ -141,7 +150,9 @@ class FirestoreBeneficiaryRepository(
                 packetCount = packetCount,
                 monetaryAidAmount = monetaryAidAmount,
                 assignedMonitorId = monitorId,
-                assignedMonitorName = monitorName
+                assignedMonitorName = monitorName,
+                expiryMonth = expiryMonth,
+                expiryYear = expiryYear
             )
             approvalsCollection.document(approvalRecord.approvalId).set(ApprovalRecord.serializer(), approvalRecord)
 

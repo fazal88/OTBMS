@@ -339,6 +339,23 @@ class DashboardScreen : Screen {
                             }
                         )
                     }
+                    item {
+                        PendingCard(
+                            label = "Expired",
+                            value = stats.expiredBeneficiaries.toString(),
+                            icon = Icons.Default.Warning,
+                            color = Color(0xFFE91E63),
+                            onClick = {
+                                navigator.push(
+                                    BeneficiaryListScreen(
+                                        BeneficiaryFilters(
+                                            status = BeneficiaryStatus.EXPIRED
+                                        )
+                                    )
+                                )
+                            }
+                        )
+                    }
 
                     item(span = { GridItemSpan(2) }) {
                         Spacer(Modifier.height(80.dp))

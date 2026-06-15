@@ -579,6 +579,7 @@ fun ListStatusBadge(status: BeneficiaryStatus) {
         BeneficiaryStatus.REAPPROVAL_PENDING -> Color(0xFF2196F3) to Icons.Default.Refresh
         BeneficiaryStatus.MISUSE_REPORTED -> MaterialTheme.colorScheme.error to Icons.Default.Warning
         BeneficiaryStatus.EDIT_REQUESTED -> Color(0xFF9C27B0) to Icons.Default.Edit
+        BeneficiaryStatus.EXPIRED -> Color(0xFFE91E63) to Icons.Default.Warning
         else -> MaterialTheme.colorScheme.outline to Icons.Default.Info
     }
     Surface(

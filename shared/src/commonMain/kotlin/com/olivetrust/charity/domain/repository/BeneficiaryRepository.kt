@@ -20,7 +20,9 @@ interface BeneficiaryRepository {
         monthlyRation: String?,
         packetCount: Int?,
         monetaryAidAmount: Double?,
-        monitorId: String
+        monitorId: String,
+        expiryMonth: Int?,
+        expiryYear: Int?
     ): Result<Unit>
     suspend fun rejectBeneficiary(id: String, rejectedBy: String, reason: String): Result<Unit>
     suspend fun requestEdit(id: String, notes: String): Result<Unit>

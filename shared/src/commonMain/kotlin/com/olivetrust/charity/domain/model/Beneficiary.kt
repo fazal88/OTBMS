@@ -11,7 +11,8 @@ enum class BeneficiaryStatus {
     DEACTIVATED,
     REAPPROVAL_PENDING,
     MISUSE_REPORTED,
-    EDIT_REQUESTED
+    EDIT_REQUESTED,
+    EXPIRED
 }
 
 @Serializable
@@ -43,6 +44,10 @@ data class Beneficiary(
     val status: BeneficiaryStatus = BeneficiaryStatus.PENDING_APPROVAL,
     val lastUpdated: Long = 0,
     
+    // Expiry info
+    val expiryMonth: Int? = null,
+    val expiryYear: Int? = null,
+
     // Approval Details
     val approvalNotes: String? = null,
     val natureOfAid: String? = null,

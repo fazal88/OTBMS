@@ -5,6 +5,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -71,6 +72,10 @@ class ApproveBeneficiaryScreen(private val beneficiaryId: String, private val be
                 var selectedMonitorId by remember { mutableStateOf("") }
                 var monitorExpanded by remember { mutableStateOf(false) }
 
+                var expiryMonth by remember { mutableStateOf("") }
+                var expiryYear by remember { mutableStateOf("") }
+                var expiryMonthExpanded by remember { mutableStateOf(false) }
+
                 Text("Aid Approval Details", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
 
                 OutlinedTextField(
@@ -113,6 +118,45 @@ class ApproveBeneficiaryScreen(private val beneficiaryId: String, private val be
                         onValueChange = { monetaryAidAmount = it },
                         label = { Text("Monetary Aid Amount (in ₹)") },
                         modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                Text("Aid Expiry (Last month/year of aid)", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Box(modifier = Modifier.weight(1f)) {
+                        OutlinedTextField(
+                            value = if (expiryMonth.isBlank()) "Select Month" else getMonthName(expiryMonth.toInt()),
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Expiry Month") },
+                            trailingIcon = { IconButton(onClick = { expiryMonthExpanded = true }) {
+                                Icon(Icons.Default.ArrowDropDown, null)
+                            }},
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        DropdownMenu(
+                            expanded = expiryMonthExpanded,
+                            onDismissRequest = { expiryMonthExpanded = false }
+                        ) {
+                            (1..12).forEach { m ->
+                                DropdownMenuItem(
+                                    text = { Text(getMonthName(m)) },
+                                    onClick = {
+                                        expiryMonth = m.toString()
+                                        expiryMonthExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    OutlinedTextField(
+                        value = expiryYear,
+                        onValueChange = { expiryYear = it },
+                        label = { Text("Expiry Year") },
+                        modifier = Modifier.weight(1f),
+                        placeholder = { Text("e.g. 2025") },
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
                     )
                 }
 
@@ -163,7 +207,9 @@ class ApproveBeneficiaryScreen(private val beneficiaryId: String, private val be
                             monthlyRation = monthlyRation.ifBlank { null },
                             packetCount = packetCount.toIntOrNull(),
                             monetaryAidAmount = monetaryAidAmount.toDoubleOrNull(),
-                            monitorId = selectedMonitorId
+                            monitorId = selectedMonitorId,
+                            expiryMonth = expiryMonth.toIntOrNull(),
+                            expiryYear = expiryYear.toIntOrNull()
                         )
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -205,7 +251,9 @@ class ApproveBeneficiaryViewModel(
         monthlyRation: String?,
         packetCount: Int?,
         monetaryAidAmount: Double?,
-        monitorId: String
+        monitorId: String,
+        expiryMonth: Int?,
+        expiryYear: Int?
     ) {
         screenModelScope.launch {
             _state.value = ApprovalState.Loading
@@ -218,7 +266,9 @@ class ApproveBeneficiaryViewModel(
                 monthlyRation = monthlyRation,
                 packetCount = packetCount,
                 monetaryAidAmount = monetaryAidAmount,
-                monitorId = monitorId
+                monitorId = monitorId,
+                expiryMonth = expiryMonth,
+                expiryYear = expiryYear
             )
             if (result.isSuccess) {
                 _state.value = ApprovalState.Success
@@ -234,4 +284,22 @@ sealed class ApprovalState {
     object Loading : ApprovalState()
     object Success : ApprovalState()
     data class Error(val message: String) : ApprovalState()
+}
+
+private fun getMonthName(month: Int): String {
+    return when (month) {
+        1 -> "January"
+        2 -> "February"
+        3 -> "March"
+        4 -> "April"
+        5 -> "May"
+        6 -> "June"
+        7 -> "July"
+        8 -> "August"
+        9 -> "September"
+        10 -> "October"
+        11 -> "November"
+        12 -> "December"
+        else -> ""
+    }
 }

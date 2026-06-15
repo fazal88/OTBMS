@@ -55,12 +55,23 @@ class DashboardViewModel(
         aidRepository.getDistributions()
     ) { beneficiaries, visits, distributions ->
         val now = DateClock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
-        val currentMonth = now.month
+        val currentMonth = now.month.number
         val currentYear = now.year
+
+        // Auto-expire beneficiaries if needed
+        beneficiaries.forEach { b ->
+            if (b.status == BeneficiaryStatus.APPROVED && b.expiryMonth != null && b.expiryYear != null) {
+                if (currentYear > b.expiryYear || (currentYear == b.expiryYear && currentMonth > b.expiryMonth)) {
+                    screenModelScope.launch {
+                        beneficiaryRepository.updateStatus(b.id, BeneficiaryStatus.EXPIRED)
+                    }
+                }
+            }
+        }
 
         val monthlyDistributions = distributions.count { dist ->
             val distDate = kotlinx.datetime.Instant.fromEpochMilliseconds(dist.date).toLocalDateTime(TimeZone.currentSystemDefault())
-            distDate.month == currentMonth && distDate.year == currentYear
+            distDate.month.number == currentMonth && distDate.year == currentYear
         }
 
         DashboardStats(
@@ -74,6 +85,7 @@ class DashboardViewModel(
             rejectedBeneficiaries = beneficiaries.count { it.status == BeneficiaryStatus.REJECTED },
             deactivatedBeneficiaries = beneficiaries.count { it.status == BeneficiaryStatus.DEACTIVATED },
             draftBeneficiaries = beneficiaries.count { it.status == BeneficiaryStatus.DRAFT },
+            expiredBeneficiaries = beneficiaries.count { it.status == BeneficiaryStatus.EXPIRED },
             totalBeneficiaries = beneficiaries.size
         )
     }.stateIn(screenModelScope, SharingStarted.WhileSubscribed(5000), DashboardStats())
@@ -90,5 +102,6 @@ data class DashboardStats(
     val rejectedBeneficiaries: Int = 0,
     val deactivatedBeneficiaries: Int = 0,
     val draftBeneficiaries: Int = 0,
+    val expiredBeneficiaries: Int = 0,
     val totalBeneficiaries: Int = 0
 )

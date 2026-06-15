@@ -16,5 +16,7 @@ data class ApprovalRecord(
     val packetCount: Int? = null,
     val monetaryAidAmount: Double? = null,
     val assignedMonitorId: String = "",
-    val assignedMonitorName: String = ""
+    val assignedMonitorName: String = "",
+    val expiryMonth: Int? = null,
+    val expiryYear: Int? = null
 )
