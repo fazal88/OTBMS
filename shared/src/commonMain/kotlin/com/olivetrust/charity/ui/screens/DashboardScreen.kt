@@ -112,57 +112,73 @@ class DashboardScreen : Screen {
 
                     // View All Buttons
                     item(span = { GridItemSpan(2) }) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            FilledTonalButton(
-                                onClick = { navigator.push(BeneficiaryListScreen()) },
-                                modifier = Modifier.weight(1f),
-                                contentPadding = PaddingValues(horizontal = 4.dp)
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Icon(Icons.Default.Face, null, modifier = Modifier.size(16.dp))
-                                Spacer(Modifier.width(4.dp))
-                                Text("Beneficiaries", fontSize = 10.sp)
+                                FilledTonalButton(
+                                    onClick = { navigator.push(BeneficiaryListScreen()) },
+                                    modifier = Modifier.weight(1f),
+                                    contentPadding = PaddingValues(horizontal = 4.dp)
+                                ) {
+                                    Icon(Icons.Default.Face, null, modifier = Modifier.size(16.dp))
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("Beneficiaries", fontSize = 10.sp)
+                                }
+                                OutlinedButton(
+                                    onClick = { navigator.push(EventListScreen()) },
+                                    modifier = Modifier.weight(1f),
+                                    contentPadding = PaddingValues(horizontal = 4.dp)
+                                ) {
+                                    Icon(Icons.Default.DateRange, null, modifier = Modifier.size(16.dp))
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("Events", fontSize = 10.sp)
+                                }
                             }
-                            OutlinedButton(
-                                onClick = { navigator.push(VisitListScreen()) },
-                                modifier = Modifier.weight(1f),
-                                contentPadding = PaddingValues(horizontal = 4.dp)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Icon(
-                                    Icons.Default.LocationOn,
-                                    null,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(Modifier.width(4.dp))
-                                Text("Visits", fontSize = 10.sp)
-                            }
-                            OutlinedButton(
-                                onClick = { navigator.push(AidListScreen()) },
-                                modifier = Modifier.weight(1f),
-                                contentPadding = PaddingValues(horizontal = 4.dp)
-                            ) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.List,
-                                    null,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(Modifier.width(4.dp))
-                                Text("Aid", fontSize = 10.sp)
-                            }
-                            OutlinedButton(
-                                onClick = { navigator.push(ApprovalListScreen()) },
-                                modifier = Modifier.weight(1f),
-                                contentPadding = PaddingValues(horizontal = 4.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.CheckCircle,
-                                    null,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(Modifier.width(4.dp))
-                                Text("Approvals", fontSize = 10.sp)
+                                OutlinedButton(
+                                    onClick = { navigator.push(VisitListScreen()) },
+                                    modifier = Modifier.weight(1f),
+                                    contentPadding = PaddingValues(horizontal = 4.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.LocationOn,
+                                        null,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("Visits", fontSize = 10.sp)
+                                }
+                                OutlinedButton(
+                                    onClick = { navigator.push(AidListScreen()) },
+                                    modifier = Modifier.weight(1f),
+                                    contentPadding = PaddingValues(horizontal = 4.dp)
+                                ) {
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.List,
+                                        null,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("Aid", fontSize = 10.sp)
+                                }
+                                OutlinedButton(
+                                    onClick = { navigator.push(ApprovalListScreen()) },
+                                    modifier = Modifier.weight(1f),
+                                    contentPadding = PaddingValues(horizontal = 4.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.CheckCircle,
+                                        null,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("Approvals", fontSize = 10.sp)
+                                }
                             }
                         }
                     }

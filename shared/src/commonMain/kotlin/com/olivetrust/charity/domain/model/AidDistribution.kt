@@ -27,5 +27,6 @@ data class AidDistribution(
     val distributionLocationLng: Double = 0.0,
     val deliveryStatus: DeliveryStatus = DeliveryStatus.DELIVERED,
     val evidencePhotoUrl: String? = null,
-    val signatureUrl: String? = null
+    val signatureUrl: String? = null,
+    val eventId: String? = null
 )

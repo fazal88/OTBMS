@@ -19,6 +19,7 @@ val appModule = module {
     singleOf(::FirestoreVisitRepository) bind VisitRepository::class
     singleOf(::FirestoreEmployeeRepository) bind EmployeeRepository::class
     singleOf(::FirestoreAuditRepository) bind AuditRepository::class
+    singleOf(::FirestoreEventRepository) bind EventRepository::class
     
     factory { LoginViewModel(get(), get()) }
     factory { DashboardViewModel(get(), get(), get(), get()) }
@@ -32,4 +33,7 @@ val appModule = module {
     factory { VisitListViewModel(get()) }
     factory { AidListViewModel(get()) }
     factory { ApprovalListViewModel(get()) }
+    factory { EventListViewModel(get()) }
+    factory { CreateEventViewModel(get(), get()) }
+    factory { (eventId: String) -> EventDetailViewModel(eventId, get(), get(), get(), get()) }
 }

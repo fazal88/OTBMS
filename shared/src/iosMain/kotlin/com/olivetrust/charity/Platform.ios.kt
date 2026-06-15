@@ -23,3 +23,8 @@ class IOSLocationService : LocationService {
 }
 
 actual fun getLocationService(): LocationService = IOSLocationService()
+
+actual fun sendSms(phoneNumber: String, message: String) {
+    // In a real app, use MFMessageComposeViewController or tel: URL
+    println("IOS_SMS: To $phoneNumber: $message")
+}

@@ -20,3 +20,5 @@ interface LocationService {
 }
 
 expect fun getLocationService(): LocationService
+
+expect fun sendSms(phoneNumber: String, message: String)
