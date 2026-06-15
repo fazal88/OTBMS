@@ -3,7 +3,9 @@ package com.olivetrust.charity.ui.screens
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.olivetrust.charity.domain.model.AidDistribution
+import com.olivetrust.charity.domain.model.DistributionEvent
 import com.olivetrust.charity.domain.repository.AidRepository
+import com.olivetrust.charity.domain.repository.EventRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.datetime.*
 
@@ -20,8 +22,14 @@ data class AidFilters(
     val year: Int? = null
 )
 
+data class AidDistributionWithEvent(
+    val distribution: AidDistribution,
+    val eventName: String? = null
+)
+
 class AidListViewModel(
-    private val aidRepository: AidRepository
+    private val aidRepository: AidRepository,
+    private val eventRepository: EventRepository
 ) : ScreenModel {
 
     private val _searchQuery = MutableStateFlow("")
@@ -41,23 +49,31 @@ class AidListViewModel(
         .catch { _error.value = "Failed to load aid distributions: ${it.message}" }
         .stateIn(screenModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    private val allEventsFlow = eventRepository.getEvents()
+        .stateIn(screenModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     val totalCount: StateFlow<Int> = allAidFlow
         .map { it.size }
         .stateIn(screenModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
-    val distributions: StateFlow<List<AidDistribution>> = combine(
+    val distributions: StateFlow<List<AidDistributionWithEvent>> = combine(
         allAidFlow,
+        allEventsFlow,
         _searchQuery,
         _sortOrder,
         _filters
-    ) { allAid, query, sort, filter ->
+    ) { allAid, allEvents, query, sort, filter ->
         allAid
             .asSequence()
             .filter { a ->
                 applySearch(a, query) && applyFilters(a, filter)
             }
+            .map { a ->
+                val event = allEvents.find { it.id == a.eventId }
+                AidDistributionWithEvent(a, event?.name)
+            }
             .sortedWith { a, b ->
-                applySort(a, b, sort)
+                applySort(a.distribution, b.distribution, sort)
             }
             .toList()
     }.stateIn(screenModelScope, SharingStarted.WhileSubscribed(5000), emptyList())

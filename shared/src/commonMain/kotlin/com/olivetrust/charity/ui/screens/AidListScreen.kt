@@ -65,7 +65,7 @@ class AidListScreen : Screen {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AidListContent(
-    distributions: List<AidDistribution>,
+    distributions: List<AidDistributionWithEvent>,
     totalCount: Int,
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
@@ -333,7 +333,8 @@ fun AidListContent(
 }
 
 @Composable
-fun AidItemCard(aid: AidDistribution) {
+fun AidItemCard(item: AidDistributionWithEvent) {
+    val aid = item.distribution
     Card(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
         shape = RoundedCornerShape(16.dp),
@@ -350,17 +351,34 @@ fun AidItemCard(aid: AidDistribution) {
                     Text(aid.beneficiaryName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     Text("Area: ${aid.areaCode}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                 }
-                Surface(
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text(
-                        aid.natureOfAid,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        fontWeight = FontWeight.Bold
-                    )
+                Column(horizontalAlignment = Alignment.End) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(
+                            aid.natureOfAid,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    if (item.eventName != null) {
+                        Spacer(Modifier.height(4.dp))
+                        Surface(
+                            color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f),
+                            shape = RoundedCornerShape(4.dp)
+                        ) {
+                            Text(
+                                "Event: ${item.eventName}",
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                fontSize = 8.sp
+                            )
+                        }
+                    }
                 }
             }
             

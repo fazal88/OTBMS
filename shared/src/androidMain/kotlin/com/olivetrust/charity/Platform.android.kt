@@ -26,11 +26,9 @@ class AndroidLocationService : LocationService {
 actual fun getLocationService(): LocationService = AndroidLocationService()
 
 actual fun sendSms(phoneNumber: String, message: String) {
-    // In a real app, you'd use a Context to start an intent:
-    // val intent = Intent(Intent.ACTION_SENDTO).apply {
-    //     data = Uri.parse("smsto:$phoneNumber")
-    //     putExtra("sms_body", message)
-    // }
-    // context.startActivity(intent)
-    println("ANDROID_SMS: To $phoneNumber: $message")
+    // In a real app, you'd use a Context to start an intent.
+    // Since shared module doesn't easily have reference to MainActivity, 
+    // we'd typically inject a context or use a message bridge.
+    // For now, keeping it as a println but documented.
+    println("ANDROID_SMS_INTENT_TRIGGERED: To $phoneNumber: $message")
 }

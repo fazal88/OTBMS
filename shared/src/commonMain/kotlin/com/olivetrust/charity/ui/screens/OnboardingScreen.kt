@@ -74,7 +74,7 @@ fun OnboardingContent(
     var isNatureDropDownExpanded by remember { mutableStateOf(false) }
     var isHeadGenderDropDownExpanded by remember { mutableStateOf(false) }
     
-    val areaCodes = listOf("1", "2", "3", "4")
+    val areaCodes = listOf("Gate no 5", "Azmi Nagar", "Ambojwadi", "Other")
     val natureOptions = listOf("Owned", "Rented")
     val genderOptions = listOf("Male", "Female", "Other")
     val relationOptions = listOf("Wife", "Son", "Daughter", "Father", "Mother", "Brother", "Sister", "Husband", "Other")

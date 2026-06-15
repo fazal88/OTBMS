@@ -14,13 +14,16 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.olivetrust.charity.domain.model.DistributionEvent
+import com.olivetrust.charity.domain.model.EventStatus
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -73,33 +76,78 @@ class EventListScreen : Screen {
 fun EventItem(event: DistributionEvent, onClick: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth().clickable { onClick() },
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = MaterialTheme.shapes.medium
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                Icons.Default.DateRange,
-                contentDescription = null,
-                modifier = Modifier.size(40.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
+            Surface(
+                color = MaterialTheme.colorScheme.primaryContainer,
+                shape = MaterialTheme.shapes.small,
+                modifier = Modifier.size(48.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        Icons.Default.DateRange,
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp),
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
+            
             Spacer(Modifier.width(16.dp))
-            Column {
-                Text(event.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text(event.reason, style = MaterialTheme.typography.bodyMedium)
+            
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    formatDate(event.date),
+                    text = event.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
+                )
+                Text(
+                    text = event.reason,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1
+                )
+                Text(
+                    text = formatDate(event.date),
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold
                 )
             }
-            Spacer(Modifier.weight(1f))
-            Badge {
-                Text(event.status.name)
-            }
+            
+            EventStatusBadge(event.status)
         }
+    }
+}
+
+@Composable
+fun EventStatusBadge(status: EventStatus) {
+    val (color, text) = when (status) {
+        EventStatus.PLANNED -> Color(0xFF2196F3) to "Planned"
+        EventStatus.ONGOING -> Color(0xFF4CAF50) to "Ongoing"
+        EventStatus.COMPLETED -> Color(0xFF757575) to "Finished"
+        EventStatus.CANCELLED -> Color(0xFFF44336) to "Cancelled"
+    }
+
+    Surface(
+        color = color.copy(alpha = 0.1f),
+        shape = MaterialTheme.shapes.extraSmall,
+        border = androidx.compose.foundation.BorderStroke(1.dp, color.copy(alpha = 0.5f))
+    ) {
+        Text(
+            text = text.uppercase(),
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+            style = MaterialTheme.typography.labelSmall,
+            color = color,
+            fontWeight = FontWeight.Bold,
+            fontSize = 10.sp
+        )
     }
 }
 
