@@ -6,6 +6,7 @@ import com.olivetrust.charity.domain.model.VerificationVisit
 import com.olivetrust.charity.domain.model.VisitStatus
 import com.olivetrust.charity.domain.repository.VisitRepository
 import kotlinx.coroutines.flow.*
+import kotlinx.datetime.*
 
 enum class VisitSortOrder {
     DATE_DESC, DATE_ASC, NAME_ASC
@@ -14,7 +15,9 @@ enum class VisitSortOrder {
 data class VisitFilters(
     val status: VisitStatus? = null,
     val areaCode: String? = null,
-    val employeeName: String? = null
+    val employeeName: String? = null,
+    val month: Int? = null,
+    val year: Int? = null
 )
 
 class VisitListViewModel(
@@ -73,6 +76,15 @@ class VisitListViewModel(
         if (f.status != null && v.visitStatus != f.status) return false
         if (!f.areaCode.isNullOrBlank() && !v.areaCode.contains(f.areaCode, ignoreCase = true)) return false
         if (!f.employeeName.isNullOrBlank() && !v.employeeId.contains(f.employeeName, ignoreCase = true)) return false
+        
+        if (f.month != null || f.year != null) {
+            val dateTime = Instant.fromEpochMilliseconds(v.date)
+                .toLocalDateTime(TimeZone.currentSystemDefault())
+            
+            if (f.month != null && dateTime.month.number != f.month) return false
+            if (f.year != null && dateTime.year != f.year) return false
+        }
+
         return true
     }
 

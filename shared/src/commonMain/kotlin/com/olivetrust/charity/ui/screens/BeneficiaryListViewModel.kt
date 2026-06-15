@@ -6,6 +6,7 @@ import com.olivetrust.charity.domain.model.Beneficiary
 import com.olivetrust.charity.domain.model.BeneficiaryStatus
 import com.olivetrust.charity.domain.repository.BeneficiaryRepository
 import kotlinx.coroutines.flow.*
+import kotlinx.datetime.*
 
 enum class SortOrder {
     NAME_ASC, NAME_DESC, 
@@ -22,7 +23,9 @@ data class BeneficiaryFilters(
     val reasonForAid: String? = null,
     val natureOfAddress: String? = null,
     val minAmount: Double? = null,
-    val maxAmount: Double? = null
+    val maxAmount: Double? = null,
+    val month: Int? = null,
+    val year: Int? = null
 )
 
 class BeneficiaryListViewModel(
@@ -109,6 +112,14 @@ class BeneficiaryListViewModel(
         
         if (f.minAmount != null && (b.monetaryAidAmount ?: 0.0) < f.minAmount) return false
         if (f.maxAmount != null && (b.monetaryAidAmount ?: 0.0) > f.maxAmount) return false
+
+        if (f.month != null || f.year != null) {
+            val dateTime = Instant.fromEpochMilliseconds(b.onboardingDate)
+                .toLocalDateTime(TimeZone.currentSystemDefault())
+            
+            if (f.month != null && dateTime.month.number != f.month) return false
+            if (f.year != null && dateTime.year != f.year) return false
+        }
         
         return true
     }

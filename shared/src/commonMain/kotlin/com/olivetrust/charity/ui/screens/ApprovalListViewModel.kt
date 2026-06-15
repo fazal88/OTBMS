@@ -5,6 +5,7 @@ import cafe.adriel.voyager.core.model.screenModelScope
 import com.olivetrust.charity.domain.model.ApprovalRecord
 import com.olivetrust.charity.domain.repository.BeneficiaryRepository
 import kotlinx.coroutines.flow.*
+import kotlinx.datetime.*
 
 enum class ApprovalSortOrder {
     DATE_DESC, DATE_ASC, NAME_ASC
@@ -12,7 +13,9 @@ enum class ApprovalSortOrder {
 
 data class ApprovalFilters(
     val approverName: String? = null,
-    val natureOfAid: String? = null
+    val natureOfAid: String? = null,
+    val month: Int? = null,
+    val year: Int? = null
 )
 
 class ApprovalListViewModel(
@@ -69,6 +72,15 @@ class ApprovalListViewModel(
     private fun applyFilters(a: ApprovalRecord, f: ApprovalFilters): Boolean {
         if (!f.approverName.isNullOrBlank() && !a.approverName.contains(f.approverName, ignoreCase = true)) return false
         if (!f.natureOfAid.isNullOrBlank() && !a.natureOfAid.contains(f.natureOfAid, ignoreCase = true)) return false
+
+        if (f.month != null || f.year != null) {
+            val dateTime = Instant.fromEpochMilliseconds(a.date)
+                .toLocalDateTime(TimeZone.currentSystemDefault())
+            
+            if (f.month != null && dateTime.month.number != f.month) return false
+            if (f.year != null && dateTime.year != f.year) return false
+        }
+
         return true
     }
 

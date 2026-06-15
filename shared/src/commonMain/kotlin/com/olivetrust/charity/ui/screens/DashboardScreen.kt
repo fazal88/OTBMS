@@ -213,6 +213,15 @@ class DashboardScreen : Screen {
 
                     item {
                         PendingCard(
+                            label = "Total",
+                            value = stats.totalBeneficiaries.toString(),
+                            icon = Icons.Default.Person,
+                            color = Color(0xFF673AB7),
+                            onClick = { navigator.push(BeneficiaryListScreen()) }
+                        )
+                    }
+                    item {
+                        PendingCard(
                             label = "Onboarding",
                             value = stats.pendingOnboarding.toString(),
                             icon = Icons.Default.Person,
@@ -273,6 +282,57 @@ class DashboardScreen : Screen {
                                     BeneficiaryListScreen(
                                         BeneficiaryFilters(
                                             status = BeneficiaryStatus.REAPPROVAL_PENDING
+                                        )
+                                    )
+                                )
+                            }
+                        )
+                    }
+                    item {
+                        PendingCard(
+                            label = "Drafts",
+                            value = stats.draftBeneficiaries.toString(),
+                            icon = Icons.Default.Edit,
+                            color = Color(0xFF9E9E9E),
+                            onClick = {
+                                navigator.push(
+                                    BeneficiaryListScreen(
+                                        BeneficiaryFilters(
+                                            status = BeneficiaryStatus.DRAFT
+                                        )
+                                    )
+                                )
+                            }
+                        )
+                    }
+                    item {
+                        PendingCard(
+                            label = "Rejected",
+                            value = stats.rejectedBeneficiaries.toString(),
+                            icon = Icons.Default.Close,
+                            color = Color(0xFF795548),
+                            onClick = {
+                                navigator.push(
+                                    BeneficiaryListScreen(
+                                        BeneficiaryFilters(
+                                            status = BeneficiaryStatus.REJECTED
+                                        )
+                                    )
+                                )
+                            }
+                        )
+                    }
+                    item {
+                        PendingCard(
+                            label = "Deactivated",
+                            value = stats.deactivatedBeneficiaries.toString(),
+                            icon = Icons.Default.Lock,
+                            color = Color(0xFF37474F),
+                            onClick = {
+                                navigator.push(
+                                    BeneficiaryListScreen(
+                                        BeneficiaryFilters(
+                                            status = BeneficiaryStatus.DEACTIVATED
                                         )
                                     )
                                 )

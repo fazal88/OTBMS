@@ -183,6 +183,22 @@ fun AidListContent(
                                 trailingIcon = { Icon(Icons.Default.Close, null, Modifier.size(14.dp)) }
                             )
                         }
+                        if (filters.month != null) {
+                            FilterChip(
+                                selected = true,
+                                onClick = { onFiltersChange(filters.copy(month = null)) },
+                                label = { Text("Month: ${getMonthName(filters.month)}") },
+                                trailingIcon = { Icon(Icons.Default.Close, null, Modifier.size(14.dp)) }
+                            )
+                        }
+                        if (filters.year != null) {
+                            FilterChip(
+                                selected = true,
+                                onClick = { onFiltersChange(filters.copy(year = null)) },
+                                label = { Text("Year: ${filters.year}") },
+                                trailingIcon = { Icon(Icons.Default.Close, null, Modifier.size(14.dp)) }
+                            )
+                        }
                         TextButton(onClick = {
                             onResetFilters()
                             onSearchQueryChange("")
@@ -412,6 +428,58 @@ fun AidFilterBottomSheet(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Month and Year
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                var monthMenuExpanded by remember { mutableStateOf(false) }
+                Box(modifier = Modifier.weight(1f)) {
+                    OutlinedTextField(
+                        value = tempFilters.month?.let { getMonthName(it) } ?: "Select Month",
+                        onValueChange = { },
+                        readOnly = true,
+                        label = { Text("Month") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        trailingIcon = {
+                            IconButton(onClick = { monthMenuExpanded = true }) {
+                                Icon(Icons.Default.ArrowDropDown, null)
+                            }
+                        }
+                    )
+                    DropdownMenu(
+                        expanded = monthMenuExpanded,
+                        onDismissRequest = { monthMenuExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("None") },
+                            onClick = {
+                                tempFilters = tempFilters.copy(month = null)
+                                monthMenuExpanded = false
+                            }
+                        )
+                        (1..12).forEach { m ->
+                            DropdownMenuItem(
+                                text = { Text(getMonthName(m)) },
+                                onClick = {
+                                    tempFilters = tempFilters.copy(month = m)
+                                    monthMenuExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                OutlinedTextField(
+                    value = tempFilters.year?.toString() ?: "",
+                    onValueChange = { tempFilters = tempFilters.copy(year = it.toIntOrNull()) },
+                    label = { Text("Year") },
+                    modifier = Modifier.weight(1f),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    shape = RoundedCornerShape(12.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
             OutlinedTextField(
                 value = tempFilters.areaCode ?: "",
                 onValueChange = { tempFilters = tempFilters.copy(areaCode = it.ifBlank { null }) },
@@ -453,6 +521,24 @@ fun AidFilterBottomSheet(
 
             Spacer(modifier = Modifier.height(40.dp))
         }
+    }
+}
+
+private fun getMonthName(month: Int): String {
+    return when (month) {
+        1 -> "January"
+        2 -> "February"
+        3 -> "March"
+        4 -> "April"
+        5 -> "May"
+        6 -> "June"
+        7 -> "July"
+        8 -> "August"
+        9 -> "September"
+        10 -> "October"
+        11 -> "November"
+        12 -> "December"
+        else -> ""
     }
 }
 

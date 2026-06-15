@@ -14,7 +14,7 @@ import org.koin.compose.KoinApplication
 @Preview
 fun App() {
     // Uncomment the line below to seed the database once, then comment it back out.
-     LaunchedEffect(Unit) { DatabaseSeeder.seed() }
+//     LaunchedEffect(Unit) { DatabaseSeeder.seed() }
 
     KoinApplication(application = {
         modules(appModule)

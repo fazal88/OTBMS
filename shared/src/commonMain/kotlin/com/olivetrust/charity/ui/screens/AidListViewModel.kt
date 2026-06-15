@@ -5,6 +5,7 @@ import cafe.adriel.voyager.core.model.screenModelScope
 import com.olivetrust.charity.domain.model.AidDistribution
 import com.olivetrust.charity.domain.repository.AidRepository
 import kotlinx.coroutines.flow.*
+import kotlinx.datetime.*
 
 enum class AidSortOrder {
     DATE_DESC, DATE_ASC, AMOUNT_DESC, NAME_ASC
@@ -14,7 +15,9 @@ data class AidFilters(
     val areaCode: String? = null,
     val natureOfAid: String? = null,
     val minAmount: Double? = null,
-    val maxAmount: Double? = null
+    val maxAmount: Double? = null,
+    val month: Int? = null,
+    val year: Int? = null
 )
 
 class AidListViewModel(
@@ -75,6 +78,15 @@ class AidListViewModel(
         if (!f.natureOfAid.isNullOrBlank() && !a.natureOfAid.contains(f.natureOfAid, ignoreCase = true)) return false
         if (f.minAmount != null && a.aidAmount < f.minAmount) return false
         if (f.maxAmount != null && a.aidAmount > f.maxAmount) return false
+
+        if (f.month != null || f.year != null) {
+            val dateTime = Instant.fromEpochMilliseconds(a.date)
+                .toLocalDateTime(TimeZone.currentSystemDefault())
+            
+            if (f.month != null && dateTime.month.number != f.month) return false
+            if (f.year != null && dateTime.year != f.year) return false
+        }
+
         return true
     }
 

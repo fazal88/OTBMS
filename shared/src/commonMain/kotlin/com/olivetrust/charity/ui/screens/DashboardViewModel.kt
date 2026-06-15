@@ -71,6 +71,9 @@ class DashboardViewModel(
             pendingEdits = beneficiaries.count { it.status == BeneficiaryStatus.EDIT_REQUESTED },
             pendingReapprovals = beneficiaries.count { it.status == BeneficiaryStatus.REAPPROVAL_PENDING },
             misuseReports = beneficiaries.count { it.status == BeneficiaryStatus.MISUSE_REPORTED },
+            rejectedBeneficiaries = beneficiaries.count { it.status == BeneficiaryStatus.REJECTED },
+            deactivatedBeneficiaries = beneficiaries.count { it.status == BeneficiaryStatus.DEACTIVATED },
+            draftBeneficiaries = beneficiaries.count { it.status == BeneficiaryStatus.DRAFT },
             totalBeneficiaries = beneficiaries.size
         )
     }.stateIn(screenModelScope, SharingStarted.WhileSubscribed(5000), DashboardStats())
@@ -84,5 +87,8 @@ data class DashboardStats(
     val pendingEdits: Int = 0,
     val pendingReapprovals: Int = 0,
     val misuseReports: Int = 0,
+    val rejectedBeneficiaries: Int = 0,
+    val deactivatedBeneficiaries: Int = 0,
+    val draftBeneficiaries: Int = 0,
     val totalBeneficiaries: Int = 0
 )
