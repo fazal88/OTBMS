@@ -1,21 +1,20 @@
 package com.olivetrust.charity.data.repository
 
-import com.olivetrust.charity.domain.model.AuditLog
-import com.olivetrust.charity.domain.model.Beneficiary
-import com.olivetrust.charity.domain.model.BeneficiaryStatus
+import com.olivetrust.charity.domain.model.*
 import com.olivetrust.charity.domain.repository.AuditRepository
 import com.olivetrust.charity.domain.repository.BeneficiaryRepository
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.firestore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlin.time.Clock
 
 class FirestoreBeneficiaryRepository(
     private val auditRepository: AuditRepository
 ) : BeneficiaryRepository {
     private val firestore by lazy { Firebase.firestore }
     private val collection by lazy { firestore.collection("beneficiaries") }
+    private val approvalsCollection by lazy { firestore.collection("approvals") }
+    private val usersCollection by lazy { firestore.collection("users") }
 
     override fun getBeneficiaries(): Flow<List<Beneficiary>> {
         return collection.snapshots().map { snapshot ->
@@ -41,12 +40,25 @@ class FirestoreBeneficiaryRepository(
         }
     }
 
+    override fun getApprovals(): Flow<List<ApprovalRecord>> {
+        return approvalsCollection.snapshots().map { snapshot ->
+            snapshot.documents.mapNotNull {
+                try {
+                    it.data(ApprovalRecord.serializer())
+                } catch (e: Exception) {
+                    println("FIRESTORE_ERROR: Failed to decode approval ${it.id}: ${e.message}")
+                    null
+                }
+            }
+        }
+    }
+
     private suspend fun log(beneficiary: Beneficiary, action: String, userId: String) {
-        val now = Clock.System.now().toEpochMilliseconds()
+        val now = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
         auditRepository.logAction(AuditLog(
             auditId = "A_$now",
             userId = userId,
-            role = com.olivetrust.charity.domain.model.UserRole.EMPLOYEE,
+            role = UserRole.EMPLOYEE,
             actionType = action,
             entityType = "BENEFICIARY",
             entityId = beneficiary.id,
@@ -57,7 +69,7 @@ class FirestoreBeneficiaryRepository(
 
     override suspend fun createBeneficiary(beneficiary: Beneficiary): Result<String> {
         return try {
-            val now = Clock.System.now().toEpochMilliseconds()
+            val now = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
             val finalBeneficiary = beneficiary.copy(onboardingDate = now, lastUpdated = now)
             collection.document(finalBeneficiary.id).set(Beneficiary.serializer(), finalBeneficiary)
             log(finalBeneficiary, "CREATE", finalBeneficiary.onboardedBy)
@@ -69,7 +81,7 @@ class FirestoreBeneficiaryRepository(
 
     override suspend fun updateBeneficiary(beneficiary: Beneficiary): Result<Unit> {
         return try {
-            val updated = beneficiary.copy(lastUpdated = Clock.System.now().toEpochMilliseconds())
+            val updated = beneficiary.copy(lastUpdated = kotlinx.datetime.Clock.System.now().toEpochMilliseconds())
             collection.document(updated.id).set(Beneficiary.serializer(), updated)
             Result.success(Unit)
         } catch (e: Exception) {
@@ -90,7 +102,17 @@ class FirestoreBeneficiaryRepository(
         return try {
             val doc = collection.document(id).get()
             val beneficiary = doc.data(Beneficiary.serializer())
-            val now = Clock.System.now().toEpochMilliseconds()
+            
+            // Try to get names for the record
+            val approverDoc = usersCollection.document(approverId).get()
+            val approverName = if (approverDoc.exists) approverDoc.data(User.serializer()).fullName else "Unknown Approver"
+            
+            val monitorDoc = usersCollection.document(monitorId).get()
+            val monitorName = if (monitorDoc.exists) monitorDoc.data(User.serializer()).fullName else "Unknown Monitor"
+
+            val now = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
+            
+            // 1. Update Beneficiary
             val updated = beneficiary.copy(
                 status = BeneficiaryStatus.APPROVED,
                 approvalNotes = notes,
@@ -104,6 +126,25 @@ class FirestoreBeneficiaryRepository(
                 lastUpdated = now
             )
             collection.document(id).set(Beneficiary.serializer(), updated)
+            
+            // 2. Create Approval Record
+            val approvalRecord = ApprovalRecord(
+                approvalId = "APP_${now}_${id}",
+                date = now,
+                beneficiaryId = id,
+                beneficiaryName = beneficiary.headName,
+                approverId = approverId,
+                approverName = approverName,
+                notes = notes,
+                natureOfAid = natureOfAid,
+                monthlyRation = monthlyRation,
+                packetCount = packetCount,
+                monetaryAidAmount = monetaryAidAmount,
+                assignedMonitorId = monitorId,
+                assignedMonitorName = monitorName
+            )
+            approvalsCollection.document(approvalRecord.approvalId).set(ApprovalRecord.serializer(), approvalRecord)
+
             log(updated, "APPROVE", approverId)
             Result.success(Unit)
         } catch (e: Exception) {
@@ -115,7 +156,7 @@ class FirestoreBeneficiaryRepository(
         return try {
             val doc = collection.document(id).get()
             val beneficiary = doc.data(Beneficiary.serializer())
-            val now = Clock.System.now().toEpochMilliseconds()
+            val now = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
             val updated = beneficiary.copy(
                 status = BeneficiaryStatus.REJECTED,
                 rejectionReason = reason,
@@ -138,7 +179,7 @@ class FirestoreBeneficiaryRepository(
             val updated = beneficiary.copy(
                 status = BeneficiaryStatus.EDIT_REQUESTED,
                 editRequestNotes = notes,
-                lastUpdated = Clock.System.now().toEpochMilliseconds()
+                lastUpdated = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
             )
             collection.document(id).set(Beneficiary.serializer(), updated)
             Result.success(Unit)
@@ -153,7 +194,7 @@ class FirestoreBeneficiaryRepository(
             val beneficiary = doc.data(Beneficiary.serializer())
             val updated = beneficiary.copy(
                 status = status,
-                lastUpdated = Clock.System.now().toEpochMilliseconds()
+                lastUpdated = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
             )
             collection.document(id).set(Beneficiary.serializer(), updated)
             Result.success(Unit)

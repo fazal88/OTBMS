@@ -467,7 +467,7 @@ fun BeneficiaryCard(
                     InfoItem(Icons.AutoMirrored.Filled.List, "Packets", beneficiary.packetCount?.toString() ?: "—")
                 }
                 Column(modifier = Modifier.weight(1f)) {
-                    InfoItem(Icons.Default.CheckCircle, "Monetary", beneficiary.monetaryAidAmount?.let { "PKR $it" } ?: "—")
+                    InfoItem(Icons.Default.CheckCircle, "Monetary", beneficiary.monetaryAidAmount?.let { "₹ $it" } ?: "—")
                     InfoItem(Icons.Default.Info, "Reason", beneficiary.reasonForAid, maxLines = 1)
                 }
             }

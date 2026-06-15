@@ -17,6 +17,7 @@ object DatabaseSeeder {
             val beneficiaries = seedBeneficiaries(now)
             seedVisits(beneficiaries, now)
             seedAidDistributions(beneficiaries, now)
+            seedApprovals(beneficiaries, now)
             println("DATABASE_SEEDER: Seeding completed successfully!")
         } catch (e: Exception) {
             println("DATABASE_SEEDER: Error during seeding: ${e.message}")
@@ -183,6 +184,34 @@ object DatabaseSeeder {
                 println("DATABASE_SEEDER: Setting distribution ${dist.distributionId}...")
                 aidCollection.document(dist.distributionId).set(AidDistribution.serializer(), dist)
             }
+        }
+    }
+
+    private suspend fun seedApprovals(beneficiaries: List<Beneficiary>, now: Long) {
+        val approvalsCollection = firestore.collection("approvals")
+        val random = Random(42)
+
+        beneficiaries.filter { it.status == BeneficiaryStatus.APPROVED }.forEach { b ->
+            val approvalDate = b.onboardingDate + (random.nextLong(1, 5) * 24 * 60 * 60 * 1000)
+            if (approvalDate > now) return@forEach
+
+            val record = ApprovalRecord(
+                approvalId = "APP_${b.id}",
+                date = approvalDate,
+                beneficiaryId = b.id,
+                beneficiaryName = b.headName,
+                approverId = "approver_01",
+                approverName = "Alice Approver",
+                notes = "Deserving case verified by staff.",
+                natureOfAid = b.natureOfAid ?: "Ration",
+                monthlyRation = b.monthlyRation,
+                packetCount = b.packetCount,
+                monetaryAidAmount = b.monetaryAidAmount,
+                assignedMonitorId = "employee_01",
+                assignedMonitorName = "John Staff"
+            )
+            println("DATABASE_SEEDER: Setting approval record ${record.approvalId}...")
+            approvalsCollection.document(record.approvalId).set(ApprovalRecord.serializer(), record)
         }
     }
 }

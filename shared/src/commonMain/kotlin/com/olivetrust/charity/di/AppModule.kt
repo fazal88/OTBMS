@@ -31,4 +31,5 @@ val appModule = module {
     factory { ApproveBeneficiaryViewModel(get(), get(), get()) }
     factory { VisitListViewModel(get()) }
     factory { AidListViewModel(get()) }
+    factory { ApprovalListViewModel(get()) }
 }

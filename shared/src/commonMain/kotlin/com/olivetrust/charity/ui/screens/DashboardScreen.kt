@@ -34,6 +34,7 @@ import com.olivetrust.charity.domain.model.UserRole
 import com.olivetrust.charity.domain.model.User
 import com.olivetrust.charity.domain.model.BeneficiaryStatus
 import kotlinx.datetime.*
+import kotlin.time.Clock
 
 class DashboardScreen : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -143,6 +144,15 @@ class DashboardScreen : Screen {
                                 Icon(Icons.AutoMirrored.Filled.List, null, modifier = Modifier.size(16.dp))
                                 Spacer(Modifier.width(4.dp))
                                 Text("Aid", fontSize = 10.sp)
+                            }
+                            OutlinedButton(
+                                onClick = { navigator.push(ApprovalListScreen()) },
+                                modifier = Modifier.weight(1f),
+                                contentPadding = PaddingValues(horizontal = 4.dp)
+                            ) {
+                                Icon(Icons.Default.CheckCircle, null, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("Approvals", fontSize = 10.sp)
                             }
                         }
                     }

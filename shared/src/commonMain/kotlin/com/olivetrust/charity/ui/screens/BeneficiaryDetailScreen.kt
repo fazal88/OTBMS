@@ -332,7 +332,7 @@ internal fun DistributionCard(dist: AidDistribution) {
                 Text(dist.natureOfAid, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
             }
             Column(horizontalAlignment = Alignment.End) {
-                if (dist.aidAmount > 0) Text("PKR ${dist.aidAmount}", fontWeight = FontWeight.Bold)
+                if (dist.aidAmount > 0) Text("₹ ${dist.aidAmount}", fontWeight = FontWeight.Bold)
                 if (dist.packetCount > 0) Text("${dist.packetCount} Packets", style = MaterialTheme.typography.bodySmall)
             }
         }

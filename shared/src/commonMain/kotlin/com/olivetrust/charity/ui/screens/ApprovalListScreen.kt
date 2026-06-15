@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -26,15 +27,14 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import com.olivetrust.charity.domain.model.VerificationVisit
-import com.olivetrust.charity.domain.model.VisitStatus
+import com.olivetrust.charity.domain.model.ApprovalRecord
 import kotlinx.datetime.*
 
-class VisitListScreen : Screen {
+class ApprovalListScreen : Screen {
     @Composable
     override fun Content() {
-        val viewModel = koinScreenModel<VisitListViewModel>()
-        val visits by viewModel.visits.collectAsState()
+        val viewModel = koinScreenModel<ApprovalListViewModel>()
+        val approvals by viewModel.approvals.collectAsState()
         val totalCount by viewModel.totalCount.collectAsState()
         val searchQuery by viewModel.searchQuery.collectAsState()
         val sortOrder by viewModel.sortOrder.collectAsState()
@@ -42,8 +42,8 @@ class VisitListScreen : Screen {
         val error by viewModel.error.collectAsState()
         val navigator = LocalNavigator.currentOrThrow
 
-        VisitListContent(
-            visits = visits,
+        ApprovalListContent(
+            approvals = approvals,
             totalCount = totalCount,
             searchQuery = searchQuery,
             onSearchQueryChange = viewModel::updateSearchQuery,
@@ -61,15 +61,15 @@ class VisitListScreen : Screen {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun VisitListContent(
-    visits: List<VerificationVisit>,
+fun ApprovalListContent(
+    approvals: List<ApprovalRecord>,
     totalCount: Int,
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
-    sortOrder: VisitSortOrder,
-    onSortOrderChange: (VisitSortOrder) -> Unit,
-    filters: VisitFilters,
-    onFiltersChange: (VisitFilters) -> Unit,
+    sortOrder: ApprovalSortOrder,
+    onSortOrderChange: (ApprovalSortOrder) -> Unit,
+    filters: ApprovalFilters,
+    onFiltersChange: (ApprovalFilters) -> Unit,
     onResetFilters: () -> Unit,
     onBack: () -> Unit,
     error: String?,
@@ -79,7 +79,7 @@ fun VisitListContent(
     var isSortMenuExpanded by remember { mutableStateOf(false) }
     var showFilterSheet by remember { mutableStateOf(false) }
 
-    val isFilterApplied = filters != VisitFilters() || searchQuery.isNotEmpty()
+    val isFilterApplied = filters != ApprovalFilters() || searchQuery.isNotEmpty()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(error) {
@@ -104,7 +104,7 @@ fun VisitListContent(
                             TextField(
                                 value = searchQuery,
                                 onValueChange = onSearchQueryChange,
-                                placeholder = { Text("Search visits...") },
+                                placeholder = { Text("Search approvals...") },
                                 modifier = Modifier.fillMaxWidth(),
                                 singleLine = true,
                                 colors = TextFieldDefaults.colors(
@@ -124,14 +124,14 @@ fun VisitListContent(
                             )
                         } else {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("All Visits", fontWeight = FontWeight.ExtraBold)
+                                Text("Approvals", fontWeight = FontWeight.ExtraBold)
                                 Spacer(Modifier.width(8.dp))
                                 Surface(
                                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.1f),
                                     shape = CircleShape
                                 ) {
                                     Text(
-                                        text = if (isFilterApplied) "${visits.size} / $totalCount" else "$totalCount",
+                                        text = if (isFilterApplied) "${approvals.size} / $totalCount" else "$totalCount",
                                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                                         style = MaterialTheme.typography.labelSmall,
                                         fontWeight = FontWeight.Bold,
@@ -171,14 +171,6 @@ fun VisitListContent(
                                 trailingIcon = { Icon(Icons.Default.Close, null, Modifier.size(14.dp)) }
                             )
                         }
-                        if (filters.status != null) {
-                            FilterChip(
-                                selected = true,
-                                onClick = { onFiltersChange(filters.copy(status = null)) },
-                                label = { Text(filters.status.name.lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }) },
-                                trailingIcon = { Icon(Icons.Default.Close, null, Modifier.size(14.dp)) }
-                            )
-                        }
                         TextButton(onClick = {
                             onResetFilters()
                             onSearchQueryChange("")
@@ -212,7 +204,7 @@ fun VisitListContent(
                     ) {
                         BadgedBox(
                             badge = {
-                                if (filters != VisitFilters()) {
+                                if (filters != ApprovalFilters()) {
                                     Badge { Text("!", modifier = Modifier.padding(2.dp)) }
                                 }
                             }
@@ -240,13 +232,13 @@ fun VisitListContent(
                             expanded = isSortMenuExpanded,
                             onDismissRequest = { isSortMenuExpanded = false }
                         ) {
-                            VisitSortOrder.entries.forEach { order ->
+                            ApprovalSortOrder.entries.forEach { order ->
                                 DropdownMenuItem(
                                     text = { 
                                         Text(when(order) {
-                                            VisitSortOrder.DATE_DESC -> "Newest First"
-                                            VisitSortOrder.DATE_ASC -> "Oldest First"
-                                            VisitSortOrder.NAME_ASC -> "Beneficiary (A-Z)"
+                                            ApprovalSortOrder.DATE_DESC -> "Newest First"
+                                            ApprovalSortOrder.DATE_ASC -> "Oldest First"
+                                            ApprovalSortOrder.NAME_ASC -> "Beneficiary (A-Z)"
                                         })
                                     },
                                     onClick = {
@@ -266,12 +258,12 @@ fun VisitListContent(
             }
         }
     ) { padding ->
-        if (visits.isEmpty()) {
+        if (approvals.isEmpty()) {
             Box(modifier = Modifier.padding(padding).fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.outline)
+                    Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.outline)
                     Spacer(Modifier.height(16.dp))
-                    Text("No visits found", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.outline)
+                    Text("No approval records found", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.outline)
                 }
             }
         } else {
@@ -283,15 +275,16 @@ fun VisitListContent(
                 contentPadding = PaddingValues(bottom = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(visits) { visit ->
-                    VisitItemCard(visit)
+                item { Spacer(Modifier.height(4.dp)) }
+                items(approvals) { approval ->
+                    ApprovalItemCard(approval)
                 }
             }
         }
     }
 
     if (showFilterSheet) {
-        VisitFilterBottomSheet(
+        ApprovalFilterBottomSheet(
             filters = filters,
             onDismiss = { showFilterSheet = false },
             onApply = { 
@@ -303,7 +296,7 @@ fun VisitListContent(
 }
 
 @Composable
-fun VisitItemCard(visit: VerificationVisit) {
+fun ApprovalItemCard(approval: ApprovalRecord) {
     Card(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
         shape = RoundedCornerShape(16.dp),
@@ -316,11 +309,22 @@ fun VisitItemCard(visit: VerificationVisit) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
-                    Text(visit.beneficiaryName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Text("Area: ${visit.areaCode}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(approval.beneficiaryName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text("Approved by: ${approval.approverName}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                 }
-                VisitStatusBadge(visit.visitStatus)
+                Surface(
+                    color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        approval.natureOfAid,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
             
             Spacer(Modifier.height(12.dp))
@@ -328,66 +332,41 @@ fun VisitItemCard(visit: VerificationVisit) {
             Spacer(Modifier.height(12.dp))
             
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Person, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.outline)
-                    Spacer(Modifier.width(4.dp))
-                    Text("By: ${visit.employeeId}", style = MaterialTheme.typography.bodySmall)
+                Column {
+                    if (approval.monetaryAidAmount != null && approval.monetaryAidAmount!! > 0) {
+                        Text("₹ ${approval.monetaryAidAmount}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface)
+                    }
+                    if (approval.packetCount != null && approval.packetCount!! > 0) {
+                        Text("${approval.packetCount} Packets", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+                    }
                 }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Info, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.outline)
-                    Spacer(Modifier.width(4.dp))
-                    Text(formatVisitDate(visit.date), style = MaterialTheme.typography.bodySmall)
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(formatApprovalDate(approval.date), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+                    Text("Monitor: ${approval.assignedMonitorName}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
                 }
             }
             
-            if (!visit.reapprovalReason.isNullOrBlank()) {
+            if (approval.notes.isNotBlank()) {
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = visit.reapprovalReason!!,
+                    text = approval.notes,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
     }
 }
 
-@Composable
-fun VisitStatusBadge(status: VisitStatus) {
-    val (color, icon) = when (status) {
-        VisitStatus.SUCCESSFUL -> Color(0xFF4CAF50) to Icons.Default.CheckCircle
-        VisitStatus.REAPPROVAL_REQUIRED -> Color(0xFFFF9800) to Icons.Default.Refresh
-        VisitStatus.MISUSE_REPORTED -> MaterialTheme.colorScheme.error to Icons.Default.Warning
-        VisitStatus.EDIT_REQUESTED -> Color(0xFF9C27B0) to Icons.Default.Edit
-    }
-    Surface(
-        color = color.copy(alpha = 0.1f),
-        shape = RoundedCornerShape(8.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, color.copy(alpha = 0.5f))
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Icon(icon, null, modifier = Modifier.size(12.dp), tint = color)
-            Text(
-                text = status.name.replace("_", " ").lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() },
-                style = MaterialTheme.typography.labelSmall,
-                color = color,
-                fontWeight = FontWeight.Bold
-            )
-        }
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun VisitFilterBottomSheet(
-    filters: VisitFilters,
+fun ApprovalFilterBottomSheet(
+    filters: ApprovalFilters,
     onDismiss: () -> Unit,
-    onApply: (VisitFilters) -> Unit
+    onApply: (ApprovalFilters) -> Unit
 ) {
     var tempFilters by remember { mutableStateOf(filters) }
     val sheetState = rememberModalBottomSheetState()
@@ -410,7 +389,7 @@ fun VisitFilterBottomSheet(
             ) {
                 Text("Filters", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = { tempFilters = VisitFilters() }) {
+                    TextButton(onClick = { tempFilters = ApprovalFilters() }) {
                         Text("Reset")
                     }
                     Button(
@@ -424,23 +403,10 @@ fun VisitFilterBottomSheet(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Text("Status", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                VisitStatus.entries.forEach { status ->
-                    FilterChip(
-                        selected = tempFilters.status == status,
-                        onClick = { tempFilters = tempFilters.copy(status = if (tempFilters.status == status) null else status) },
-                        label = { Text(status.name.replace("_", " ").lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }) }
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
             OutlinedTextField(
-                value = tempFilters.areaCode ?: "",
-                onValueChange = { tempFilters = tempFilters.copy(areaCode = it.ifBlank { null }) },
-                label = { Text("Area Code") },
+                value = tempFilters.approverName ?: "",
+                onValueChange = { tempFilters = tempFilters.copy(approverName = it.ifBlank { null }) },
+                label = { Text("Approver Name") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
             )
@@ -448,9 +414,9 @@ fun VisitFilterBottomSheet(
             Spacer(modifier = Modifier.height(12.dp))
 
             OutlinedTextField(
-                value = tempFilters.employeeName ?: "",
-                onValueChange = { tempFilters = tempFilters.copy(employeeName = it.ifBlank { null }) },
-                label = { Text("Staff Name") },
+                value = tempFilters.natureOfAid ?: "",
+                onValueChange = { tempFilters = tempFilters.copy(natureOfAid = it.ifBlank { null }) },
+                label = { Text("Nature of Aid") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
             )
@@ -460,7 +426,7 @@ fun VisitFilterBottomSheet(
     }
 }
 
-private fun formatVisitDate(timestamp: Long): String {
+private fun formatApprovalDate(timestamp: Long): String {
     val instant = Instant.fromEpochMilliseconds(timestamp)
     val dateTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())
     return "${dateTime.dayOfMonth}/${dateTime.monthNumber}/${dateTime.year}"

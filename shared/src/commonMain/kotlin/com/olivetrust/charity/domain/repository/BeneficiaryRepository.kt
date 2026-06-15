@@ -1,5 +1,6 @@
 package com.olivetrust.charity.domain.repository
 
+import com.olivetrust.charity.domain.model.ApprovalRecord
 import com.olivetrust.charity.domain.model.Beneficiary
 import com.olivetrust.charity.domain.model.BeneficiaryStatus
 import kotlinx.coroutines.flow.Flow
@@ -7,6 +8,7 @@ import kotlinx.coroutines.flow.Flow
 interface BeneficiaryRepository {
     fun getBeneficiaries(): Flow<List<Beneficiary>>
     fun getBeneficiaryById(id: String): Flow<Beneficiary?>
+    fun getApprovals(): Flow<List<ApprovalRecord>>
     
     suspend fun createBeneficiary(beneficiary: Beneficiary): Result<String>
     suspend fun updateBeneficiary(beneficiary: Beneficiary): Result<Unit>

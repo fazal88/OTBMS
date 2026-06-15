@@ -18,6 +18,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
@@ -149,48 +150,6 @@ fun AidListContent(
                                 Icon(Icons.Default.Search, contentDescription = "Search")
                             }
                         }
-                        IconButton(onClick = { showFilterSheet = true }) {
-                            BadgedBox(
-                                badge = {
-                                    if (filters != AidFilters()) {
-                                        Badge { Text("!", modifier = Modifier.padding(2.dp)) }
-                                    }
-                                }
-                            ) {
-                                Icon(Icons.Default.Info, contentDescription = "Filter")
-                            }
-                        }
-                        Box {
-                            IconButton(onClick = { isSortMenuExpanded = true }) {
-                                Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Sort")
-                            }
-                            DropdownMenu(
-                                expanded = isSortMenuExpanded,
-                                onDismissRequest = { isSortMenuExpanded = false }
-                            ) {
-                                AidSortOrder.entries.forEach { order ->
-                                    DropdownMenuItem(
-                                        text = { 
-                                            Text(when(order) {
-                                                AidSortOrder.DATE_DESC -> "Newest First"
-                                                AidSortOrder.DATE_ASC -> "Oldest First"
-                                                AidSortOrder.AMOUNT_DESC -> "Highest Amount"
-                                                AidSortOrder.NAME_ASC -> "Beneficiary (A-Z)"
-                                            })
-                                        },
-                                        onClick = {
-                                            onSortOrderChange(order)
-                                            isSortMenuExpanded = false
-                                        },
-                                        leadingIcon = {
-                                            if (sortOrder == order) {
-                                                Icon(Icons.Default.Check, contentDescription = null)
-                                            }
-                                        }
-                                    )
-                                }
-                            }
-                        }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = Color.Transparent,
@@ -207,6 +166,7 @@ fun AidListContent(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        Text("Filters:", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
                         if (searchQuery.isNotEmpty()) {
                             FilterChip(
                                 selected = true,
@@ -223,8 +183,88 @@ fun AidListContent(
                                 trailingIcon = { Icon(Icons.Default.Close, null, Modifier.size(14.dp)) }
                             )
                         }
-                        TextButton(onClick = onResetFilters) {
+                        TextButton(onClick = {
+                            onResetFilters()
+                            onSearchQueryChange("")
+                        }) {
                             Text("Clear All", style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                }
+            }
+        },
+        bottomBar = {
+            Surface(
+                tonalElevation = 8.dp,
+                shadowElevation = 8.dp,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                        .navigationBarsPadding(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Button(
+                        onClick = { showFilterSheet = true },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    ) {
+                        BadgedBox(
+                            badge = {
+                                if (filters != AidFilters()) {
+                                    Badge { Text("!", modifier = Modifier.padding(2.dp)) }
+                                }
+                            }
+                        ) {
+                            Icon(Icons.Default.List, null, modifier = Modifier.size(18.dp))
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Text("Filter")
+                    }
+
+                    Button(
+                        onClick = { isSortMenuExpanded = true },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                        )
+                    ) {
+                        Icon(Icons.Default.Refresh, null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Sort")
+                        
+                        DropdownMenu(
+                            expanded = isSortMenuExpanded,
+                            onDismissRequest = { isSortMenuExpanded = false }
+                        ) {
+                            AidSortOrder.entries.forEach { order ->
+                                DropdownMenuItem(
+                                    text = { 
+                                        Text(when(order) {
+                                            AidSortOrder.DATE_DESC -> "Newest First"
+                                            AidSortOrder.DATE_ASC -> "Oldest First"
+                                            AidSortOrder.AMOUNT_DESC -> "Highest Amount"
+                                            AidSortOrder.NAME_ASC -> "Beneficiary (A-Z)"
+                                        })
+                                    },
+                                    onClick = {
+                                        onSortOrderChange(order)
+                                        isSortMenuExpanded = false
+                                    },
+                                    leadingIcon = {
+                                        if (sortOrder == order) {
+                                            Icon(Icons.Default.Check, contentDescription = null)
+                                        }
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -237,6 +277,14 @@ fun AidListContent(
                     Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.outline)
                     Spacer(Modifier.height(16.dp))
                     Text("No aid distributions found", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.outline)
+                    if (isFilterApplied) {
+                        Button(onClick = { 
+                            onResetFilters()
+                            onSearchQueryChange("")
+                        }, modifier = Modifier.padding(top = 16.dp)) {
+                            Text("Reset All")
+                        }
+                    }
                 }
             }
         } else {
@@ -245,9 +293,10 @@ fun AidListContent(
                     .padding(padding)
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
-                contentPadding = PaddingValues(16.dp),
+                contentPadding = PaddingValues(bottom = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                item { Spacer(Modifier.height(4.dp)) }
                 items(distributions) { aid ->
                     AidItemCard(aid)
                 }
@@ -270,7 +319,7 @@ fun AidListContent(
 @Composable
 fun AidItemCard(aid: AidDistribution) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -306,7 +355,7 @@ fun AidItemCard(aid: AidDistribution) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
                     if (aid.aidAmount > 0) {
-                        Text("PKR ${aid.aidAmount}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface)
+                        Text("₹ ${aid.aidAmount}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface)
                     }
                     if (aid.packetCount > 0) {
                         Text("${aid.packetCount} Packets", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)

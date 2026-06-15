@@ -79,7 +79,7 @@ fun EditBeneficiaryContent(
     var isNatureDropDownExpanded by remember { mutableStateOf(false) }
     var isHeadGenderDropDownExpanded by remember { mutableStateOf(false) }
     
-    val areaCodes = listOf("1 - Gate no 5", "2 - Azmi Nagar", "3 - Ambojwadi", "4 - Other")
+    val areaCodes = listOf("Gate no 5", "Azmi Nagar", "Ambojwadi", "Other")
     val natureOptions = listOf("Owned", "Rented")
     val genderOptions = listOf("Male", "Female", "Other")
     val relationOptions = listOf("Wife", "Son", "Daughter", "Father", "Mother", "Brother", "Sister", "Husband", "Other")

@@ -111,7 +111,7 @@ class ApproveBeneficiaryScreen(private val beneficiaryId: String, private val be
                     OutlinedTextField(
                         value = monetaryAidAmount,
                         onValueChange = { monetaryAidAmount = it },
-                        label = { Text("Monetary Aid Amount") },
+                        label = { Text("Monetary Aid Amount (in ₹)") },
                         modifier = Modifier.fillMaxWidth()
                     )
                 }

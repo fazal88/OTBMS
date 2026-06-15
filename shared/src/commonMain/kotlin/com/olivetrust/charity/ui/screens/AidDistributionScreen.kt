@@ -159,7 +159,7 @@ fun AidDistributionContent(
                 OutlinedTextField(
                     value = aidAmount,
                     onValueChange = { aidAmount = it },
-                    label = { Text("Amount (if monetary)") },
+                    label = { Text("Amount (in ₹)") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
