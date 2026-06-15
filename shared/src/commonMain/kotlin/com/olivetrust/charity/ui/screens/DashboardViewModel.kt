@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import kotlinx.datetime.*
+import kotlinx.datetime.Clock as DateClock
 
 class DashboardViewModel(
     private val authRepository: AuthRepository,
@@ -53,7 +54,7 @@ class DashboardViewModel(
         visitRepository.getVisits(),
         aidRepository.getDistributions()
     ) { beneficiaries, visits, distributions ->
-        val now = kotlinx.datetime.Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+        val now = DateClock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
         val currentMonth = now.month
         val currentYear = now.year
 

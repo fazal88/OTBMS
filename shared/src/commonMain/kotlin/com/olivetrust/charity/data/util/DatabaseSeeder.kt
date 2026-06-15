@@ -78,33 +78,51 @@ object DatabaseSeeder {
         val firstNames = listOf("Muhammad", "Ahmed", "Ali", "Ayesha", "Fatima", "Omar", "Zainab", "Hassan", "Sara", "Bilal", "Usman", "Khadija", "Hamza", "Zoya", "Ibrahim")
         val lastNames = listOf("Khan", "Sheikh", "Malik", "Ahmed", "Butt", "Iqbal", "Siddiqui", "Qureshi", "Abbasi", "Raza")
         val occupations = listOf("Laborer", "Driver", "Security Guard", "Shopkeeper", "Unemployed", "Widow", "Street Vendor", "Maid", "Carpenter")
-        val areas = listOf("LHR-01", "LHR-02", "KHI-05", "ISB-03", "RWN-10", "FSD-01", "MUL-04")
+        val areas = listOf("Gate no 5", "Azmi Nagar", "Ambojwadi", "Other")
         val reasons = listOf("Low income", "Chronic illness", "Disability", "Large family with no earner", "Recent job loss", "Orphan support")
         val natureOfAidOptions = listOf("Ration", "Monetary", "Both")
         val monthlyRations = listOf("Flour 10kg, Sugar 2kg", "Oil 5L, Pulse 2kg", "Full Package Type A", "Emergency Ration")
-        
-        val random = Random(42)
+        val relationOptions = listOf("Wife", "Son", "Daughter", "Father", "Mother", "Brother", "Sister", "Husband", "Other")
+        val educations = listOf("None", "Primary", "Metric", "Intermediate")
 
-        for (i in 1..50) {
+        val random = Random(42)
+        for (i in 1..150) {
             val id = "ben_${i.toString().padStart(3, '0')}"
             val headName = "${firstNames.random(random)} ${lastNames.random(random)}"
             val status = BeneficiaryStatus.entries.random(random)
-            val addedDate = now - (random.nextLong(1, 30) * 24 * 60 * 60 * 1000)
-            
+            val addedDate = now - (random.nextLong(1, 180) * 24 * 60 * 60 * 1000)
+            val isRented = random.nextBoolean()
+            val noDependents = random.nextInt(2, 5)
+
+            val fMembers = arrayListOf<FamilyMember>()
+            for(i in 1..noDependents){
+
+                val family = FamilyMember(
+                    relation = "${relationOptions.random(random)}",
+                    name = "${firstNames.random(random)}",
+                    age = random.nextInt(25, 75),
+                    gender = if (random.nextBoolean()) "Male" else "Female",
+                    occupation = occupations.random(random),
+                    education = educations.random(random),
+                    diseaseInability = "NA",
+                )
+
+                fMembers.add(family)
+            }
             val b = Beneficiary(
                 id = id,
                 headName = headName,
                 headAge = random.nextInt(25, 75),
                 headGender = if (random.nextBoolean()) "Male" else "Female",
                 headOccupation = occupations.random(random),
-                headEducation = listOf("None", "Primary", "Metric", "Intermediate").random(random),
-                phoneNumber = "03${random.nextInt(10000000, 99999999)}",
+                headEducation = educations.random(random),
+                phoneNumber = "79${random.nextInt(10000000, 99999999)}",
                 address = "House $i, Street ${random.nextInt(1, 50)}, Block ${('A'..'E').random(random)}, ${areas.random(random)}",
                 areaCode = areas.random(random),
-                natureOfAddress = if (random.nextBoolean()) "Rented" else "Owned",
-                natureOfRent = if (random.nextBoolean()) "${random.nextInt(3, 15)}000" else null,
+                natureOfAddress = if (isRented) "Rented" else "Owned",
+                natureOfRent = if (isRented) "${random.nextInt(3, 15)}000" else null,
                 reasonForAid = reasons.random(random),
-                numberOfDependants = random.nextInt(2, 10),
+                numberOfDependants = noDependents,
                 onboardingDate = addedDate,
                 lastUpdated = addedDate + random.nextLong(0, 3600000),
                 onboardedBy = "employee_01",
@@ -113,9 +131,9 @@ object DatabaseSeeder {
                 packetCount = if (status == BeneficiaryStatus.APPROVED) random.nextInt(1, 5) else null,
                 monthlyRation = if (status == BeneficiaryStatus.APPROVED) monthlyRations.random(random) else null,
                 monetaryAidAmount = if (status == BeneficiaryStatus.APPROVED) random.nextInt(20, 100) * 100.0 else null,
-                approvalNotes = if (status == BeneficiaryStatus.APPROVED) "Verified deserving case." else null
+                approvalNotes = if (status == BeneficiaryStatus.APPROVED) "Verified deserving case." else null,
+                familyMembers = fMembers
             )
-
             println("DATABASE_SEEDER: Setting beneficiary ${b.id}...")
             beneficiariesCollection.document(b.id).set(Beneficiary.serializer(), b)
             beneficiaries.add(b)
@@ -141,7 +159,7 @@ object DatabaseSeeder {
                     date = visitDate,
                     latitude = b.latitude + (random.nextDouble() - 0.5) * 0.01,
                     longitude = b.longitude + (random.nextDouble() - 0.5) * 0.01,
-                    employeeId = "John Staff",
+                    employeeId = "employee_01",
                     beneficiaryId = b.id,
                     beneficiaryName = b.headName,
                     areaCode = b.areaCode,
@@ -178,7 +196,7 @@ object DatabaseSeeder {
                     reason = "Monthly distribution",
                     familyCount = b.numberOfDependants + 1,
                     receiverName = b.headName,
-                    distributedBy = "John Staff",
+                    distributedBy = "employee_01",
                     deliveryStatus = DeliveryStatus.DELIVERED
                 )
                 println("DATABASE_SEEDER: Setting distribution ${dist.distributionId}...")
@@ -201,14 +219,14 @@ object DatabaseSeeder {
                 beneficiaryId = b.id,
                 beneficiaryName = b.headName,
                 approverId = "approver_01",
-                approverName = "Alice Approver",
+                approverName = "Ikram Sayyed",
                 notes = "Deserving case verified by staff.",
                 natureOfAid = b.natureOfAid ?: "Ration",
                 monthlyRation = b.monthlyRation,
                 packetCount = b.packetCount,
                 monetaryAidAmount = b.monetaryAidAmount,
                 assignedMonitorId = "employee_01",
-                assignedMonitorName = "John Staff"
+                assignedMonitorName = "Noman Janaab"
             )
             println("DATABASE_SEEDER: Setting approval record ${record.approvalId}...")
             approvalsCollection.document(record.approvalId).set(ApprovalRecord.serializer(), record)

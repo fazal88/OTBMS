@@ -24,8 +24,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.tooling.preview.Preview
-import com.olivetrust.charity.ui.previews.PreviewMocks
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -34,7 +32,7 @@ import com.olivetrust.charity.domain.model.UserRole
 import com.olivetrust.charity.domain.model.User
 import com.olivetrust.charity.domain.model.BeneficiaryStatus
 import kotlinx.datetime.*
-import kotlin.time.Clock
+import kotlinx.datetime.Clock as DateClock
 
 class DashboardScreen : Screen {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -132,7 +130,11 @@ class DashboardScreen : Screen {
                                 modifier = Modifier.weight(1f),
                                 contentPadding = PaddingValues(horizontal = 4.dp)
                             ) {
-                                Icon(Icons.Default.LocationOn, null, modifier = Modifier.size(16.dp))
+                                Icon(
+                                    Icons.Default.LocationOn,
+                                    null,
+                                    modifier = Modifier.size(16.dp)
+                                )
                                 Spacer(Modifier.width(4.dp))
                                 Text("Visits", fontSize = 10.sp)
                             }
@@ -141,7 +143,11 @@ class DashboardScreen : Screen {
                                 modifier = Modifier.weight(1f),
                                 contentPadding = PaddingValues(horizontal = 4.dp)
                             ) {
-                                Icon(Icons.AutoMirrored.Filled.List, null, modifier = Modifier.size(16.dp))
+                                Icon(
+                                    Icons.AutoMirrored.Filled.List,
+                                    null,
+                                    modifier = Modifier.size(16.dp)
+                                )
                                 Spacer(Modifier.width(4.dp))
                                 Text("Aid", fontSize = 10.sp)
                             }
@@ -150,7 +156,11 @@ class DashboardScreen : Screen {
                                 modifier = Modifier.weight(1f),
                                 contentPadding = PaddingValues(horizontal = 4.dp)
                             ) {
-                                Icon(Icons.Default.CheckCircle, null, modifier = Modifier.size(16.dp))
+                                Icon(
+                                    Icons.Default.CheckCircle,
+                                    null,
+                                    modifier = Modifier.size(16.dp)
+                                )
                                 Spacer(Modifier.width(4.dp))
                                 Text("Approvals", fontSize = 10.sp)
                             }
@@ -166,7 +176,15 @@ class DashboardScreen : Screen {
                             value = stats.approvedBeneficiaries.toString(),
                             icon = Icons.Default.CheckCircle,
                             color = Color(0xFF4CAF50),
-                            onClick = { navigator.push(BeneficiaryListScreen(BeneficiaryFilters(status = BeneficiaryStatus.APPROVED))) }
+                            onClick = {
+                                navigator.push(
+                                    BeneficiaryListScreen(
+                                        BeneficiaryFilters(
+                                            status = BeneficiaryStatus.APPROVED
+                                        )
+                                    )
+                                )
+                            }
                         )
                     }
                     item {
@@ -192,14 +210,22 @@ class DashboardScreen : Screen {
                     item(span = { GridItemSpan(2) }) {
                         SectionLabel("Attention Required")
                     }
-                    
+
                     item {
                         PendingCard(
                             label = "Onboarding",
                             value = stats.pendingOnboarding.toString(),
                             icon = Icons.Default.Person,
                             color = Color(0xFFFF9800),
-                            onClick = { navigator.push(BeneficiaryListScreen(BeneficiaryFilters(status = BeneficiaryStatus.PENDING_APPROVAL))) }
+                            onClick = {
+                                navigator.push(
+                                    BeneficiaryListScreen(
+                                        BeneficiaryFilters(
+                                            status = BeneficiaryStatus.PENDING_APPROVAL
+                                        )
+                                    )
+                                )
+                            }
                         )
                     }
                     item {
@@ -208,7 +234,15 @@ class DashboardScreen : Screen {
                             value = stats.pendingEdits.toString(),
                             icon = Icons.Default.Edit,
                             color = Color(0xFF9C27B0),
-                            onClick = { navigator.push(BeneficiaryListScreen(BeneficiaryFilters(status = BeneficiaryStatus.EDIT_REQUESTED))) }
+                            onClick = {
+                                navigator.push(
+                                    BeneficiaryListScreen(
+                                        BeneficiaryFilters(
+                                            status = BeneficiaryStatus.EDIT_REQUESTED
+                                        )
+                                    )
+                                )
+                            }
                         )
                     }
                     item {
@@ -217,7 +251,15 @@ class DashboardScreen : Screen {
                             value = stats.misuseReports.toString(),
                             icon = Icons.Default.Warning,
                             color = Color(0xFFF44336),
-                            onClick = { navigator.push(BeneficiaryListScreen(BeneficiaryFilters(status = BeneficiaryStatus.MISUSE_REPORTED))) }
+                            onClick = {
+                                navigator.push(
+                                    BeneficiaryListScreen(
+                                        BeneficiaryFilters(
+                                            status = BeneficiaryStatus.MISUSE_REPORTED
+                                        )
+                                    )
+                                )
+                            }
                         )
                     }
                     item {
@@ -226,7 +268,15 @@ class DashboardScreen : Screen {
                             value = stats.pendingReapprovals.toString(),
                             icon = Icons.Default.Refresh,
                             color = Color(0xFF607D8B),
-                            onClick = { navigator.push(BeneficiaryListScreen(BeneficiaryFilters(status = BeneficiaryStatus.REAPPROVAL_PENDING))) }
+                            onClick = {
+                                navigator.push(
+                                    BeneficiaryListScreen(
+                                        BeneficiaryFilters(
+                                            status = BeneficiaryStatus.REAPPROVAL_PENDING
+                                        )
+                                    )
+                                )
+                            }
                         )
                     }
 
@@ -300,8 +350,17 @@ fun MainStatCard(
         Column(modifier = Modifier.padding(16.dp)) {
             Icon(icon, null, modifier = Modifier.size(24.dp), tint = color)
             Spacer(Modifier.height(12.dp))
-            Text(value, style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Black, color = color)
-            Text(label, style = MaterialTheme.typography.labelMedium, color = color.copy(alpha = 0.8f))
+            Text(
+                value,
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Black,
+                color = color
+            )
+            Text(
+                label,
+                style = MaterialTheme.typography.labelMedium,
+                color = color.copy(alpha = 0.8f)
+            )
         }
     }
 }
@@ -326,10 +385,24 @@ fun WideStatCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = color)
-                Text(subtitle, style = MaterialTheme.typography.labelSmall, color = color.copy(alpha = 0.6f))
+                Text(
+                    label,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = color
+                )
+                Text(
+                    subtitle,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = color.copy(alpha = 0.6f)
+                )
                 Spacer(Modifier.height(4.dp))
-                Text(value, style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Black, color = color)
+                Text(
+                    value,
+                    style = MaterialTheme.typography.displaySmall,
+                    fontWeight = FontWeight.Black,
+                    color = color
+                )
             }
             Icon(icon, null, modifier = Modifier.size(48.dp), tint = color.copy(alpha = 0.3f))
         }
@@ -347,7 +420,10 @@ fun PendingCard(
     OutlinedCard(
         modifier = Modifier.fillMaxWidth().clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, if (value != "0") color.copy(alpha = 0.5f) else MaterialTheme.colorScheme.outlineVariant),
+        border = BorderStroke(
+            1.dp,
+            if (value != "0") color.copy(alpha = 0.5f) else MaterialTheme.colorScheme.outlineVariant
+        ),
         colors = CardDefaults.outlinedCardColors(
             containerColor = if (value != "0") color.copy(alpha = 0.05f) else Color.Transparent
         )
@@ -364,19 +440,35 @@ fun PendingCard(
                     .background(if (value != "0") color.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, null, modifier = Modifier.size(16.dp), tint = if (value != "0") color else MaterialTheme.colorScheme.outline)
+                Icon(
+                    icon,
+                    null,
+                    modifier = Modifier.size(16.dp),
+                    tint = if (value != "0") color else MaterialTheme.colorScheme.outline
+                )
             }
             Column {
-                Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = if (value != "0") color else MaterialTheme.colorScheme.onSurface)
-                Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 10.sp)
+                Text(
+                    value,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = if (value != "0") color else MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    label,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 10.sp
+                )
             }
         }
     }
 }
 
 private fun getCurrentMonthName(): String {
-    val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
-    return now.month.name.lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+    val now = DateClock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+    return now.month.name.lowercase()
+        .replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
 }
 
 @Composable
@@ -447,10 +539,10 @@ internal fun ProfileDialog(
                     ProfileInfoRow(Icons.Default.Phone, "Phone", user?.mobileNumber ?: "N/A")
                     ProfileInfoRow(Icons.Default.Info, "Role", user?.role?.name ?: "N/A")
                 }
-                
+
                 if (user?.role != UserRole.SUPER_ADMIN) {
                     Button(
-                        onClick = { 
+                        onClick = {
                             if (isEditing) {
                                 onUpdateProfile(name, phone)
                                 isEditing = false
@@ -500,8 +592,16 @@ private fun ProfileInfoRow(icon: ImageVector, label: String, value: String) {
             modifier = Modifier.size(20.dp)
         )
         Column {
-            Text(text = label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(text = value, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium
+            )
         }
     }
 }
