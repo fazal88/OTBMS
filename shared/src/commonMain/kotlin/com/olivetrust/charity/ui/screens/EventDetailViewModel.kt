@@ -12,6 +12,7 @@ import com.olivetrust.charity.domain.repository.EventRepository
 import com.olivetrust.charity.sendSms
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlin.time.Clock
 
 data class InviteeStatus(
     val beneficiary: Beneficiary,
@@ -80,7 +81,7 @@ class EventDetailViewModel(
         screenModelScope.launch {
             val currentEvent = event.value ?: return@launch
             val location = locationService.getCurrentLocation()
-            val now = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
+            val now = Clock.System.now().toEpochMilliseconds()
             
             val distribution = AidDistribution(
                 distributionId = "AID_${now}_${beneficiary.id}",
