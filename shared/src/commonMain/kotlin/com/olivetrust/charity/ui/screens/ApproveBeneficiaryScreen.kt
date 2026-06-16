@@ -91,7 +91,18 @@ class ApproveBeneficiaryScreen(private val beneficiaryId: String, private val be
                     listOf("Ration", "Monetary", "Both").forEach { option ->
                         FilterChip(
                             selected = natureOfAid == option,
-                            onClick = { natureOfAid = option },
+                            onClick = { 
+                                natureOfAid = option
+                                when (option) {
+                                    "Monetary" -> {
+                                        monthlyRation = ""
+                                        packetCount = ""
+                                    }
+                                    "Ration" -> {
+                                        monetaryAidAmount = ""
+                                    }
+                                }
+                            },
                             label = { Text(option) }
                         )
                     }
@@ -204,9 +215,9 @@ class ApproveBeneficiaryScreen(private val beneficiaryId: String, private val be
                             id = beneficiaryId,
                             notes = notes,
                             natureOfAid = natureOfAid,
-                            monthlyRation = monthlyRation.ifBlank { null },
-                            packetCount = packetCount.toIntOrNull(),
-                            monetaryAidAmount = monetaryAidAmount.toDoubleOrNull(),
+                            monthlyRation = if (natureOfAid != "Monetary") monthlyRation.ifBlank { null } else null,
+                            packetCount = if (natureOfAid != "Monetary") packetCount.toIntOrNull() else null,
+                            monetaryAidAmount = if (natureOfAid != "Ration") monetaryAidAmount.toDoubleOrNull() else null,
                             monitorId = selectedMonitorId,
                             expiryMonth = expiryMonth.toIntOrNull(),
                             expiryYear = expiryYear.toIntOrNull()

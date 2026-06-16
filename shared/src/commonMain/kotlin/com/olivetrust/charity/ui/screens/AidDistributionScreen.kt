@@ -56,8 +56,8 @@ data class AidDistributionScreen(val beneficiaryId: String, val beneficiaryName:
                     beneficiaryName = beneficiaryName,
                     areaCode = beneficiary?.areaCode ?: "",
                     natureOfAid = nature,
-                    aidAmount = amount.toDoubleOrNull() ?: 0.0,
-                    packetCount = packets.toIntOrNull() ?: 0,
+                    aidAmount = if (nature != "Ration") (amount.toDoubleOrNull() ?: 0.0) else 0.0,
+                    packetCount = if (nature == "Ration" || nature == "Both") (packets.toIntOrNull() ?: 0) else 0,
                     reason = reason,
                     familyCount = beneficiary?.numberOfDependants?.plus(1) ?: 1,
                     receiverName = finalReceiver,
@@ -147,6 +147,11 @@ fun AidDistributionContent(
                                 text = { Text(option) },
                                 onClick = {
                                     natureOfAid = option
+                                    if (option == "Monetary") {
+                                        packetCount = ""
+                                    } else if (option == "Ration") {
+                                        aidAmount = ""
+                                    }
                                     natureExpanded = false
                                 }
                             )
