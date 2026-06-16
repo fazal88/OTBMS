@@ -125,7 +125,7 @@ class ApproveBeneficiaryScreen(private val beneficiaryId: String, private val be
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Box(modifier = Modifier.weight(1f)) {
                         OutlinedTextField(
-                            value = if (expiryMonth.isBlank()) "Select Month" else getMonthName(expiryMonth.toInt()),
+                            value = if (expiryMonth.isBlank()) "month" else getMonthName(expiryMonth.toInt()),
                             onValueChange = {},
                             readOnly = true,
                             label = { Text("Expiry Month") },

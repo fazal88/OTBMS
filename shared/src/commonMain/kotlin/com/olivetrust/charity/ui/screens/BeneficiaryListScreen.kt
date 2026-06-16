@@ -688,7 +688,7 @@ fun FilterBottomSheet(
                 var monthMenuExpanded by remember { mutableStateOf(false) }
                 Box(modifier = Modifier.weight(1f)) {
                     OutlinedTextField(
-                        value = tempFilters.month?.let { getMonthName(it) } ?: "Select Month",
+                        value = tempFilters.month?.let { getMonthName(it) } ?: "month",
                         onValueChange = { },
                         readOnly = true,
                         label = { Text("Month") },

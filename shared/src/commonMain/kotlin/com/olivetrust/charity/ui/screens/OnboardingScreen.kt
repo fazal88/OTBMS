@@ -6,6 +6,8 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Build
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,6 +25,7 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import com.olivetrust.charity.domain.model.Beneficiary
 import com.olivetrust.charity.domain.model.BeneficiaryStatus
 import com.olivetrust.charity.domain.model.FamilyMember
+import com.olivetrust.charity.isDebug
 import kotlin.time.Clock
 
 class OnboardingScreen : Screen {
@@ -86,7 +89,34 @@ fun OnboardingContent(
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("New Beneficiary") })
+            TopAppBar(
+                title = { Text("New Beneficiary") },
+                actions = {
+                    if (isDebug) {
+                        IconButton(onClick = {
+                            headName = "Test Beneficiary"
+                            headAge = "45"
+                            headGender = "Male"
+                            headOccupation = "Labor"
+                            headEducation = "Primary"
+                            phoneNumber = "9876543210"
+                            address = "Test Address 123"
+                            incomeSource = "Daily Wage"
+                            areaCode = "Azmi Nagar"
+                            natureOfAddress = "Rented"
+                            natureOfRent = "5000"
+                            diseaseInability = "None"
+                            reasonForAid = "Low income"
+                            numberOfDependants = "2"
+                            familyMembers.clear()
+                            familyMembers.add(FamilyMember("Wife", "Test Wife", 40, "Female", "Housewife", "Primary"))
+                            familyMembers.add(FamilyMember("Son", "Test Son", 15, "Male", "Student", "Middle"))
+                        }) {
+                            Icon(Icons.Default.Build, contentDescription = "Debug Prefill")
+                        }
+                    }
+                }
+            )
         }
     ) { padding ->
         LazyColumn(modifier = Modifier.padding(padding).padding(16.dp)) {

@@ -4,6 +4,7 @@ import android.os.Build
 import android.telephony.SmsManager
 import android.content.Intent
 import android.net.Uri
+import android.content.pm.ApplicationInfo
 
 class AndroidPlatform : Platform {
     override val name: String = "Android ${Build.VERSION.SDK_INT}"
@@ -28,11 +29,15 @@ class AndroidLocationService : LocationService {
 
 actual fun getLocationService(): LocationService = AndroidLocationService()
 
+actual val isDebug: Boolean
+    get() = ContextHolder.get()?.let { (it.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0 } ?: true
+
 actual fun sendSms(phoneNumber: String, message: String) {
+    val finalMessage = if (isDebug) "[TEST] $message" else message
     val context = ContextHolder.get() ?: return
     try {
         val smsManager = context.getSystemService(SmsManager::class.java)
-        val parts = smsManager.divideMessage(message)
+        val parts = smsManager.divideMessage(finalMessage)
         smsManager.sendMultipartTextMessage(phoneNumber, null, parts, null, null)
         println("ANDROID_SMS: Sent background SMS to $phoneNumber")
     } catch (e: Exception) {
@@ -40,7 +45,7 @@ actual fun sendSms(phoneNumber: String, message: String) {
         try {
             val intent = Intent(Intent.ACTION_SENDTO).apply {
                 data = Uri.parse("smsto:$phoneNumber")
-                putExtra("sms_body", message)
+                putExtra("sms_body", finalMessage)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             context.startActivity(intent)

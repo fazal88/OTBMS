@@ -21,4 +21,6 @@ interface LocationService {
 
 expect fun getLocationService(): LocationService
 
+expect val isDebug: Boolean
+
 expect fun sendSms(phoneNumber: String, message: String)

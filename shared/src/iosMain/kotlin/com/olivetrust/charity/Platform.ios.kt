@@ -1,6 +1,7 @@
 package com.olivetrust.charity
 
 import platform.UIKit.UIDevice
+import kotlin.experimental.ExperimentalNativeApi
 
 class IOSPlatform: Platform {
     override val name: String = UIDevice.currentDevice.systemName() + " " + UIDevice.currentDevice.systemVersion
@@ -24,7 +25,11 @@ class IOSLocationService : LocationService {
 
 actual fun getLocationService(): LocationService = IOSLocationService()
 
+@OptIn(ExperimentalNativeApi::class)
+actual val isDebug: Boolean = kotlin.native.Platform.isDebugBinary
+
 actual fun sendSms(phoneNumber: String, message: String) {
+    val finalMessage = if (isDebug) "[TEST] $message" else message
     // In a real app, use MFMessageComposeViewController or tel: URL
-    println("IOS_SMS: To $phoneNumber: $message")
+    println("IOS_SMS: To $phoneNumber: $finalMessage")
 }
