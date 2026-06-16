@@ -9,6 +9,7 @@ import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.firestore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlin.time.Clock
 
 class FirestoreEventRepository(
     private val auditRepository: AuditRepository
@@ -42,7 +43,7 @@ class FirestoreEventRepository(
 
     override suspend fun createEvent(event: DistributionEvent): Result<String> {
         return try {
-            val now = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
+            val now = Clock.System.now().toEpochMilliseconds()
             val finalEvent = event.copy(createdAt = now)
             collection.document(finalEvent.id).set(DistributionEvent.serializer(), finalEvent)
             

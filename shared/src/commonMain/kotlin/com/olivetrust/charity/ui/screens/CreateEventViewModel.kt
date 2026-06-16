@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlin.time.Clock
 
 class CreateEventViewModel(
     private val eventRepository: EventRepository,
@@ -71,7 +72,7 @@ class CreateEventViewModel(
 
     fun createEvent(userId: String, onSuccess: () -> Unit) {
         screenModelScope.launch {
-            val now = kotlinx.datetime.Clock.System.now().toEpochMilliseconds()
+            val now = Clock.System.now().toEpochMilliseconds()
             val event = DistributionEvent(
                 id = "EVT_$now",
                 name = _name.value,

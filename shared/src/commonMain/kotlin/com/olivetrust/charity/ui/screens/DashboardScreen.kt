@@ -32,6 +32,7 @@ import com.olivetrust.charity.domain.model.UserRole
 import com.olivetrust.charity.domain.model.User
 import com.olivetrust.charity.domain.model.BeneficiaryStatus
 import kotlinx.datetime.*
+import kotlin.time.Clock
 import kotlinx.datetime.Clock as DateClock
 
 class DashboardScreen : Screen {
@@ -559,7 +560,7 @@ fun PendingCard(
 }
 
 private fun getCurrentMonthName(): String {
-    val now = DateClock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+    val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
     return now.month.name.lowercase()
         .replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
 }
