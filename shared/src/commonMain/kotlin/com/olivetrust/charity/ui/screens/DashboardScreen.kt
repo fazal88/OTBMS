@@ -559,7 +559,7 @@ fun PendingCard(
 }
 
 private fun getCurrentMonthName(): String {
-    val now = kotlinx.datetime.Instant.fromEpochMilliseconds(Clock.System.now().toEpochMilliseconds()).toLocalDateTime(TimeZone.currentSystemDefault())
+    val now = Instant.fromEpochMilliseconds(Clock.System.now().toEpochMilliseconds()).toLocalDateTime(TimeZone.currentSystemDefault())
     return now.month.name.lowercase()
         .replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
 }

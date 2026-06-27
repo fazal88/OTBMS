@@ -49,6 +49,25 @@ class DashboardViewModel(
         }
     }
 
+    init {
+        // Auto-expire beneficiaries if needed - moved out of combine to avoid side-effect loops
+        screenModelScope.launch {
+            beneficiaryRepository.getBeneficiaries().collect { beneficiaries ->
+                val now = Instant.fromEpochMilliseconds(Clock.System.now().toEpochMilliseconds()).toLocalDateTime(TimeZone.currentSystemDefault())
+                val currentMonth = now.month.number
+                val currentYear = now.year
+
+                beneficiaries.forEach { b ->
+                    if (b.status == BeneficiaryStatus.APPROVED && b.expiryMonth != null && b.expiryYear != null) {
+                        if (currentYear > b.expiryYear || (currentYear == b.expiryYear && currentMonth > b.expiryMonth)) {
+                            beneficiaryRepository.updateStatus(b.id, BeneficiaryStatus.EXPIRED)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     val stats: StateFlow<DashboardStats> = combine(
         beneficiaryRepository.getBeneficiaries(),
         visitRepository.getVisits(),
@@ -58,19 +77,8 @@ class DashboardViewModel(
         val currentMonth = now.month.number
         val currentYear = now.year
 
-        // Auto-expire beneficiaries if needed
-        beneficiaries.forEach { b ->
-            if (b.status == BeneficiaryStatus.APPROVED && b.expiryMonth != null && b.expiryYear != null) {
-                if (currentYear > b.expiryYear || (currentYear == b.expiryYear && currentMonth > b.expiryMonth)) {
-                    screenModelScope.launch {
-                        beneficiaryRepository.updateStatus(b.id, BeneficiaryStatus.EXPIRED)
-                    }
-                }
-            }
-        }
-
         val monthlyDistributions = distributions.count { dist ->
-            val distDate = kotlinx.datetime.Instant.fromEpochMilliseconds(dist.date).toLocalDateTime(TimeZone.currentSystemDefault())
+            val distDate = Instant.fromEpochMilliseconds(dist.date).toLocalDateTime(TimeZone.currentSystemDefault())
             distDate.month.number == currentMonth && distDate.year == currentYear
         }
 
