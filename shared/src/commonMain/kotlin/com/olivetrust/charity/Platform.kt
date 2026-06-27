@@ -24,3 +24,5 @@ expect fun getLocationService(): LocationService
 expect val isDebug: Boolean
 
 expect fun sendSms(phoneNumber: String, message: String)
+
+expect fun openMaps(latitude: Double, longitude: Double, label: String = "")

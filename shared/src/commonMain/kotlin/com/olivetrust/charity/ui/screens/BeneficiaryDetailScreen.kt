@@ -44,6 +44,7 @@ import com.olivetrust.charity.domain.repository.*
 import kotlinx.coroutines.flow.*
 import kotlinx.datetime.*
 import androidx.compose.foundation.lazy.items
+import com.olivetrust.charity.openMaps
 
 class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
 
@@ -174,7 +175,38 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
                                 DetailRow("Onboarding Date", formatDate(b.onboardingDate))
                                 DetailRow("Onboarded By", b.onboardedBy)
                                 DetailRow("Device", b.deviceUsed)
-                                DetailRow("Location", "${b.latitude}, ${b.longitude}")
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "Location",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = "${b.latitude}, ${b.longitude}",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Medium,
+                                            textAlign = TextAlign.End
+                                        )
+                                        if (b.latitude != 0.0 || b.longitude != 0.0) {
+                                            IconButton(
+                                                onClick = { openMaps(b.latitude, b.longitude, b.headName) },
+                                                modifier = Modifier.size(32.dp).padding(start = 4.dp)
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.LocationOn,
+                                                    contentDescription = "Open in Maps",
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
 
@@ -318,6 +350,22 @@ internal fun VisitCard(visit: VerificationVisit) {
             visit.misuseReport?.let {
                 Text("Report: ${it.description}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
             }
+            if (visit.latitude != 0.0 || visit.longitude != 0.0) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(
+                        onClick = { openMaps(visit.latitude, visit.longitude, "Visit: ${visit.beneficiaryName}") },
+                        contentPadding = PaddingValues(0.dp),
+                        modifier = Modifier.height(24.dp)
+                    ) {
+                        Icon(Icons.Default.LocationOn, null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("View Location", style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+            }
         }
     }
 }
@@ -328,14 +376,32 @@ internal fun DistributionCard(dist: AidDistribution) {
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(formatDate(dist.date), style = MaterialTheme.typography.labelMedium)
-                Text(dist.natureOfAid, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(formatDate(dist.date), style = MaterialTheme.typography.labelMedium)
+                    Text(dist.natureOfAid, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    if (dist.aidAmount > 0) Text("₹ ${dist.aidAmount}", fontWeight = FontWeight.Bold)
+                    if (dist.packetCount > 0) Text("${dist.packetCount} Packets", style = MaterialTheme.typography.bodySmall)
+                }
             }
-            Column(horizontalAlignment = Alignment.End) {
-                if (dist.aidAmount > 0) Text("₹ ${dist.aidAmount}", fontWeight = FontWeight.Bold)
-                if (dist.packetCount > 0) Text("${dist.packetCount} Packets", style = MaterialTheme.typography.bodySmall)
+            if (dist.distributionLocationLat != 0.0 || dist.distributionLocationLng != 0.0) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(
+                        onClick = { openMaps(dist.distributionLocationLat, dist.distributionLocationLng, "Aid: ${dist.beneficiaryName}") },
+                        contentPadding = PaddingValues(0.dp),
+                        modifier = Modifier.height(24.dp)
+                    ) {
+                        Icon(Icons.Default.LocationOn, null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("View Location", style = MaterialTheme.typography.labelSmall)
+                    }
+                }
             }
         }
     }

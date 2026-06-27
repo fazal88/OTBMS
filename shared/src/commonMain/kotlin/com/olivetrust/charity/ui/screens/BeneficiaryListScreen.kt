@@ -35,6 +35,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.olivetrust.charity.domain.model.Beneficiary
 import com.olivetrust.charity.domain.model.BeneficiaryStatus
+import com.olivetrust.charity.openMaps
 import com.olivetrust.charity.ui.previews.PreviewMocks
 
 class BeneficiaryListScreen(private val initialFilters: BeneficiaryFilters = BeneficiaryFilters()) : Screen {
@@ -454,14 +455,31 @@ fun BeneficiaryCard(
                 )
                 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.LocationOn, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        text = beneficiary.areaCode,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Medium
-                    )
+                    Surface(
+                        onClick = { 
+                            if (beneficiary.latitude != 0.0 || beneficiary.longitude != 0.0) {
+                                openMaps(beneficiary.latitude, beneficiary.longitude, beneficiary.headName)
+                            }
+                        },
+                        color = Color.Transparent,
+                        enabled = beneficiary.latitude != 0.0 || beneficiary.longitude != 0.0
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.LocationOn, 
+                                null, 
+                                modifier = Modifier.size(14.dp), 
+                                tint = if (beneficiary.latitude != 0.0 || beneficiary.longitude != 0.0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                text = beneficiary.areaCode,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (beneficiary.latitude != 0.0 || beneficiary.longitude != 0.0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
                     Spacer(Modifier.width(12.dp))
                     Icon(Icons.Default.Person, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.outline)
                     Spacer(Modifier.width(4.dp))

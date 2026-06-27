@@ -1,8 +1,10 @@
 package com.olivetrust.charity
 
 import platform.UIKit.UIDevice
+import platform.UIKit.UIApplication
 import platform.CoreLocation.*
 import platform.Foundation.NSError
+import platform.Foundation.NSURL
 import platform.darwin.NSObject
 import kotlin.experimental.ExperimentalNativeApi
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -96,4 +98,16 @@ actual fun sendSms(phoneNumber: String, message: String) {
     val finalMessage = if (isDebug) "[TEST] $message" else message
     // In a real app, use MFMessageComposeViewController or tel: URL
     println("IOS_SMS: To $phoneNumber: $finalMessage")
+}
+
+actual fun openMaps(latitude: Double, longitude: Double, label: String) {
+    val urlString = if (label.isNotBlank()) {
+        "https://maps.apple.com/?q=${label.replace(" ", "+")}&ll=$latitude,$longitude"
+    } else {
+        "https://maps.apple.com/?ll=$latitude,$longitude"
+    }
+    val url = NSURL.URLWithString(urlString)
+    if (url != null) {
+        UIApplication.sharedApplication.openURL(url, options = emptyMap<Any?, Any?>(), completionHandler = null)
+    }
 }

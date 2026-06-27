@@ -28,6 +28,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.olivetrust.charity.domain.model.VerificationVisit
 import com.olivetrust.charity.domain.model.VisitStatus
+import com.olivetrust.charity.openMaps
 import kotlinx.datetime.*
 
 class VisitListScreen : Screen {
@@ -364,6 +365,24 @@ fun VisitItemCard(visit: VerificationVisit) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
                 )
+            }
+
+            if (visit.latitude != 0.0 || visit.longitude != 0.0) {
+                Spacer(Modifier.height(12.dp))
+                Button(
+                    onClick = { openMaps(visit.latitude, visit.longitude, "Visit: ${visit.beneficiaryName}") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    ),
+                    contentPadding = PaddingValues(vertical = 4.dp)
+                ) {
+                    Icon(Icons.Default.LocationOn, null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("View Visit Location", style = MaterialTheme.typography.labelMedium)
+                }
             }
         }
     }

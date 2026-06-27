@@ -31,6 +31,7 @@ import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.olivetrust.charity.domain.model.AidDistribution
+import com.olivetrust.charity.openMaps
 import kotlinx.datetime.*
 
 class AidListScreen : Screen {
@@ -398,6 +399,24 @@ fun AidItemCard(item: AidDistributionWithEvent) {
                 Column(horizontalAlignment = Alignment.End) {
                     Text(formatAidDate(aid.date), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
                     Text("By: ${aid.distributedBy}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+                }
+            }
+            
+            if (aid.distributionLocationLat != 0.0 || aid.distributionLocationLng != 0.0) {
+                Spacer(Modifier.height(12.dp))
+                Button(
+                    onClick = { openMaps(aid.distributionLocationLat, aid.distributionLocationLng, "Aid: ${aid.beneficiaryName}") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                    ),
+                    contentPadding = PaddingValues(vertical = 4.dp)
+                ) {
+                    Icon(Icons.Default.LocationOn, null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("View Distribution Location", style = MaterialTheme.typography.labelMedium)
                 }
             }
         }

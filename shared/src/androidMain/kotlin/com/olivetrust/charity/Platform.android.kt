@@ -69,3 +69,22 @@ actual fun sendSms(phoneNumber: String, message: String) {
         }
     }
 }
+
+actual fun openMaps(latitude: Double, longitude: Double, label: String) {
+    val context = ContextHolder.get() ?: return
+    val uri = if (label.isNotBlank()) {
+        Uri.parse("geo:0,0?q=$latitude,$longitude($label)")
+    } else {
+        Uri.parse("geo:$latitude,$longitude?z=16")
+    }
+    
+    val mapIntent = Intent(Intent.ACTION_VIEW, uri).apply {
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+    
+    try {
+        context.startActivity(mapIntent)
+    } catch (e: Exception) {
+        println("ANDROID_MAPS_ERROR: ${e.message}")
+    }
+}
