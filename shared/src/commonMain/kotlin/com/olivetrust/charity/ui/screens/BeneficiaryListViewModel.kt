@@ -4,6 +4,7 @@ import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.olivetrust.charity.domain.model.Beneficiary
 import com.olivetrust.charity.domain.model.BeneficiaryStatus
+import com.olivetrust.charity.domain.repository.AuthRepository
 import com.olivetrust.charity.domain.repository.BeneficiaryRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.datetime.*
@@ -29,8 +30,15 @@ data class BeneficiaryFilters(
 )
 
 class BeneficiaryListViewModel(
-    private val beneficiaryRepository: BeneficiaryRepository
+    private val beneficiaryRepository: BeneficiaryRepository,
+    private val authRepository: AuthRepository
 ) : ScreenModel {
+
+    val currentUser = authRepository.currentUser.stateIn(
+        screenModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        null
+    )
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery = _searchQuery.asStateFlow()

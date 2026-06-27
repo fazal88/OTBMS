@@ -44,6 +44,7 @@ import com.olivetrust.charity.domain.repository.*
 import kotlinx.coroutines.flow.*
 import kotlinx.datetime.*
 import androidx.compose.foundation.lazy.items
+import com.olivetrust.charity.domain.util.LocationUtil
 import com.olivetrust.charity.openMaps
 
 class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
@@ -322,61 +323,13 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
 }
 
 @Composable
-internal fun VisitCard(visit: VerificationVisit) {
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    formatDate(visit.date),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    visit.visitStatus.name.replace("_", " "),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = when (visit.visitStatus) {
-                        VisitStatus.SUCCESSFUL -> Color(0xFF4CAF50)
-                        VisitStatus.REAPPROVAL_REQUIRED -> Color(0xFFFF9800)
-                        else -> MaterialTheme.colorScheme.error
-                    }
-                )
-            }
-            visit.reapprovalReason?.let {
-                Text("Note: $it", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp))
-            }
-            visit.misuseReport?.let {
-                Text("Report: ${it.description}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
-            }
-            if (visit.latitude != 0.0 || visit.longitude != 0.0) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(
-                        onClick = { openMaps(visit.latitude, visit.longitude, "Visit: ${visit.beneficiaryName}") },
-                        contentPadding = PaddingValues(0.dp),
-                        modifier = Modifier.height(24.dp)
-                    ) {
-                        Icon(Icons.Default.LocationOn, null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("View Location", style = MaterialTheme.typography.labelSmall)
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
 internal fun DistributionCard(dist: AidDistribution) {
     Card(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
+        Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(formatDate(dist.date), style = MaterialTheme.typography.labelMedium)
@@ -459,48 +412,57 @@ internal fun ActionButtons(
     onAid: () -> Unit,
     onVisit: () -> Unit
 ) {
+    val isEmployee = user?.role == UserRole.EMPLOYEE
+    val isApprover = user?.role == UserRole.APPROVER
+    val isSuperAdmin = user?.role == UserRole.SUPER_ADMIN
+
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+        // Edit/Delete Section - Restricted to Employee/Admin
+        if (isEmployee || isSuperAdmin) {
             if (b.status == BeneficiaryStatus.PENDING_APPROVAL || 
                 b.status == BeneficiaryStatus.REAPPROVAL_PENDING ||
                 b.status == BeneficiaryStatus.MISUSE_REPORTED ||
-                b.status == BeneficiaryStatus.EDIT_REQUESTED) {
-                Button(
-                    onClick = onEdit,
-                    modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(12.dp),
-                    shape = RoundedCornerShape(8.dp)
+                b.status == BeneficiaryStatus.EDIT_REQUESTED ||
+                b.status == BeneficiaryStatus.DRAFT) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Icon(
-                        Icons.Default.Edit,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Edit")
-                }
+                    Button(
+                        onClick = onEdit,
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(12.dp),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Edit")
+                    }
 
-                OutlinedButton(
-                    onClick = onDelete,
-                    modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(12.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                ) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Delete")
+                    OutlinedButton(
+                        onClick = onDelete,
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(12.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Delete")
+                    }
                 }
             }
         }
 
-        if (user?.role == UserRole.APPROVER || user?.role == UserRole.SUPER_ADMIN) {
+        // Approval Section - Restricted to Approver/Admin
+        if (isApprover || isSuperAdmin) {
             if (b.status == BeneficiaryStatus.PENDING_APPROVAL || 
                 b.status == BeneficiaryStatus.REAPPROVAL_PENDING ||
                 b.status == BeneficiaryStatus.MISUSE_REPORTED ||
@@ -541,30 +503,33 @@ internal fun ActionButtons(
             }
         }
 
-        if (b.status == BeneficiaryStatus.APPROVED) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Button(
-                    onClick = onAid,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(8.dp)
+        // Aid/Visit Section - Restricted to Employee/Admin
+        if (isEmployee || isSuperAdmin) {
+            if (b.status == BeneficiaryStatus.APPROVED) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Give Aid")
-                }
+                    Button(
+                        onClick = onAid,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Give Aid")
+                    }
 
-                Button(
-                    onClick = onVisit,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
-                ) {
-                    Icon(Icons.Default.Check, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Verify Visit")
+                    Button(
+                        onClick = onVisit,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                    ) {
+                        Icon(Icons.Default.Check, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Verify Visit")
+                    }
                 }
             }
         }

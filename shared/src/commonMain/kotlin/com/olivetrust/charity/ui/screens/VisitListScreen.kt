@@ -28,6 +28,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.olivetrust.charity.domain.model.VerificationVisit
 import com.olivetrust.charity.domain.model.VisitStatus
+import com.olivetrust.charity.domain.util.LocationUtil
 import com.olivetrust.charity.openMaps
 import kotlinx.datetime.*
 
@@ -297,11 +298,12 @@ fun VisitListContent(
                     .padding(padding)
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
-                contentPadding = PaddingValues(bottom = 8.dp),
+                contentPadding = PaddingValues(bottom = 16.dp, start = 16.dp, end = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                item { Spacer(Modifier.height(4.dp)) }
                 items(visits) { visit ->
-                    VisitItemCard(visit)
+                    VisitCard(visit)
                 }
             }
         }
@@ -316,104 +318,6 @@ fun VisitListContent(
                 showFilterSheet = false
             }
         )
-    }
-}
-
-@Composable
-fun VisitItemCard(visit: VerificationVisit) {
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(visit.beneficiaryName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Text("Area: ${visit.areaCode}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
-                }
-                VisitStatusBadge(visit.visitStatus)
-            }
-            
-            Spacer(Modifier.height(12.dp))
-            HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
-            Spacer(Modifier.height(12.dp))
-            
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Person, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.outline)
-                    Spacer(Modifier.width(4.dp))
-                    Text("By: ${visit.employeeId}", style = MaterialTheme.typography.bodySmall)
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Info, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.outline)
-                    Spacer(Modifier.width(4.dp))
-                    Text(formatVisitDate(visit.date), style = MaterialTheme.typography.bodySmall)
-                }
-            }
-            
-            if (!visit.reapprovalReason.isNullOrBlank()) {
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    text = visit.reapprovalReason!!,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
-                )
-            }
-
-            if (visit.latitude != 0.0 || visit.longitude != 0.0) {
-                Spacer(Modifier.height(12.dp))
-                Button(
-                    onClick = { openMaps(visit.latitude, visit.longitude, "Visit: ${visit.beneficiaryName}") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    ),
-                    contentPadding = PaddingValues(vertical = 4.dp)
-                ) {
-                    Icon(Icons.Default.LocationOn, null, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text("View Visit Location", style = MaterialTheme.typography.labelMedium)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun VisitStatusBadge(status: VisitStatus) {
-    val (color, icon) = when (status) {
-        VisitStatus.SUCCESSFUL -> Color(0xFF4CAF50) to Icons.Default.CheckCircle
-        VisitStatus.REAPPROVAL_REQUIRED -> Color(0xFFFF9800) to Icons.Default.Refresh
-        VisitStatus.MISUSE_REPORTED -> MaterialTheme.colorScheme.error to Icons.Default.Warning
-        VisitStatus.EDIT_REQUESTED -> Color(0xFF9C27B0) to Icons.Default.Edit
-    }
-    Surface(
-        color = color.copy(alpha = 0.1f),
-        shape = RoundedCornerShape(8.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, color.copy(alpha = 0.5f))
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Icon(icon, null, modifier = Modifier.size(12.dp), tint = color)
-            Text(
-                text = status.name.replace("_", " ").lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() },
-                style = MaterialTheme.typography.labelSmall,
-                color = color,
-                fontWeight = FontWeight.Bold
-            )
-        }
     }
 }
 
@@ -563,10 +467,4 @@ private fun getMonthName(month: Int): String {
         12 -> "December"
         else -> ""
     }
-}
-
-private fun formatVisitDate(timestamp: Long): String {
-    val instant = Instant.fromEpochMilliseconds(timestamp)
-    val dateTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())
-    return "${dateTime.dayOfMonth}/${dateTime.monthNumber}/${dateTime.year}"
 }

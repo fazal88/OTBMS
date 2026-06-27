@@ -48,6 +48,7 @@ class BeneficiaryListScreen(private val initialFilters: BeneficiaryFilters = Ben
         val sortOrder by viewModel.sortOrder.collectAsState()
         val filters by viewModel.filters.collectAsState()
         val error by viewModel.error.collectAsState()
+        val user by viewModel.currentUser.collectAsState()
         val navigator = LocalNavigator.currentOrThrow
 
         LaunchedEffect(Unit) {
@@ -69,6 +70,7 @@ class BeneficiaryListScreen(private val initialFilters: BeneficiaryFilters = Ben
             onBack = { navigator.pop() },
             error = error,
             onDismissError = { viewModel.clearError() },
+            user = user,
             onBeneficiaryClick = { id -> navigator.push(BeneficiaryDetailScreen(id)) },
             onAidClick = { id, name -> navigator.push(AidDistributionScreen(id, name)) },
             onVisitClick = { id, name -> navigator.push(VerificationVisitScreen(id, name)) }
@@ -91,6 +93,7 @@ fun BeneficiaryListContent(
     onBack: () -> Unit,
     error: String?,
     onDismissError: () -> Unit,
+    user: com.olivetrust.charity.domain.model.User?,
     onBeneficiaryClick: (String) -> Unit,
     onAidClick: (String, String) -> Unit,
     onVisitClick: (String, String) -> Unit
@@ -101,7 +104,6 @@ fun BeneficiaryListContent(
     var showFilterSheet by remember { mutableStateOf(false) }
 
     val isFilterApplied = filters != BeneficiaryFilters() || searchQuery.isNotEmpty()
-
     val snackbarHostState = remember { SnackbarHostState() }
     
     LaunchedEffect(error) {
@@ -176,7 +178,6 @@ fun BeneficiaryListContent(
                     )
                 )
                 
-                // Active Filters Row (Horizontal Scroll)
                 if (isFilterApplied) {
                     Row(
                         modifier = Modifier
@@ -374,6 +375,7 @@ fun BeneficiaryListContent(
                 items(beneficiaries) { beneficiary ->
                     BeneficiaryCard(
                         beneficiary = beneficiary,
+                        user = user,
                         onClick = { onBeneficiaryClick(beneficiary.id) },
                         onCallClick = {
                             if (beneficiary.phoneNumber.isNotEmpty()) {
@@ -403,11 +405,15 @@ fun BeneficiaryListContent(
 @Composable
 fun BeneficiaryCard(
     beneficiary: Beneficiary,
+    user: com.olivetrust.charity.domain.model.User?,
     onClick: () -> Unit,
     onCallClick: () -> Unit,
     onAidClick: () -> Unit,
     onVisitClick: () -> Unit
 ) {
+    val isEmployee = user?.role == com.olivetrust.charity.domain.model.UserRole.EMPLOYEE
+    val isSuperAdmin = user?.role == com.olivetrust.charity.domain.model.UserRole.SUPER_ADMIN
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -418,7 +424,6 @@ fun BeneficiaryCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            // Header with status and call
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -443,7 +448,6 @@ fun BeneficiaryCard(
 
             Spacer(Modifier.height(8.dp))
 
-            // Main Info
             Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                 Text(
                     text = beneficiary.headName,
@@ -495,7 +499,6 @@ fun BeneficiaryCard(
             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
             Spacer(Modifier.height(12.dp))
 
-            // Details Grid
             Row(modifier = Modifier.padding(horizontal = 16.dp)) {
                 Column(modifier = Modifier.weight(1f)) {
                     InfoItem(Icons.Default.Add, "Nature", beneficiary.natureOfAid ?: "Pending")
@@ -531,36 +534,36 @@ fun BeneficiaryCard(
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
-
-            // Footer Actions
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                    .padding(8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                OutlinedButton(
-                    onClick = onVisitClick,
-                    modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(0.0.dp),
-                    shape = RoundedCornerShape(8.dp)
+            if ((isEmployee || isSuperAdmin) && beneficiary.status == BeneficiaryStatus.APPROVED) {
+                Spacer(Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                        .padding(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text("Visit", fontSize = 12.sp)
-                }
-                
-                Button(
-                    onClick = onAidClick,
-                    modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(0.0.dp),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text("Give Aid", fontSize = 12.sp)
+                    OutlinedButton(
+                        onClick = onVisitClick,
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(0.0.dp),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("Visit", fontSize = 12.sp)
+                    }
+                    
+                    Button(
+                        onClick = onAidClick,
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(0.0.dp),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("Give Aid", fontSize = 12.sp)
+                    }
                 }
             }
         }
@@ -665,7 +668,6 @@ fun FilterBottomSheet(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Status
             Text("Status", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 BeneficiaryStatus.entries.forEach { status ->
@@ -679,7 +681,6 @@ fun FilterBottomSheet(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Area Code
             OutlinedTextField(
                 value = tempFilters.areaCode ?: "",
                 onValueChange = { tempFilters = tempFilters.copy(areaCode = it.ifBlank { null }) },
@@ -690,7 +691,6 @@ fun FilterBottomSheet(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Nature of Aid
             OutlinedTextField(
                 value = tempFilters.natureOfAid ?: "",
                 onValueChange = { tempFilters = tempFilters.copy(natureOfAid = it.ifBlank { null }) },
@@ -701,7 +701,6 @@ fun FilterBottomSheet(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Month and Year
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 var monthMenuExpanded by remember { mutableStateOf(false) }
                 Box(modifier = Modifier.weight(1f)) {
@@ -753,7 +752,6 @@ fun FilterBottomSheet(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Packet Count Range
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
                     value = tempFilters.minPackets?.toString() ?: "",
@@ -775,7 +773,6 @@ fun FilterBottomSheet(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Amount Range
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
                     value = tempFilters.minAmount?.toString() ?: "",
@@ -797,7 +794,6 @@ fun FilterBottomSheet(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Nature of Address
             OutlinedTextField(
                 value = tempFilters.natureOfAddress ?: "",
                 onValueChange = { tempFilters = tempFilters.copy(natureOfAddress = it.ifBlank { null }) },
@@ -808,7 +804,6 @@ fun FilterBottomSheet(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Reason for Aid
             OutlinedTextField(
                 value = tempFilters.reasonForAid ?: "",
                 onValueChange = { tempFilters = tempFilters.copy(reasonForAid = it.ifBlank { null }) },
@@ -849,21 +844,13 @@ fun BeneficiaryListContentPreview() {
                 PreviewMocks.mockBeneficiary.copy(
                     natureOfAid = "Ration",
                     packetCount = 2,
-                    monthlyRation = "10kg Flour, 2kg Sugar",
                     reasonForAid = "Low income labor",
                     headAge = 45,
                     numberOfDependants = 5,
-                    monetaryAidAmount = 5000.0,
-                    approvalNotes = "Verified deserving case for monthly ration and monetary support."
-                ),
-                PreviewMocks.mockBeneficiary.copy(
-                    id = "b2",
-                    headName = "John Doe",
-                    phoneNumber = "9876543210",
-                    areaCode = "LHR-02"
+                    monetaryAidAmount = 5000.0
                 )
             ),
-            totalCount = 2,
+            totalCount = 1,
             searchQuery = "",
             onSearchQueryChange = {},
             sortOrder = SortOrder.DATE_ADDED_DESC,
@@ -874,6 +861,7 @@ fun BeneficiaryListContentPreview() {
             onBack = {},
             error = null,
             onDismissError = {},
+            user = null,
             onBeneficiaryClick = {},
             onAidClick = { _, _ -> },
             onVisitClick = { _, _ -> }

@@ -4,22 +4,33 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.tooling.preview.Preview
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.olivetrust.charity.domain.model.*
+import com.olivetrust.charity.domain.util.LocationUtil
+import com.olivetrust.charity.openMaps
 import kotlin.time.Clock
 
 data class VerificationVisitScreen(val beneficiaryId: String, val beneficiaryName: String) : Screen {
@@ -27,7 +38,13 @@ data class VerificationVisitScreen(val beneficiaryId: String, val beneficiaryNam
     override fun Content() {
         val viewModel = koinScreenModel<VerificationVisitViewModel>()
         val state by viewModel.state.collectAsState()
+        val beneficiary by viewModel.beneficiary.collectAsState()
+        val currentLocation by viewModel.currentLocation.collectAsState()
         val navigator = LocalNavigator.currentOrThrow
+
+        LaunchedEffect(beneficiaryId) {
+            viewModel.loadData(beneficiaryId)
+        }
 
         LaunchedEffect(state) {
             if (state is VisitState.Success) {
@@ -38,15 +55,21 @@ data class VerificationVisitScreen(val beneficiaryId: String, val beneficiaryNam
         VerificationVisitContent(
             beneficiaryName = beneficiaryName,
             state = state,
+            onBack = { navigator.pop() },
             onRecord = { status, notes ->
                 val now = Clock.System.now().toEpochMilliseconds()
                 val visit = VerificationVisit(
                     visitId = "V_$now",
                     date = now,
-                    latitude = 0.0,
-                    longitude = 0.0,
+                    latitude = currentLocation?.latitude ?: 0.0,
+                    longitude = currentLocation?.longitude ?: 0.0,
                     employeeId = "", 
                     beneficiaryId = beneficiaryId,
+                    beneficiaryName = beneficiaryName,
+                    beneficiaryLatitude = beneficiary?.latitude ?: 0.0,
+                    beneficiaryLongitude = beneficiary?.longitude ?: 0.0,
+                    distanceInMeters = 0.0, // Calculated in VM
+                    areaCode = beneficiary?.areaCode ?: "",
                     visitStatus = status,
                     misuseReport = if (status == VisitStatus.MISUSE_REPORTED) MisuseReport(notes, "") else null,
                     editRequest = if (status == VisitStatus.EDIT_REQUESTED) EditRequest("", notes) else null,
@@ -63,6 +86,7 @@ data class VerificationVisitScreen(val beneficiaryId: String, val beneficiaryNam
 fun VerificationVisitContent(
     beneficiaryName: String,
     state: VisitState,
+    onBack: () -> Unit,
     onRecord: (VisitStatus, String) -> Unit
 ) {
     val focusManager = LocalFocusManager.current
@@ -74,7 +98,14 @@ fun VerificationVisitContent(
             detectTapGestures(onTap = { focusManager.clearFocus() })
         },
         topBar = {
-            TopAppBar(title = { Text("Visit: $beneficiaryName") })
+            TopAppBar(
+                title = { Text("Visit: $beneficiaryName") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                }
+            )
         }
     ) { padding ->
         LazyColumn(modifier = Modifier.padding(padding).padding(16.dp)) {
@@ -127,7 +158,9 @@ fun VerificationVisitContent(
                 Spacer(modifier = Modifier.height(24.dp))
                 
                 if (state is VisitState.Loading) {
-                    CircularProgressIndicator()
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
                 } else {
                     Button(
                         onClick = {
@@ -158,6 +191,7 @@ fun VerificationVisitContentPreview() {
         VerificationVisitContent(
             beneficiaryName = "Muhammad Ahmad",
             state = VisitState.Idle,
+            onBack = {},
             onRecord = { _, _ -> }
         )
     }
