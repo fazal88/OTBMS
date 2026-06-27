@@ -1,8 +1,10 @@
 package com.olivetrust.charity.ui.screens
 
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -11,7 +13,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
@@ -80,6 +85,7 @@ fun AidDistributionContent(
     state: AidState,
     onConfirm: (String, String, String, String, String) -> Unit
 ) {
+    val focusManager = LocalFocusManager.current
     var natureOfAid by remember { mutableStateOf("Ration") }
     var aidAmount by remember { mutableStateOf("") }
     var packetCount by remember { mutableStateOf("") }
@@ -100,6 +106,9 @@ fun AidDistributionContent(
     val natureOptions = listOf("Ration", "Monetary", "Medical", "Emergency", "Other")
 
     Scaffold(
+        modifier = Modifier.pointerInput(Unit) {
+            detectTapGestures(onTap = { focusManager.clearFocus() })
+        },
         topBar = {
             TopAppBar(
                 title = { Text("Distribute Aid") },
@@ -165,7 +174,10 @@ fun AidDistributionContent(
                     value = aidAmount,
                     onValueChange = { aidAmount = it },
                     label = { Text("Amount (in ₹)") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Decimal,
+                        imeAction = ImeAction.Next
+                    ),
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     leadingIcon = { Icon(Icons.Default.CheckCircle, null) }
@@ -177,7 +189,10 @@ fun AidDistributionContent(
                     value = packetCount,
                     onValueChange = { packetCount = it },
                     label = { Text("Packet Count (if ration)") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Next
+                    ),
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     leadingIcon = { Icon(Icons.Default.ShoppingCart, null) }
@@ -189,6 +204,7 @@ fun AidDistributionContent(
                     value = receiverName,
                     onValueChange = { receiverName = it },
                     label = { Text("Receiver Name") },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     leadingIcon = { Icon(Icons.Default.Person, null) }
@@ -200,6 +216,8 @@ fun AidDistributionContent(
                     value = reason,
                     onValueChange = { reason = it },
                     label = { Text("Notes / Reason") },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     minLines = 3

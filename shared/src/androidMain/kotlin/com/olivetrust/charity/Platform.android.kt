@@ -5,6 +5,9 @@ import android.telephony.SmsManager
 import android.content.Intent
 import android.net.Uri
 import android.content.pm.ApplicationInfo
+import com.google.android.gms.location.LocationServices
+import kotlinx.coroutines.tasks.await
+import android.annotation.SuppressLint
 
 class AndroidPlatform : Platform {
     override val name: String = "Android ${Build.VERSION.SDK_INT}"
@@ -20,10 +23,22 @@ class AndroidDeviceInfo : DeviceInfo {
 actual fun getDeviceInfo(): DeviceInfo = AndroidDeviceInfo()
 
 class AndroidLocationService : LocationService {
+    @SuppressLint("MissingPermission")
     override suspend fun getCurrentLocation(): Location? {
-        // In a real app, use FusedLocationProviderClient and check permissions.
-        // For this demo, we'll return a sample location to show it's being recorded.
-        return Location(31.5204, 74.3587) // Lahore coordinates
+        val context = ContextHolder.get() ?: return null
+        return try {
+            val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
+            val location = fusedLocationClient.lastLocation.await()
+            if (location != null) {
+                Location(location.latitude, location.longitude)
+            } else {
+                // Fallback to sample for demo if no last location
+                Location(31.5204, 74.3587)
+            }
+        } catch (e: Exception) {
+            println("ANDROID_LOCATION_ERROR: ${e.message}")
+            Location(31.5204, 74.3587)
+        }
     }
 }
 

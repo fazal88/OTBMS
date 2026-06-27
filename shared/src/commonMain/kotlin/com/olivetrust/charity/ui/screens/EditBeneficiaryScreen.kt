@@ -1,5 +1,6 @@
 package com.olivetrust.charity.ui.screens
 
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -13,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -26,6 +28,8 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import com.olivetrust.charity.domain.model.Beneficiary
 import com.olivetrust.charity.domain.model.FamilyMember
 import com.olivetrust.charity.ui.previews.PreviewMocks
+import kotlinx.datetime.*
+import kotlin.time.Clock
 
 class EditBeneficiaryScreen(private val initialBeneficiary: Beneficiary) : Screen {
     @Composable
@@ -44,7 +48,7 @@ class EditBeneficiaryScreen(private val initialBeneficiary: Beneficiary) : Scree
             initialBeneficiary = initialBeneficiary,
             state = state,
             onBack = { navigator.pop() },
-            onSubmit = { viewModel.submit(it) }
+            onSubmit = { viewModel.submit(it, isEdit = true) }
         )
     }
 }
@@ -62,6 +66,14 @@ fun EditBeneficiaryContent(
     // State
     var headName by remember { mutableStateOf(initialBeneficiary.headName) }
     var headAge by remember { mutableStateOf(initialBeneficiary.headAge.toString()) }
+    
+    val currentDateTime = remember {
+        val now = Clock.System.now().toEpochMilliseconds()
+        Instant.fromEpochMilliseconds(now).toLocalDateTime(TimeZone.currentSystemDefault())
+    }
+    var startMonth by remember { mutableStateOf(initialBeneficiary.startMonth?.toString() ?: currentDateTime.month.number.toString()) }
+    var startYear by remember { mutableStateOf(initialBeneficiary.startYear?.toString() ?: currentDateTime.year.toString()) }
+
     var headGender by remember { mutableStateOf(initialBeneficiary.headGender) }
     var headOccupation by remember { mutableStateOf(initialBeneficiary.headOccupation) }
     var headEducation by remember { mutableStateOf(initialBeneficiary.headEducation) }
@@ -89,6 +101,9 @@ fun EditBeneficiaryContent(
     val familyMemberRelationExpanded = remember { mutableStateMapOf<Int, Boolean>() }
 
     Scaffold(
+        modifier = Modifier.pointerInput(Unit) {
+            detectTapGestures(onTap = { focusManager.clearFocus() })
+        },
         topBar = {
             TopAppBar(
                 title = { Text("Edit Beneficiary") },
@@ -109,6 +124,7 @@ fun EditBeneficiaryContent(
                     value = headName,
                     onValueChange = { headName = it },
                     label = { Text("Head Name") },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -118,7 +134,10 @@ fun EditBeneficiaryContent(
                         value = headAge,
                         onValueChange = { if (it.all { char -> char.isDigit() }) headAge = it },
                         label = { Text("Age") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number,
+                            imeAction = ImeAction.Next
+                        ),
                         modifier = Modifier.weight(1f)
                     )
 
@@ -157,6 +176,7 @@ fun EditBeneficiaryContent(
                     value = headOccupation,
                     onValueChange = { headOccupation = it },
                     label = { Text("Occupation") },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -165,6 +185,7 @@ fun EditBeneficiaryContent(
                     value = headEducation,
                     onValueChange = { headEducation = it },
                     label = { Text("Education") },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -177,7 +198,10 @@ fun EditBeneficiaryContent(
                         }
                     },
                     label = { Text("Phone Number") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Next
+                    ),
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(16.dp))
@@ -189,6 +213,7 @@ fun EditBeneficiaryContent(
                     value = address,
                     onValueChange = { address = it },
                     label = { Text("Address") },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -258,6 +283,7 @@ fun EditBeneficiaryContent(
                         value = natureOfRent,
                         onValueChange = { natureOfRent = it },
                         label = { Text("Rent Details") },
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -267,6 +293,7 @@ fun EditBeneficiaryContent(
                     value = incomeSource,
                     onValueChange = { incomeSource = it },
                     label = { Text("Income Source") },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -274,6 +301,7 @@ fun EditBeneficiaryContent(
                     value = diseaseInability,
                     onValueChange = { diseaseInability = it },
                     label = { Text("Disease/Inability") },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -281,6 +309,7 @@ fun EditBeneficiaryContent(
                     value = reasonForAid,
                     onValueChange = { reasonForAid = it },
                     label = { Text("Reason for Aid") },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -301,13 +330,36 @@ fun EditBeneficiaryContent(
                     label = { Text("Number of Dependants (Family Members)") },
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Number,
-                        imeAction = ImeAction.Done
-                    ),
-                    keyboardActions = KeyboardActions(
-                        onDone = { focusManager.clearFocus() }
+                        imeAction = ImeAction.Next
                     ),
                     modifier = Modifier.fillMaxWidth()
                 )
+
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Start Date (Month & Year)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = startMonth,
+                        onValueChange = { if (it.length <= 2 && it.all { char -> char.isDigit() }) startMonth = it },
+                        label = { Text("Month") },
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number,
+                            imeAction = ImeAction.Next
+                        ),
+                        modifier = Modifier.weight(1f)
+                    )
+                    OutlinedTextField(
+                        value = startYear,
+                        onValueChange = { if (it.length <= 4 && it.all { char -> char.isDigit() }) startYear = it },
+                        label = { Text("Year") },
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number,
+                            imeAction = ImeAction.Next
+                        ),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Row(
@@ -376,6 +428,7 @@ fun EditBeneficiaryContent(
                             value = member.name,
                             onValueChange = { familyMembers[index] = member.copy(name = it) },
                             label = { Text("Member Name") },
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                             modifier = Modifier.fillMaxWidth()
                         )
                         Spacer(modifier = Modifier.height(4.dp))
@@ -384,7 +437,10 @@ fun EditBeneficiaryContent(
                                 value = if (member.age == 0) "" else member.age.toString(),
                                 onValueChange = { if (it.all { char -> char.isDigit() }) familyMembers[index] = member.copy(age = it.toIntOrNull() ?: 0) },
                                 label = { Text("Age") },
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Number,
+                                    imeAction = ImeAction.Next
+                                ),
                                 modifier = Modifier.weight(1f)
                             )
                             
@@ -423,6 +479,7 @@ fun EditBeneficiaryContent(
                             value = member.occupation,
                             onValueChange = { familyMembers[index] = member.copy(occupation = it) },
                             label = { Text("Occupation") },
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                             modifier = Modifier.fillMaxWidth()
                         )
                         Spacer(modifier = Modifier.height(4.dp))
@@ -430,6 +487,7 @@ fun EditBeneficiaryContent(
                             value = member.education,
                             onValueChange = { familyMembers[index] = member.copy(education = it) },
                             label = { Text("Education") },
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                             modifier = Modifier.fillMaxWidth()
                         )
                         Spacer(modifier = Modifier.height(4.dp))
@@ -437,6 +495,8 @@ fun EditBeneficiaryContent(
                             value = member.diseaseInability ?: "",
                             onValueChange = { familyMembers[index] = member.copy(diseaseInability = it) },
                             label = { Text("Disease/Inability") },
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -468,7 +528,9 @@ fun EditBeneficiaryContent(
                                 diseaseInability = diseaseInability,
                                 reasonForAid = reasonForAid,
                                 numberOfDependants = numberOfDependants.toIntOrNull() ?: 0,
-                                familyMembers = familyMembers.toList()
+                                familyMembers = familyMembers.toList(),
+                                startMonth = startMonth.toIntOrNull(),
+                                startYear = startYear.toIntOrNull()
                             )
                             onSubmit(updatedBeneficiary)
                         },

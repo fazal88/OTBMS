@@ -38,6 +38,8 @@ data class Beneficiary(
     // Metadata
     val onboardingDate: Long = 0,
     val onboardedBy: String = "", // userId
+    val startMonth: Int? = null,
+    val startYear: Int? = null,
     val latitude: Double = 0.0,
     val longitude: Double = 0.0,
     val deviceUsed: String = "",

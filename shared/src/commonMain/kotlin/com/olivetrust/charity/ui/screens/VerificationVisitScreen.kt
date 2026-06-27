@@ -1,12 +1,18 @@
 package com.olivetrust.charity.ui.screens
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import cafe.adriel.voyager.core.screen.Screen
@@ -59,10 +65,14 @@ fun VerificationVisitContent(
     state: VisitState,
     onRecord: (VisitStatus, String) -> Unit
 ) {
+    val focusManager = LocalFocusManager.current
     var status by remember { mutableStateOf(VisitStatus.SUCCESSFUL) }
     var reportDescription by remember { mutableStateOf("") }
 
     Scaffold(
+        modifier = Modifier.pointerInput(Unit) {
+            detectTapGestures(onTap = { focusManager.clearFocus() })
+        },
         topBar = {
             TopAppBar(title = { Text("Visit: $beneficiaryName") })
         }
@@ -108,6 +118,8 @@ fun VerificationVisitContent(
                         value = reportDescription,
                         onValueChange = { reportDescription = it },
                         label = { Text("Description / Notes") },
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                         modifier = Modifier.fillMaxWidth()
                     )
                 }

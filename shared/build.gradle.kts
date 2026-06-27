@@ -59,6 +59,8 @@ kotlin {
             implementation("com.google.firebase:firebase-storage-ktx:21.0.1")
             implementation("com.google.firebase:firebase-functions-ktx:21.0.0")
             implementation("com.google.firebase:firebase-messaging-ktx:24.1.0")
+            implementation("com.google.android.gms:play-services-location:21.3.0")
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.1")
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)

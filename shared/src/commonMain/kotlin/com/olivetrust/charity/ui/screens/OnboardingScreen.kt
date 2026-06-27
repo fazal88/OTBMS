@@ -1,5 +1,6 @@
 package com.olivetrust.charity.ui.screens
 
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -12,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -26,6 +28,7 @@ import com.olivetrust.charity.domain.model.Beneficiary
 import com.olivetrust.charity.domain.model.BeneficiaryStatus
 import com.olivetrust.charity.domain.model.FamilyMember
 import com.olivetrust.charity.isDebug
+import kotlinx.datetime.*
 import kotlin.time.Clock
 
 class OnboardingScreen : Screen {
@@ -59,6 +62,14 @@ fun OnboardingContent(
     // Main Beneficiary State
     var headName by remember { mutableStateOf("") }
     var headAge by remember { mutableStateOf("") }
+    
+    val currentDateTime = remember {
+        val now = Clock.System.now().toEpochMilliseconds()
+        Instant.fromEpochMilliseconds(now).toLocalDateTime(TimeZone.currentSystemDefault())
+    }
+    var startMonth by remember { mutableStateOf(currentDateTime.month.number.toString()) }
+    var startYear by remember { mutableStateOf(currentDateTime.year.toString()) }
+
     var headGender by remember { mutableStateOf("") }
     var headOccupation by remember { mutableStateOf("") }
     var headEducation by remember { mutableStateOf("") }
@@ -88,6 +99,9 @@ fun OnboardingContent(
     val familyMemberRelationExpanded = remember { mutableStateMapOf<Int, Boolean>() }
 
     Scaffold(
+        modifier = Modifier.pointerInput(Unit) {
+            detectTapGestures(onTap = { focusManager.clearFocus() })
+        },
         topBar = {
             TopAppBar(
                 title = { Text("New Beneficiary") },
@@ -128,6 +142,7 @@ fun OnboardingContent(
                     value = headName,
                     onValueChange = { headName = it },
                     label = { Text("Head Name") },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -137,7 +152,10 @@ fun OnboardingContent(
                         value = headAge,
                         onValueChange = { if (it.all { char -> char.isDigit() }) headAge = it },
                         label = { Text("Age") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number,
+                            imeAction = ImeAction.Next
+                        ),
                         modifier = Modifier.weight(1f)
                     )
 
@@ -176,6 +194,7 @@ fun OnboardingContent(
                     value = headOccupation,
                     onValueChange = { headOccupation = it },
                     label = { Text("Occupation") },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -184,6 +203,7 @@ fun OnboardingContent(
                     value = headEducation,
                     onValueChange = { headEducation = it },
                     label = { Text("Education") },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -196,9 +216,37 @@ fun OnboardingContent(
                         }
                     },
                     label = { Text("Phone Number") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Next
+                    ),
                     modifier = Modifier.fillMaxWidth()
                 )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Start Date (Month & Year)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = startMonth,
+                        onValueChange = { if (it.length <= 2 && it.all { char -> char.isDigit() }) startMonth = it },
+                        label = { Text("Month") },
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number,
+                            imeAction = ImeAction.Next
+                        ),
+                        modifier = Modifier.weight(1f)
+                    )
+                    OutlinedTextField(
+                        value = startYear,
+                        onValueChange = { if (it.length <= 4 && it.all { char -> char.isDigit() }) startYear = it },
+                        label = { Text("Year") },
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number,
+                            imeAction = ImeAction.Next
+                        ),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text("Address & Aid Details", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
@@ -208,6 +256,7 @@ fun OnboardingContent(
                     value = address,
                     onValueChange = { address = it },
                     label = { Text("Address") },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -277,6 +326,7 @@ fun OnboardingContent(
                         value = natureOfRent,
                         onValueChange = { natureOfRent = it },
                         label = { Text("Rent Details") },
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -286,6 +336,7 @@ fun OnboardingContent(
                     value = incomeSource,
                     onValueChange = { incomeSource = it },
                     label = { Text("Income Source") },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -293,6 +344,7 @@ fun OnboardingContent(
                     value = diseaseInability,
                     onValueChange = { diseaseInability = it },
                     label = { Text("Disease/Inability") },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -300,6 +352,7 @@ fun OnboardingContent(
                     value = reasonForAid,
                     onValueChange = { reasonForAid = it },
                     label = { Text("Reason for Aid") },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -320,10 +373,7 @@ fun OnboardingContent(
                     label = { Text("Number of Dependants (Family Members)") },
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Number,
-                        imeAction = ImeAction.Done
-                    ),
-                    keyboardActions = KeyboardActions(
-                        onDone = { focusManager.clearFocus() }
+                        imeAction = ImeAction.Next
                     ),
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -395,6 +445,7 @@ fun OnboardingContent(
                             value = member.name,
                             onValueChange = { familyMembers[index] = member.copy(name = it) },
                             label = { Text("Member Name") },
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                             modifier = Modifier.fillMaxWidth()
                         )
                         Spacer(modifier = Modifier.height(4.dp))
@@ -403,7 +454,10 @@ fun OnboardingContent(
                                 value = if (member.age == 0) "" else member.age.toString(),
                                 onValueChange = { if (it.all { char -> char.isDigit() }) familyMembers[index] = member.copy(age = it.toIntOrNull() ?: 0) },
                                 label = { Text("Age") },
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Number,
+                                    imeAction = ImeAction.Next
+                                ),
                                 modifier = Modifier.weight(1f)
                             )
                             
@@ -442,6 +496,7 @@ fun OnboardingContent(
                             value = member.occupation,
                             onValueChange = { familyMembers[index] = member.copy(occupation = it) },
                             label = { Text("Occupation") },
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                             modifier = Modifier.fillMaxWidth()
                         )
                         Spacer(modifier = Modifier.height(4.dp))
@@ -449,6 +504,7 @@ fun OnboardingContent(
                             value = member.education,
                             onValueChange = { familyMembers[index] = member.copy(education = it) },
                             label = { Text("Education") },
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                             modifier = Modifier.fillMaxWidth()
                         )
                         Spacer(modifier = Modifier.height(4.dp))
@@ -456,6 +512,8 @@ fun OnboardingContent(
                             value = member.diseaseInability ?: "",
                             onValueChange = { familyMembers[index] = member.copy(diseaseInability = it) },
                             label = { Text("Disease/Inability") },
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -473,6 +531,7 @@ fun OnboardingContent(
                     Button(
                         onClick = {
                             val now = Clock.System.now().toEpochMilliseconds()
+                            
                             val beneficiary = Beneficiary(
                                 id = "B_$now",
                                 headName = headName,
@@ -493,6 +552,8 @@ fun OnboardingContent(
                                 photoUrl = "", 
                                 onboardingDate = now,
                                 onboardedBy = "", 
+                                startMonth = startMonth.toIntOrNull(),
+                                startYear = startYear.toIntOrNull(),
                                 latitude = 0.0,
                                 longitude = 0.0,
                                 deviceUsed = "",

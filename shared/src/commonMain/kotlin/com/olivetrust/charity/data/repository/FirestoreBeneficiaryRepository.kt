@@ -71,7 +71,10 @@ class FirestoreBeneficiaryRepository(
     override suspend fun createBeneficiary(beneficiary: Beneficiary): Result<String> {
         return try {
             val now = Clock.System.now().toEpochMilliseconds()
-            val finalBeneficiary = beneficiary.copy(onboardingDate = now, lastUpdated = now)
+            val finalBeneficiary = beneficiary.copy(
+                onboardingDate = now, 
+                lastUpdated = now
+            )
             collection.document(finalBeneficiary.id).set(Beneficiary.serializer(), finalBeneficiary)
             log(finalBeneficiary, "CREATE", finalBeneficiary.onboardedBy)
             Result.success(finalBeneficiary.id)

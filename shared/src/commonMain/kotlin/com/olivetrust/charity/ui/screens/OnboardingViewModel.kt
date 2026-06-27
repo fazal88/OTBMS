@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.datetime.*
 import kotlin.time.Clock
 
 class OnboardingViewModel(
@@ -21,7 +22,7 @@ class OnboardingViewModel(
     private val _state = MutableStateFlow<OnboardingState>(OnboardingState.Idle)
     val state: StateFlow<OnboardingState> = _state
 
-    fun submit(beneficiary: Beneficiary) {
+    fun submit(beneficiary: Beneficiary, isEdit: Boolean = false) {
         screenModelScope.launch {
             _state.value = OnboardingState.Loading
             val user = authRepository.currentUser.first()
@@ -30,20 +31,34 @@ class OnboardingViewModel(
                 return@launch
             }
 
-            val location = locationService.getCurrentLocation()
+            val location = if (!isEdit) locationService.getCurrentLocation() else null
 
-            val finalBeneficiary = beneficiary.copy(
-                onboardingDate = Clock.System.now().toEpochMilliseconds(),
-                onboardedBy = user.userId,
-                deviceUsed = user.deviceId ?: "unknown",
-                latitude = location?.latitude ?: 0.0,
-                longitude = location?.longitude ?: 0.0
-            )
+            val finalBeneficiary = if (isEdit) {
+                beneficiary
+            } else {
+                val now = Clock.System.now().toEpochMilliseconds()
+                val currentDateTime = Instant.fromEpochMilliseconds(now).toLocalDateTime(TimeZone.currentSystemDefault())
+                
+                beneficiary.copy(
+                    onboardingDate = now,
+                    onboardedBy = user.userId,
+                    deviceUsed = user.deviceId ?: "unknown",
+                    latitude = location?.latitude ?: 0.0,
+                    longitude = location?.longitude ?: 0.0,
+                    startMonth = beneficiary.startMonth ?: currentDateTime.month.number,
+                    startYear = beneficiary.startYear ?: currentDateTime.year
+                )
+            }
 
-            val result = beneficiaryRepository.createBeneficiary(finalBeneficiary)
+            val result = if (isEdit) {
+                beneficiaryRepository.updateBeneficiary(finalBeneficiary).map { finalBeneficiary.id }
+            } else {
+                beneficiaryRepository.createBeneficiary(finalBeneficiary)
+            }
+
             result.fold(
                 onSuccess = { _state.value = OnboardingState.Success },
-                onFailure = { _state.value = OnboardingState.Error(it.message ?: "Failed to create beneficiary") }
+                onFailure = { _state.value = OnboardingState.Error(it.message ?: "Failed to save beneficiary") }
             )
         }
     }

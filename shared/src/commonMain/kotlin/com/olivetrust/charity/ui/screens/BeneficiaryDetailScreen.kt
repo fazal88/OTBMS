@@ -42,9 +42,7 @@ import androidx.compose.ui.graphics.Color
 import com.olivetrust.charity.domain.model.*
 import com.olivetrust.charity.domain.repository.*
 import kotlinx.coroutines.flow.*
-import kotlinx.datetime.Instant
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.*
 import androidx.compose.foundation.lazy.items
 
 class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
@@ -170,6 +168,10 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
 
                         item {
                             InfoCard("Metadata", Icons.Default.Info) {
+                                if (b.startMonth != null && b.startYear != null) {
+                                    DetailRow("Start Date", "${b.startMonth}/${b.startYear}")
+                                }
+                                DetailRow("Onboarding Date", formatDate(b.onboardingDate))
                                 DetailRow("Onboarded By", b.onboardedBy)
                                 DetailRow("Device", b.deviceUsed)
                                 DetailRow("Location", "${b.latitude}, ${b.longitude}")
@@ -342,7 +344,7 @@ internal fun DistributionCard(dist: AidDistribution) {
 private fun formatDate(timestamp: Long): String {
     val instant = Instant.fromEpochMilliseconds(timestamp)
     val dateTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())
-    return "${dateTime.dayOfMonth}/${dateTime.monthNumber}/${dateTime.year}"
+    return "${dateTime.dayOfMonth}/${dateTime.month.number}/${dateTime.year}"
 }
 
 @Composable

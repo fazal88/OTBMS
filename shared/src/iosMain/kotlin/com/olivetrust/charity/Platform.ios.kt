@@ -1,7 +1,13 @@
 package com.olivetrust.charity
 
 import platform.UIKit.UIDevice
+import platform.CoreLocation.*
+import platform.Foundation.NSError
+import platform.darwin.NSObject
 import kotlin.experimental.ExperimentalNativeApi
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
+import kotlinx.cinterop.*
 
 class IOSPlatform: Platform {
     override val name: String = UIDevice.currentDevice.systemName() + " " + UIDevice.currentDevice.systemVersion
@@ -17,9 +23,67 @@ class IOSDeviceInfo : DeviceInfo {
 actual fun getDeviceInfo(): DeviceInfo = IOSDeviceInfo()
 
 class IOSLocationService : LocationService {
-    override suspend fun getCurrentLocation(): Location? {
-        // In a real app, use CoreLocation.
-        return Location(31.5204, 74.3587)
+    private var currentDelegate: CLLocationManagerDelegateProtocol? = null
+
+    @OptIn(ExperimentalForeignApi::class)
+    override suspend fun getCurrentLocation(): Location? = suspendCancellableCoroutine { continuation ->
+        val locationManager = CLLocationManager()
+        val delegate = object : NSObject(), CLLocationManagerDelegateProtocol {
+            override fun locationManager(manager: CLLocationManager, didUpdateLocations: List<*>) {
+                val locations = didUpdateLocations
+                val location = locations.lastOrNull() as? CLLocation
+                if (location != null) {
+                    manager.stopUpdatingLocation()
+                    if (continuation.isActive) {
+                        val coordinate = location.coordinate
+                        continuation.resume(Location(coordinate.useContents { latitude }, coordinate.useContents { longitude }))
+                    }
+                }
+            }
+
+            override fun locationManager(manager: CLLocationManager, didFailWithError: NSError) {
+                if (continuation.isActive) {
+                    continuation.resume(null)
+                }
+            }
+
+            override fun locationManager(manager: CLLocationManager, didChangeAuthorizationStatus: CLAuthorizationStatus) {
+                when (didChangeAuthorizationStatus) {
+                    kCLAuthorizationStatusAuthorizedWhenInUse,
+                    kCLAuthorizationStatusAuthorizedAlways -> {
+                        manager.startUpdatingLocation()
+                    }
+                    kCLAuthorizationStatusDenied,
+                    kCLAuthorizationStatusRestricted -> {
+                        if (continuation.isActive) continuation.resume(null)
+                    }
+                    else -> {}
+                }
+            }
+        }
+
+        currentDelegate = delegate
+        locationManager.delegate = delegate
+
+        val status = CLLocationManager.authorizationStatus()
+        when (status) {
+            kCLAuthorizationStatusNotDetermined -> {
+                locationManager.requestWhenInUseAuthorization()
+            }
+            kCLAuthorizationStatusAuthorizedWhenInUse,
+            kCLAuthorizationStatusAuthorizedAlways -> {
+                locationManager.startUpdatingLocation()
+            }
+            else -> {
+                if (continuation.isActive) continuation.resume(null)
+            }
+        }
+
+        continuation.invokeOnCancellation {
+            locationManager.stopUpdatingLocation()
+            locationManager.delegate = null
+            currentDelegate = null
+        }
     }
 }
 
