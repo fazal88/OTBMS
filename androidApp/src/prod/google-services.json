@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "939434208858",
+    "project_id": "olivetrustcharity",
+    "storage_bucket": "olivetrustcharity.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:939434208858:android:5fd5dee4fc91f2bdcfb263",
+        "android_client_info": {
+          "package_name": "com.olive.trust"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB5lpOR4IDV8VbB7OIizNN1nXZ2gDqUHkQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

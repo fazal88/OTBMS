@@ -20,15 +20,27 @@ kotlin {
         ios.deploymentTarget = "15.0"
         podfile = project.file("../iosApp/Podfile")
         framework {
-            baseName = "Shared"
+            baseName = "shared"
             isStatic = true
         }
-        pod("FirebaseCore") { moduleName = "FirebaseCore" }
-        pod("FirebaseFirestore") { moduleName = "FirebaseFirestore" }
-        pod("FirebaseAuth") { moduleName = "FirebaseAuth" }
-        pod("FirebaseStorage") { moduleName = "FirebaseStorage" }
-        pod("FirebaseFunctions") { moduleName = "FirebaseFunctions" }
-        pod("FirebaseMessaging") { moduleName = "FirebaseMessaging" }
+        pod("FirebaseCore") {
+            linkOnly = true
+        }
+        pod("FirebaseFirestore") {
+            linkOnly = true
+        }
+        pod("FirebaseAuth") {
+            linkOnly = true
+        }
+        pod("FirebaseStorage") {
+            linkOnly = true
+        }
+        pod("FirebaseFunctions") {
+            linkOnly = true
+        }
+        pod("FirebaseMessaging") {
+            linkOnly = true
+        }
     }
     
     androidLibrary {

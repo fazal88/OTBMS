@@ -9,6 +9,9 @@ import android.Manifest
 import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
+import com.olivetrust.charity.App
+import com.olivetrust.charity.AppConfig
+import com.olivetrust.charity.Environment
 
 class MainActivity : ComponentActivity() {
     companion object {
@@ -30,8 +33,13 @@ class MainActivity : ComponentActivity() {
 
         requestPermissions()
 
+        val config = AppConfig(
+            environment = if (BuildConfig.FLAVOR == "uat") Environment.UAT else Environment.PRODUCTION,
+            isDebug = BuildConfig.DEBUG
+        )
+
         setContent {
-            App()
+            App(config)
         }
     }
 

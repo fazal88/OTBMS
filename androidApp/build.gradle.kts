@@ -41,6 +41,20 @@ android {
         versionCode = 1
         versionName = "1.0"
     }
+    buildFeatures {
+        buildConfig = true
+    }
+    flavorDimensions.add("env")
+    productFlavors {
+        create("uat") {
+            dimension = "env"
+            applicationId = "com.olivetrust.charity"
+        }
+        create("prod") {
+            dimension = "env"
+            applicationId = "com.olive.trust"
+        }
+    }
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"

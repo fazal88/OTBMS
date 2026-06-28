@@ -1,5 +1,6 @@
 import SwiftUI
 import FirebaseCore
+import shared
 
 @main
 struct iOSApp: App {
@@ -14,7 +15,11 @@ struct iOSApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            let isDebug = _isDebugAssertConfiguration()
+            // In a real app, you might use a flag from Info.plist to distinguish UAT vs PROD
+            let environment: shared.Environment = isDebug ? .uat : .production
+            let config = AppConfig(environment: environment, isDebug: isDebug)
+            ContentView(config: config)
         }
     }
 }

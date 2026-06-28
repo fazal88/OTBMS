@@ -30,6 +30,8 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		A929E8A50FCE76CD786233F5 /* Configuration */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = Configuration;
 			sourceTree = "<group>";
 		};
@@ -104,6 +106,7 @@
 				ECAA1A07CE1F8865CD952201 /* Frameworks */,
 				E0CF2809C8183C40BB458563 /* Resources */,
 				8A1BE58F6EAE5B66667DE293 /* [CP] Copy Pods Resources */,
+				D1D4A8362FF177CB003217D3 /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -192,18 +195,31 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-iosApp/Pods-iosApp-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-iosApp/Pods-iosApp-resources-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-iosApp/Pods-iosApp-resources.sh\"\n";
 			showEnvVarsInLog = 0;
+		};
+		D1D4A8362FF177CB003217D3 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Path to the environment-specific plists\nUAT_PLIST=\"${PROJECT_DIR}/iosApp/GoogleService-Info-UAT.plist\"\nPROD_PLIST=\"${PROJECT_DIR}/iosApp/GoogleService-Info-Prod.plist\"\n\n# Destination path (standard filename Firebase expects)\nDEST=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/GoogleService-Info.plist\"\n\n# Copy the file based on the environment (I'm using Build Configuration as a trigger)\nif [[ \"${CONFIGURATION}\" == *\"Debug\"* ]]; then\n  echo \"Using UAT Configuration\"\n  cp \"$UAT_PLIST\" \"$DEST\"\nelse\n  echo \"Using PROD Configuration\"\n  cp \"$PROD_PLIST\" \"$DEST\"\nfi\n";
 		};
 		F48006515185C8F47042475F /* Compile Kotlin Framework */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -309,6 +325,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = iosApp/Info.plist;
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "We need your location to record where the visit took place.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "We need your location to record where the visit took place.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -318,6 +336,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.olive.trust;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -403,6 +422,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = iosApp/Info.plist;
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "We need your location to record where the visit took place.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "We need your location to record where the visit took place.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -412,6 +433,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.olivetrust.charity;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
