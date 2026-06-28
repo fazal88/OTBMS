@@ -1,11 +1,11 @@
 package com.olivetrust.charity
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import cafe.adriel.voyager.navigator.Navigator
 import com.olivetrust.charity.di.appModule
-import com.olivetrust.charity.ui.screens.LoginScreen
+import com.olivetrust.charity.ui.screens.SplashScreen
+import com.olivetrust.charity.ui.theme.OliveTheme
 import androidx.compose.ui.tooling.preview.Preview
 import com.olivetrust.charity.data.util.DatabaseSeeder
 import org.koin.compose.KoinApplication
@@ -19,8 +19,9 @@ fun App() {
     KoinApplication(application = {
         modules(appModule)
     }) {
-        MaterialTheme {
-            Navigator(LoginScreen())
+        OliveTheme {
+            Navigator(SplashScreen())
         }
     }
 }
+

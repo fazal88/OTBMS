@@ -3,10 +3,12 @@ package com.olivetrust.charity.ui.screens
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -55,7 +57,14 @@ class DashboardScreen : Screen {
         Scaffold(
             topBar = {
                 CenterAlignedTopAppBar(
-                    title = { Text("Olive Trust", fontWeight = FontWeight.ExtraBold) },
+                    title = { 
+                        Text(
+                            text = "Olive Trust", 
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 1.sp
+                        ) 
+                    },
                     actions = {
                         if (user?.role == UserRole.APPROVER || user?.role == UserRole.SUPER_ADMIN) {
                             IconButton(onClick = { navigator.push(EmployeeManagementScreen()) }) {
@@ -78,7 +87,11 @@ class DashboardScreen : Screen {
                                 )
                             }
                         }
-                    }
+                    },
+                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        titleContentColor = MaterialTheme.colorScheme.primary
+                    )
                 )
             },
             floatingActionButton = {
@@ -89,7 +102,8 @@ class DashboardScreen : Screen {
                         text = { Text("New Beneficiary") },
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary,
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(20.dp),
+                        elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 6.dp)
                     )
                 }
             }
@@ -101,86 +115,18 @@ class DashboardScreen : Screen {
             ) {
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(2),
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     item(span = { GridItemSpan(2) }) {
                         WelcomeHeader(user?.fullName ?: "User")
                     }
 
-                    // View All Buttons
+                    // View All Buttons - Quick Actions
                     item(span = { GridItemSpan(2) }) {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                FilledTonalButton(
-                                    onClick = { navigator.push(BeneficiaryListScreen()) },
-                                    modifier = Modifier.weight(1f),
-                                    contentPadding = PaddingValues(horizontal = 4.dp)
-                                ) {
-                                    Icon(Icons.Default.Face, null, modifier = Modifier.size(16.dp))
-                                    Spacer(Modifier.width(4.dp))
-                                    Text("Beneficiaries", fontSize = 10.sp)
-                                }
-                                OutlinedButton(
-                                    onClick = { navigator.push(EventListScreen()) },
-                                    modifier = Modifier.weight(1f),
-                                    contentPadding = PaddingValues(horizontal = 4.dp)
-                                ) {
-                                    Icon(Icons.Default.DateRange, null, modifier = Modifier.size(16.dp))
-                                    Spacer(Modifier.width(4.dp))
-                                    Text("Events", fontSize = 10.sp)
-                                }
-                            }
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                OutlinedButton(
-                                    onClick = { navigator.push(VisitListScreen()) },
-                                    modifier = Modifier.weight(1f),
-                                    contentPadding = PaddingValues(horizontal = 4.dp)
-                                ) {
-                                    Icon(
-                                        Icons.Default.LocationOn,
-                                        null,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Spacer(Modifier.width(4.dp))
-                                    Text("Visits", fontSize = 10.sp)
-                                }
-                                OutlinedButton(
-                                    onClick = { navigator.push(AidListScreen()) },
-                                    modifier = Modifier.weight(1f),
-                                    contentPadding = PaddingValues(horizontal = 4.dp)
-                                ) {
-                                    Icon(
-                                        Icons.AutoMirrored.Filled.List,
-                                        null,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Spacer(Modifier.width(4.dp))
-                                    Text("Aid", fontSize = 10.sp)
-                                }
-                                OutlinedButton(
-                                    onClick = { navigator.push(ApprovalListScreen()) },
-                                    modifier = Modifier.weight(1f),
-                                    contentPadding = PaddingValues(horizontal = 4.dp)
-                                ) {
-                                    Icon(
-                                        Icons.Default.CheckCircle,
-                                        null,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                    Spacer(Modifier.width(4.dp))
-                                    Text("Approvals", fontSize = 10.sp)
-                                }
-                            }
-                        }
+                        QuickActionsRow(navigator)
                     }
 
                     item(span = { GridItemSpan(2) }) {
@@ -191,7 +137,7 @@ class DashboardScreen : Screen {
                             label = "Approved",
                             value = stats.approvedBeneficiaries.toString(),
                             icon = Icons.Default.CheckCircle,
-                            color = Color(0xFF4CAF50),
+                            color = Color(0xFF386B1D),
                             onClick = {
                                 navigator.push(
                                     BeneficiaryListScreen(
@@ -208,17 +154,17 @@ class DashboardScreen : Screen {
                             label = "Visits",
                             value = stats.totalVisits.toString(),
                             icon = Icons.Default.LocationOn,
-                            color = Color(0xFF2196F3),
+                            color = Color(0xFF2E5B8E),
                             onClick = { navigator.push(VisitListScreen()) }
                         )
                     }
                     item(span = { GridItemSpan(2) }) {
                         WideStatCard(
-                            label = "Monthly Aid Distributions",
+                            label = "Aid Distributed",
                             value = stats.monthlyAidDistributed.toString(),
                             icon = Icons.AutoMirrored.Filled.List,
                             color = MaterialTheme.colorScheme.tertiary,
-                            subtitle = "For ${getCurrentMonthName()}",
+                            subtitle = "Performance for ${getCurrentMonthName()}",
                             onClick = { navigator.push(AidListScreen()) }
                         )
                     }
@@ -229,19 +175,10 @@ class DashboardScreen : Screen {
 
                     item {
                         PendingCard(
-                            label = "Total",
-                            value = stats.totalBeneficiaries.toString(),
-                            icon = Icons.Default.Person,
-                            color = Color(0xFF673AB7),
-                            onClick = { navigator.push(BeneficiaryListScreen()) }
-                        )
-                    }
-                    item {
-                        PendingCard(
                             label = "Onboarding",
                             value = stats.pendingOnboarding.toString(),
                             icon = Icons.Default.Person,
-                            color = Color(0xFFFF9800),
+                            color = Color(0xFFB36200),
                             onClick = {
                                 navigator.push(
                                     BeneficiaryListScreen(
@@ -258,7 +195,7 @@ class DashboardScreen : Screen {
                             label = "Edit Requests",
                             value = stats.pendingEdits.toString(),
                             icon = Icons.Default.Edit,
-                            color = Color(0xFF9C27B0),
+                            color = Color(0xFF7B2E8E),
                             onClick = {
                                 navigator.push(
                                     BeneficiaryListScreen(
@@ -275,7 +212,7 @@ class DashboardScreen : Screen {
                             label = "Misuse Reports",
                             value = stats.misuseReports.toString(),
                             icon = Icons.Default.Warning,
-                            color = Color(0xFFF44336),
+                            color = Color(0xFFB3261E),
                             onClick = {
                                 navigator.push(
                                     BeneficiaryListScreen(
@@ -289,78 +226,10 @@ class DashboardScreen : Screen {
                     }
                     item {
                         PendingCard(
-                            label = "Reapprovals",
-                            value = stats.pendingReapprovals.toString(),
-                            icon = Icons.Default.Refresh,
-                            color = Color(0xFF607D8B),
-                            onClick = {
-                                navigator.push(
-                                    BeneficiaryListScreen(
-                                        BeneficiaryFilters(
-                                            status = BeneficiaryStatus.REAPPROVAL_PENDING
-                                        )
-                                    )
-                                )
-                            }
-                        )
-                    }
-                    item {
-                        PendingCard(
-                            label = "Drafts",
-                            value = stats.draftBeneficiaries.toString(),
-                            icon = Icons.Default.Edit,
-                            color = Color(0xFF9E9E9E),
-                            onClick = {
-                                navigator.push(
-                                    BeneficiaryListScreen(
-                                        BeneficiaryFilters(
-                                            status = BeneficiaryStatus.DRAFT
-                                        )
-                                    )
-                                )
-                            }
-                        )
-                    }
-                    item {
-                        PendingCard(
-                            label = "Rejected",
-                            value = stats.rejectedBeneficiaries.toString(),
-                            icon = Icons.Default.Close,
-                            color = Color(0xFF795548),
-                            onClick = {
-                                navigator.push(
-                                    BeneficiaryListScreen(
-                                        BeneficiaryFilters(
-                                            status = BeneficiaryStatus.REJECTED
-                                        )
-                                    )
-                                )
-                            }
-                        )
-                    }
-                    item {
-                        PendingCard(
-                            label = "Deactivated",
-                            value = stats.deactivatedBeneficiaries.toString(),
-                            icon = Icons.Default.Lock,
-                            color = Color(0xFF37474F),
-                            onClick = {
-                                navigator.push(
-                                    BeneficiaryListScreen(
-                                        BeneficiaryFilters(
-                                            status = BeneficiaryStatus.DEACTIVATED
-                                        )
-                                    )
-                                )
-                            }
-                        )
-                    }
-                    item {
-                        PendingCard(
                             label = "Expired",
                             value = stats.expiredBeneficiaries.toString(),
-                            icon = Icons.Default.Warning,
-                            color = Color(0xFFE91E63),
+                            icon = Icons.Default.Info,
+                            color = Color(0xFF44483D),
                             onClick = {
                                 navigator.push(
                                     BeneficiaryListScreen(
@@ -397,18 +266,51 @@ class DashboardScreen : Screen {
 }
 
 @Composable
+fun QuickActionsRow(navigator: cafe.adriel.voyager.navigator.Navigator) {
+    Row(
+        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        AssistChip(
+            onClick = { navigator.push(BeneficiaryListScreen()) },
+            label = { Text("Beneficiaries") },
+            leadingIcon = { Icon(Icons.Default.Face, null, modifier = Modifier.size(18.dp)) },
+            shape = RoundedCornerShape(12.dp)
+        )
+        AssistChip(
+            onClick = { navigator.push(EventListScreen()) },
+            label = { Text("Events") },
+            leadingIcon = { Icon(Icons.Default.DateRange, null, modifier = Modifier.size(18.dp)) },
+            shape = RoundedCornerShape(12.dp)
+        )
+        AssistChip(
+            onClick = { navigator.push(VisitListScreen()) },
+            label = { Text("Visits") },
+            leadingIcon = { Icon(Icons.Default.LocationOn, null, modifier = Modifier.size(18.dp)) },
+            shape = RoundedCornerShape(12.dp)
+        )
+        AssistChip(
+            onClick = { navigator.push(AidListScreen()) },
+            label = { Text("Aid History") },
+            leadingIcon = { Icon(Icons.AutoMirrored.Filled.List, null, modifier = Modifier.size(18.dp)) },
+            shape = RoundedCornerShape(12.dp)
+        )
+    }
+}
+
+@Composable
 fun WelcomeHeader(name: String) {
     Column(modifier = Modifier.padding(bottom = 8.dp)) {
         Text(
             text = "Welcome back,",
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
             text = name,
-            style = MaterialTheme.typography.headlineLarge,
-            fontWeight = FontWeight.ExtraBold,
-            color = MaterialTheme.colorScheme.onSurface
+            style = MaterialTheme.typography.displaySmall,
+            fontWeight = FontWeight.Black,
+            color = MaterialTheme.colorScheme.primary
         )
     }
 }
@@ -417,10 +319,11 @@ fun WelcomeHeader(name: String) {
 fun SectionLabel(text: String) {
     Text(
         text = text,
-        style = MaterialTheme.typography.labelLarge,
+        style = MaterialTheme.typography.titleSmall,
         fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(top = 8.dp)
+        color = MaterialTheme.colorScheme.secondary,
+        modifier = Modifier.padding(top = 8.dp),
+        letterSpacing = 1.sp
     )
 }
 
@@ -432,27 +335,36 @@ fun MainStatCard(
     color: Color,
     onClick: () -> Unit
 ) {
-    Card(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.1f)),
-        border = BorderStroke(1.dp, color.copy(alpha = 0.2f))
+        shape = RoundedCornerShape(28.dp),
+        color = color.copy(alpha = 0.08f),
+        border = BorderStroke(1.dp, color.copy(alpha = 0.12f))
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Icon(icon, null, modifier = Modifier.size(24.dp), tint = color)
-            Spacer(Modifier.height(12.dp))
+        Column(modifier = Modifier.padding(20.dp)) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(color.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, null, modifier = Modifier.size(20.dp), tint = color)
+            }
+            Spacer(Modifier.height(16.dp))
             Text(
                 value,
-                style = MaterialTheme.typography.headlineLarge,
+                style = MaterialTheme.typography.displaySmall,
                 fontWeight = FontWeight.Black,
                 color = color
             )
             Text(
                 label,
-                style = MaterialTheme.typography.labelMedium,
-                color = color.copy(alpha = 0.8f)
+                style = MaterialTheme.typography.labelLarge,
+                color = color.copy(alpha = 0.7f),
+                fontWeight = FontWeight.Bold
             )
         }
     }
@@ -467,14 +379,14 @@ fun WideStatCard(
     subtitle: String,
     onClick: () -> Unit
 ) {
-    Card(
+    Surface(
         modifier = Modifier.fillMaxWidth().clickable { onClick() },
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.1f)),
-        border = BorderStroke(1.dp, color.copy(alpha = 0.2f))
+        shape = RoundedCornerShape(28.dp),
+        color = color.copy(alpha = 0.08f),
+        border = BorderStroke(1.dp, color.copy(alpha = 0.12f))
     ) {
         Row(
-            modifier = Modifier.padding(20.dp),
+            modifier = Modifier.padding(24.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
@@ -489,15 +401,23 @@ fun WideStatCard(
                     style = MaterialTheme.typography.labelSmall,
                     color = color.copy(alpha = 0.6f)
                 )
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(8.dp))
                 Text(
                     value,
-                    style = MaterialTheme.typography.displaySmall,
+                    style = MaterialTheme.typography.displayMedium,
                     fontWeight = FontWeight.Black,
                     color = color
                 )
             }
-            Icon(icon, null, modifier = Modifier.size(48.dp), tint = color.copy(alpha = 0.3f))
+            Box(
+                modifier = Modifier
+                    .size(64.dp)
+                    .clip(CircleShape)
+                    .background(color.copy(alpha = 0.1f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, null, modifier = Modifier.size(32.dp), tint = color.copy(alpha = 0.4f))
+            }
         }
     }
 }
@@ -510,40 +430,38 @@ fun PendingCard(
     color: Color,
     onClick: () -> Unit
 ) {
-    OutlinedCard(
+    Surface(
         modifier = Modifier.fillMaxWidth().clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(20.dp),
+        color = if (value != "0") color.copy(alpha = 0.05f) else MaterialTheme.colorScheme.surface,
         border = BorderStroke(
             1.dp,
-            if (value != "0") color.copy(alpha = 0.5f) else MaterialTheme.colorScheme.outlineVariant
-        ),
-        colors = CardDefaults.outlinedCardColors(
-            containerColor = if (value != "0") color.copy(alpha = 0.05f) else Color.Transparent
+            if (value != "0") color.copy(alpha = 0.2f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
         )
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Box(
                 modifier = Modifier
-                    .size(32.dp)
-                    .clip(CircleShape)
-                    .background(if (value != "0") color.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant),
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(if (value != "0") color.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     icon,
                     null,
-                    modifier = Modifier.size(16.dp),
+                    modifier = Modifier.size(18.dp),
                     tint = if (value != "0") color else MaterialTheme.colorScheme.outline
                 )
             }
             Column {
                 Text(
                     value,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = if (value != "0") color else MaterialTheme.colorScheme.onSurface
                 )
@@ -551,7 +469,8 @@ fun PendingCard(
                     label,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 10.sp
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium
                 )
             }
         }
@@ -577,7 +496,7 @@ internal fun ProfileDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        shape = RoundedCornerShape(28.dp),
+        shape = RoundedCornerShape(32.dp),
         title = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -585,19 +504,19 @@ internal fun ProfileDialog(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(64.dp)
+                        .size(80.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary),
+                        .background(MaterialTheme.colorScheme.primaryContainer),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = (user?.fullName?.take(1) ?: "U").uppercase(),
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.onPrimary,
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
                         fontWeight = FontWeight.Bold
                     )
                 }
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = "My Profile",
                     style = MaterialTheme.typography.headlineSmall,
@@ -643,10 +562,10 @@ internal fun ProfileDialog(
                                 isEditing = true
                             }
                         },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Icon(if (isEditing) Icons.Default.Check else Icons.Default.Edit, null)
+                        Icon(if (isEditing) Icons.Default.Check else Icons.Default.Edit, null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(if (isEditing) "Save Changes" else "Edit Profile")
                     }
@@ -674,16 +593,24 @@ internal fun ProfileDialog(
 @Composable
 private fun ProfileInfoRow(icon: ImageVector, label: String, value: String) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Icon(
-            icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(20.dp)
-        )
+        Surface(
+            modifier = Modifier.size(40.dp),
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
         Column {
             Text(
                 text = label,
@@ -693,7 +620,7 @@ private fun ProfileInfoRow(icon: ImageVector, label: String, value: String) {
             Text(
                 text = value,
                 style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.SemiBold
             )
         }
     }
