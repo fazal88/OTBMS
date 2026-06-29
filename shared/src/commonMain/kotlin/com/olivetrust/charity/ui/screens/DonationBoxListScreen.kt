@@ -31,7 +31,9 @@ import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.olivetrust.charity.domain.model.*
+import com.olivetrust.charity.domain.util.LocationUtil
 import com.olivetrust.charity.openMaps
+import com.olivetrust.charity.Location
 import kotlinx.datetime.*
 
 data class DonationBoxListScreen(private val initialFilters: DonationBoxFilters = DonationBoxFilters()) : Screen {
@@ -44,6 +46,7 @@ data class DonationBoxListScreen(private val initialFilters: DonationBoxFilters 
         val filters by viewModel.filters.collectAsState()
         val error by viewModel.error.collectAsState()
         val user by viewModel.currentUser.collectAsState()
+        val currentLocation by viewModel.currentLocation.collectAsState()
         val navigator = LocalNavigator.currentOrThrow
 
         LaunchedEffect(Unit) {
@@ -64,6 +67,7 @@ data class DonationBoxListScreen(private val initialFilters: DonationBoxFilters 
             onBack = { navigator.pop() },
             error = error,
             user = user,
+            currentLocation = currentLocation,
             onBoxClick = { id -> navigator.push(DonationBoxDetailScreen(id)) },
             onInstallClick = { navigator.push(InstallDonationBoxScreen()) },
             onMapClick = { navigator.push(DonationBoxMapScreen(filters)) }
@@ -85,6 +89,7 @@ fun DonationBoxListContent(
     onBack: () -> Unit,
     error: String?,
     user: User?,
+    currentLocation: Location?,
     onBoxClick: (String) -> Unit,
     onInstallClick: () -> Unit,
     onMapClick: () -> Unit
@@ -172,7 +177,13 @@ fun DonationBoxListContent(
                             FilterChip(
                                 selected = true,
                                 onClick = { onFiltersChange(filters.copy(status = null)) },
-                                label = { Text(filters.status.name.replace("_", " ").lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }) },
+                                label = { 
+                                    Text(when (filters.status) {
+                                        DonationBoxStatus.APPROVED_ACTIVE -> "Active"
+                                        DonationBoxStatus.PENDING_APPROVAL -> "Pending"
+                                        else -> filters.status.name.replace("_", " ").lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+                                    })
+                                },
                                 trailingIcon = { Icon(Icons.Default.Close, null, Modifier.size(14.dp)) }
                             )
                         }
@@ -269,6 +280,7 @@ fun DonationBoxListContent(
                                             BoxSortOrder.LAST_COLLECTION_DATE_DESC -> "Last Collection (Newest)"
                                             BoxSortOrder.LAST_UPDATED_ASC -> "Last Updated (Oldest)"
                                             BoxSortOrder.LAST_UPDATED_DESC -> "Last Updated (Newest)"
+                                            BoxSortOrder.DISTANCE_ASC -> "Distance (Nearest)"
                                         })
                                     },
                                     onClick = {
@@ -308,6 +320,7 @@ fun DonationBoxListContent(
                 items(boxes) { box ->
                     DonationBoxCard(
                         box = box,
+                        currentLocation = currentLocation,
                         onClick = { onBoxClick(box.id) },
                         onCallClick = {
                             if (box.contactNumber.isNotEmpty()) {
@@ -338,6 +351,7 @@ fun DonationBoxListContent(
 @Composable
 fun DonationBoxCard(
     box: DonationBox,
+    currentLocation: Location?,
     onClick: () -> Unit,
     onCallClick: () -> Unit,
     onDirectionsClick: () -> Unit
@@ -357,11 +371,26 @@ fun DonationBoxCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 DonationBoxStatusBadge(box.status)
-                Text(
-                    text = box.id,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (currentLocation != null) {
+                        val distance = LocationUtil.calculateDistance(
+                            currentLocation.latitude, currentLocation.longitude,
+                            box.latitude, box.longitude
+                        )
+                        Icon(Icons.Default.LocationOn, null, modifier = Modifier.size(10.dp), tint = MaterialTheme.colorScheme.primary)
+                        Text(
+                            text = LocationUtil.formatDistance(distance),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(end = 8.dp)
+                        )
+                    }
+                    Text(
+                        text = box.id,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                }
             }
 
             Spacer(Modifier.height(12.dp))
@@ -413,22 +442,22 @@ fun DonationBoxCard(
                     onClick = onCallClick,
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(0.dp)
+                    contentPadding = PaddingValues(horizontal = 4.dp)
                 ) {
                     Icon(Icons.Default.Call, null, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(4.dp))
-                    Text("Call POC", fontSize = 12.sp)
+                    Text("Call", fontSize = 12.sp, maxLines = 1)
                 }
                 
                 Button(
                     onClick = onDirectionsClick,
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(0.dp)
+                    contentPadding = PaddingValues(horizontal = 4.dp)
                 ) {
                     Icon(Icons.Default.LocationOn, null, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(4.dp))
-                    Text("Directions", fontSize = 12.sp)
+                    Text("Directions", fontSize = 12.sp, maxLines = 1)
                 }
             }
         }
@@ -475,7 +504,11 @@ fun DonationBoxStatusBadge(status: DonationBoxStatus) {
         ) {
             Icon(icon, null, modifier = Modifier.size(12.dp), tint = color)
             Text(
-                text = status.name.replace("_", " ").lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() },
+                text = when (status) {
+                    DonationBoxStatus.APPROVED_ACTIVE -> "Active"
+                    DonationBoxStatus.PENDING_APPROVAL -> "Pending"
+                    else -> status.name.replace("_", " ").lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+                },
                 style = MaterialTheme.typography.labelSmall,
                 color = color,
                 fontWeight = FontWeight.Bold,
@@ -534,7 +567,13 @@ fun DonationBoxFilterBottomSheet(
                     FilterChip(
                         selected = tempFilters.status == status,
                         onClick = { tempFilters = tempFilters.copy(status = if (tempFilters.status == status) null else status) },
-                        label = { Text(status.name.replace("_", " ").lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }) }
+                        label = { 
+                            Text(when (status) {
+                                DonationBoxStatus.APPROVED_ACTIVE -> "Active"
+                                DonationBoxStatus.PENDING_APPROVAL -> "Pending"
+                                else -> status.name.replace("_", " ").lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+                            })
+                        }
                     )
                 }
             }

@@ -115,41 +115,51 @@ fun DonationBoxDetailContent(
         bottomBar = {
             if (box != null && user != null) {
                 Surface(tonalElevation = 8.dp, shadowElevation = 8.dp) {
-                    Row(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(16.dp)
                             .navigationBarsPadding(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         if (user.role == UserRole.COLLECTOR && box.status == DonationBoxStatus.APPROVED_ACTIVE) {
                             Button(
-                                onClick = onReportIssue,
-                                modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                            ) {
-                                Text("Report Issue")
-                            }
-                            Button(
                                 onClick = onRecordCollection,
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.fillMaxWidth()
                             ) {
+                                Icon(Icons.Default.Add, null)
+                                Spacer(Modifier.width(8.dp))
                                 Text("Record Collection")
                             }
-                        } else if (user.role == UserRole.APPROVER && box.status == DonationBoxStatus.PENDING_APPROVAL) {
-                            OutlinedButton(
-                                onClick = { showRejectDialog = true },
-                                modifier = Modifier.weight(1f)
+                            Button(
+                                onClick = onReportIssue,
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                             ) {
-                                Text("Reject")
+                                Icon(Icons.Default.Warning, null)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Report Issue")
                             }
+                        } else if (user.role == UserRole.APPROVER && box.status == DonationBoxStatus.PENDING_APPROVAL) {
                             Button(
                                 onClick = onApprove,
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier.fillMaxWidth(),
                                 enabled = !isProcessing
                             ) {
                                 if (isProcessing) CircularProgressIndicator(Modifier.size(20.dp), color = Color.White)
-                                else Text("Approve")
+                                else {
+                                    Icon(Icons.Default.Check, null)
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("Approve")
+                                }
+                            }
+                            OutlinedButton(
+                                onClick = { showRejectDialog = true },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(Icons.Default.Close, null)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Reject")
                             }
                         }
                     }
@@ -169,7 +179,7 @@ fun DonationBoxDetailContent(
                         Text("Info", modifier = Modifier.padding(12.dp))
                     }
                     Tab(selected = selectedTab == 1, onClick = { selectedTab = 1 }) {
-                        Text("Collections", modifier = Modifier.padding(12.dp))
+                        Text("History", modifier = Modifier.padding(12.dp))
                     }
                     Tab(selected = selectedTab == 2, onClick = { selectedTab = 2 }) {
                         Text("Issues", modifier = Modifier.padding(12.dp))
@@ -286,7 +296,11 @@ fun BoxInfoTab(box: DonationBox, uriHandler: UriHandler) {
                 DetailItem("Area Code", box.areaCode)
                 DetailItem("Installation Date", formatDate(box.installationDate))
                 DetailItem("Installed By", box.installedBy)
-                DetailItem("Status", box.status.name.replace("_", " "))
+                DetailItem("Status", when(box.status) {
+                    DonationBoxStatus.APPROVED_ACTIVE -> "Active"
+                    DonationBoxStatus.PENDING_APPROVAL -> "Pending"
+                    else -> box.status.name.replace("_", " ")
+                })
             }
         }
 
@@ -297,10 +311,10 @@ fun BoxInfoTab(box: DonationBox, uriHandler: UriHandler) {
                 DetailItem("Person of Contact", box.personOfContact)
                 DetailItem("Contact Number", box.contactNumber)
                 
-                Row(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(Modifier.padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
                         onClick = { uriHandler.openUri("tel:${box.contactNumber}") },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         Icon(Icons.Default.Call, null)
                         Spacer(Modifier.width(8.dp))
@@ -308,7 +322,7 @@ fun BoxInfoTab(box: DonationBox, uriHandler: UriHandler) {
                     }
                     Button(
                         onClick = { openMaps(box.latitude, box.longitude, box.address) },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         Icon(Icons.Default.LocationOn, null)
                         Spacer(Modifier.width(8.dp))

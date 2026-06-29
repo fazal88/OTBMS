@@ -674,7 +674,10 @@ internal fun StatusBadge(status: BeneficiaryStatus) {
         ) {
             Icon(icon, contentDescription = null, modifier = Modifier.size(14.dp), tint = color)
             Text(
-                text = status.name.replace("_", " "),
+                text = when (status) {
+                    BeneficiaryStatus.PENDING_APPROVAL -> "PENDING"
+                    else -> status.name.replace("_", " ")
+                },
                 style = MaterialTheme.typography.labelMedium,
                 color = color,
                 fontWeight = FontWeight.Bold

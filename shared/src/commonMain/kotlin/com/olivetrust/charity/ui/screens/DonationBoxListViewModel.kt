@@ -6,15 +6,20 @@ import com.olivetrust.charity.domain.model.DonationBox
 import com.olivetrust.charity.domain.model.DonationBoxStatus
 import com.olivetrust.charity.domain.repository.AuthRepository
 import com.olivetrust.charity.domain.repository.DonationBoxRepository
+import com.olivetrust.charity.domain.util.LocationUtil
+import com.olivetrust.charity.Location
+import com.olivetrust.charity.LocationService
 import com.olivetrust.charity.util.CommonSerializable
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 import kotlinx.datetime.*
 
 enum class BoxSortOrder : CommonSerializable {
     ID_ASC, ID_DESC,
     INSTALLATION_DATE_ASC, INSTALLATION_DATE_DESC,
     LAST_COLLECTION_DATE_ASC, LAST_COLLECTION_DATE_DESC,
-    LAST_UPDATED_ASC, LAST_UPDATED_DESC
+    LAST_UPDATED_ASC, LAST_UPDATED_DESC,
+    DISTANCE_ASC
 }
 
 data class DonationBoxFilters(
@@ -29,7 +34,8 @@ data class DonationBoxFilters(
 
 class DonationBoxListViewModel(
     private val boxRepository: DonationBoxRepository,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val locationService: LocationService
 ) : ScreenModel {
 
     val currentUser = authRepository.currentUser.stateIn(
@@ -37,6 +43,9 @@ class DonationBoxListViewModel(
         SharingStarted.WhileSubscribed(5000),
         null
     )
+
+    private val _currentLocation = MutableStateFlow<Location?>(null)
+    val currentLocation = _currentLocation.asStateFlow()
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery = _searchQuery.asStateFlow()
@@ -50,6 +59,16 @@ class DonationBoxListViewModel(
     private val _error = MutableStateFlow<String?>(null)
     val error = _error.asStateFlow()
 
+    init {
+        loadCurrentLocation()
+    }
+
+    private fun loadCurrentLocation() {
+        screenModelScope.launch {
+            _currentLocation.value = locationService.getCurrentLocation()
+        }
+    }
+
     private val allBoxesFlow = boxRepository.getDonationBoxes()
         .onEach { _error.value = null }
         .catch { _error.value = "Failed to load donation boxes: ${it.message}" }
@@ -59,15 +78,16 @@ class DonationBoxListViewModel(
         allBoxesFlow,
         _searchQuery,
         _sortOrder,
-        _filters
-    ) { allBoxes, query, sort, filter ->
+        _filters,
+        _currentLocation
+    ) { allBoxes, query, sort, filter, location ->
         allBoxes
             .asSequence()
             .filter { b ->
                 applySearch(b, query) && applyFilters(b, filter)
             }
             .sortedWith { a, b ->
-                applySort(a, b, sort)
+                applySort(a, b, sort, location)
             }
             .toList()
     }.stateIn(screenModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -98,7 +118,7 @@ class DonationBoxListViewModel(
         return true
     }
 
-    private fun applySort(a: DonationBox, b: DonationBox, sort: BoxSortOrder): Int {
+    private fun applySort(a: DonationBox, b: DonationBox, sort: BoxSortOrder, location: Location?): Int {
         return when (sort) {
             BoxSortOrder.ID_ASC -> a.id.compareTo(b.id)
             BoxSortOrder.ID_DESC -> b.id.compareTo(a.id)
@@ -108,6 +128,14 @@ class DonationBoxListViewModel(
             BoxSortOrder.LAST_COLLECTION_DATE_DESC -> (b.lastCollectionDate ?: 0).compareTo(a.lastCollectionDate ?: 0)
             BoxSortOrder.LAST_UPDATED_ASC -> a.lastUpdated.compareTo(b.lastUpdated)
             BoxSortOrder.LAST_UPDATED_DESC -> b.lastUpdated.compareTo(a.lastUpdated)
+            BoxSortOrder.DISTANCE_ASC -> {
+                if (location == null) 0
+                else {
+                    val distA = LocationUtil.calculateDistance(location.latitude, location.longitude, a.latitude, a.longitude)
+                    val distB = LocationUtil.calculateDistance(location.latitude, location.longitude, b.latitude, b.longitude)
+                    distA.compareTo(distB)
+                }
+            }
         }
     }
 

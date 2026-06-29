@@ -202,7 +202,12 @@ fun BeneficiaryListContent(
                             FilterChip(
                                 selected = true,
                                 onClick = { onFiltersChange(filters.copy(status = null)) },
-                                label = { Text(filters.status.name.lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }) },
+                                label = { 
+                                    Text(when (filters.status) {
+                                        BeneficiaryStatus.PENDING_APPROVAL -> "Pending"
+                                        else -> filters.status.name.lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+                                    })
+                                },
                                 trailingIcon = { Icon(Icons.Default.Close, null, Modifier.size(14.dp)) }
                             )
                         }
@@ -615,7 +620,10 @@ fun ListStatusBadge(status: BeneficiaryStatus) {
         ) {
             Icon(icon, null, modifier = Modifier.size(12.dp), tint = color)
             Text(
-                text = status.name.replace("_", " ").lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() },
+                text = when (status) {
+                    BeneficiaryStatus.PENDING_APPROVAL -> "Pending"
+                    else -> status.name.replace("_", " ").lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+                },
                 style = MaterialTheme.typography.labelSmall,
                 color = color,
                 fontWeight = FontWeight.Bold,
@@ -674,7 +682,12 @@ fun FilterBottomSheet(
                     FilterChip(
                         selected = tempFilters.status == status,
                         onClick = { tempFilters = tempFilters.copy(status = if (tempFilters.status == status) null else status) },
-                        label = { Text(status.name.replace("_", " ").lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }) }
+                        label = { 
+                            Text(when (status) {
+                                BeneficiaryStatus.PENDING_APPROVAL -> "Pending"
+                                else -> status.name.replace("_", " ").lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+                            })
+                        }
                     )
                 }
             }
