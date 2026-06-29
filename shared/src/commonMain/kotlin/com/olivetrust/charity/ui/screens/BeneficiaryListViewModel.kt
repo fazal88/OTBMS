@@ -6,10 +6,11 @@ import com.olivetrust.charity.domain.model.Beneficiary
 import com.olivetrust.charity.domain.model.BeneficiaryStatus
 import com.olivetrust.charity.domain.repository.AuthRepository
 import com.olivetrust.charity.domain.repository.BeneficiaryRepository
+import com.olivetrust.charity.util.CommonSerializable
 import kotlinx.coroutines.flow.*
 import kotlinx.datetime.*
 
-enum class SortOrder {
+enum class SortOrder : CommonSerializable {
     NAME_ASC, NAME_DESC, 
     DATE_ADDED_ASC, DATE_ADDED_DESC, 
     DATE_UPDATED_ASC, DATE_UPDATED_DESC
@@ -27,7 +28,7 @@ data class BeneficiaryFilters(
     val maxAmount: Double? = null,
     val month: Int? = null,
     val year: Int? = null
-)
+) : CommonSerializable
 
 class BeneficiaryListViewModel(
     private val beneficiaryRepository: BeneficiaryRepository,

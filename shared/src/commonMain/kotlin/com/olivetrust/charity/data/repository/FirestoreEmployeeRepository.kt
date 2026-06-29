@@ -49,7 +49,17 @@ class FirestoreEmployeeRepository(
         return try {
             val doc = collection.document(userId).get()
             val user = doc.data(User.serializer())
-            val updated = user.copy(status = status)
+            
+            val updated = if (status == UserStatus.DISABLED) {
+                user.copy(
+                    status = status,
+                    deviceId = null,
+                    deviceApproved = false
+                )
+            } else {
+                user.copy(status = status)
+            }
+
             collection.document(userId).set(User.serializer(), updated)
             val now = Clock.System.now().toEpochMilliseconds()
             auditRepository.logAction(AuditLog(

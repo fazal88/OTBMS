@@ -1,6 +1,7 @@
 package com.olivetrust.charity.domain.model
 
 import kotlinx.serialization.Serializable
+import com.olivetrust.charity.util.CommonSerializable
 
 @Serializable
 data class AuditLog(
@@ -16,4 +17,4 @@ data class AuditLog(
     val longitude: Double? = null,
     val oldValue: String? = null,
     val newValue: String? = null
-)
+) : CommonSerializable

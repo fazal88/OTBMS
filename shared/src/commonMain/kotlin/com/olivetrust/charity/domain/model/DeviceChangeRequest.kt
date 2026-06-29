@@ -1,9 +1,10 @@
 package com.olivetrust.charity.domain.model
 
 import kotlinx.serialization.Serializable
+import com.olivetrust.charity.util.CommonSerializable
 
 @Serializable
-enum class RequestStatus {
+enum class RequestStatus : CommonSerializable {
     PENDING,
     APPROVED,
     REJECTED
@@ -20,4 +21,4 @@ data class DeviceChangeRequest(
     val status: RequestStatus = RequestStatus.PENDING,
     val approvedBy: String? = null,
     val approvedAt: Long? = null
-)
+) : CommonSerializable

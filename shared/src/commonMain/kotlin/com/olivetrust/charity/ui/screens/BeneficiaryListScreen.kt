@@ -38,7 +38,7 @@ import com.olivetrust.charity.domain.model.BeneficiaryStatus
 import com.olivetrust.charity.openMaps
 import com.olivetrust.charity.ui.previews.PreviewMocks
 
-class BeneficiaryListScreen(private val initialFilters: BeneficiaryFilters = BeneficiaryFilters()) : Screen {
+data class BeneficiaryListScreen(private val initialFilters: BeneficiaryFilters = BeneficiaryFilters()) : Screen {
     @Composable
     override fun Content() {
         val viewModel = koinScreenModel<BeneficiaryListViewModel>()

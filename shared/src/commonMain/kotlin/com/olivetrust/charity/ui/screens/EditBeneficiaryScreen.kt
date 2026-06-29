@@ -31,7 +31,7 @@ import com.olivetrust.charity.ui.previews.PreviewMocks
 import kotlinx.datetime.*
 import kotlin.time.Clock
 
-class EditBeneficiaryScreen(private val initialBeneficiary: Beneficiary) : Screen {
+data class EditBeneficiaryScreen(private val initialBeneficiary: Beneficiary) : Screen {
     @Composable
     override fun Content() {
         val viewModel = koinScreenModel<OnboardingViewModel>()

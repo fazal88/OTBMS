@@ -1,9 +1,10 @@
 package com.olivetrust.charity.domain.model
 
 import kotlinx.serialization.Serializable
+import com.olivetrust.charity.util.CommonSerializable
 
 @Serializable
-enum class BeneficiaryStatus {
+enum class BeneficiaryStatus : CommonSerializable {
     DRAFT,
     PENDING_APPROVAL,
     APPROVED,
@@ -67,7 +68,7 @@ data class Beneficiary(
 
     // Edit Request Details
     val editRequestNotes: String? = null
-)
+) : CommonSerializable
 
 @Serializable
 data class FamilyMember(
@@ -78,4 +79,4 @@ data class FamilyMember(
     val occupation: String = "",
     val education: String = "",
     val diseaseInability: String? = null
-)
+) : CommonSerializable

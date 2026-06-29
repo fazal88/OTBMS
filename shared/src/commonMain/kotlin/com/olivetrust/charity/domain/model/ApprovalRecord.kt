@@ -1,6 +1,7 @@
 package com.olivetrust.charity.domain.model
 
 import kotlinx.serialization.Serializable
+import com.olivetrust.charity.util.CommonSerializable
 
 @Serializable
 data class ApprovalRecord(
@@ -19,4 +20,4 @@ data class ApprovalRecord(
     val assignedMonitorName: String = "",
     val expiryMonth: Int? = null,
     val expiryYear: Int? = null
-)
+) : CommonSerializable

@@ -1,9 +1,10 @@
 package com.olivetrust.charity.domain.model
 
 import kotlinx.serialization.Serializable
+import com.olivetrust.charity.util.CommonSerializable
 
 @Serializable
-enum class DeliveryStatus {
+enum class DeliveryStatus : CommonSerializable {
     DELIVERED,
     PARTIALLY_DELIVERED,
     FAILED
@@ -29,4 +30,4 @@ data class AidDistribution(
     val evidencePhotoUrl: String? = null,
     val signatureUrl: String? = null,
     val eventId: String? = null
-)
+) : CommonSerializable

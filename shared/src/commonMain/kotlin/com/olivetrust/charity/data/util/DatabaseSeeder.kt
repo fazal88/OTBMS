@@ -3,6 +3,7 @@ package com.olivetrust.charity.data.util
 import com.olivetrust.charity.domain.model.*
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.firestore
+import kotlinx.datetime.*
 import kotlin.random.Random
 import kotlin.time.Clock
 
@@ -13,11 +14,12 @@ object DatabaseSeeder {
         try {
             println("DATABASE_SEEDER: Starting seeding...")
             val now = Clock.System.now().toEpochMilliseconds()
-//            seedUsers(now)
+            seedUsers(now)
             val beneficiaries = seedBeneficiaries(now)
             seedVisits(beneficiaries, now)
             seedAidDistributions(beneficiaries, now)
             seedApprovals(beneficiaries, now)
+            seedDonationBoxes(now)
             println("DATABASE_SEEDER: Seeding completed successfully!")
         } catch (e: Exception) {
             println("DATABASE_SEEDER: Error during seeding: ${e.message}")
@@ -35,7 +37,7 @@ object DatabaseSeeder {
                 employeeCode = "ADM001",
                 username = "admin",
                 fullName = "System Administrator",
-                mobileNumber = "+1234567890",
+                mobileNumber = "+917303991959",
                 passwordHash = defaultPasswordHash,
                 role = UserRole.SUPER_ADMIN,
                 status = UserStatus.ACTIVE,
@@ -45,8 +47,19 @@ object DatabaseSeeder {
                 userId = "employee_01",
                 employeeCode = "EMP001",
                 username = "emp1",
-                fullName = "John Staff",
-                mobileNumber = "+1234567891",
+                fullName = "Nomaan Janaab",
+                mobileNumber = "+918951951595",
+                passwordHash = defaultPasswordHash,
+                role = UserRole.EMPLOYEE,
+                status = UserStatus.ACTIVE,
+                createdAt = now
+            ),
+            User(
+                userId = "employee_02",
+                employeeCode = "EMP002",
+                username = "emp2",
+                fullName = "Fazal Shaikh",
+                mobileNumber = "7303991959",
                 passwordHash = defaultPasswordHash,
                 role = UserRole.EMPLOYEE,
                 status = UserStatus.ACTIVE,
@@ -56,10 +69,21 @@ object DatabaseSeeder {
                 userId = "approver_01",
                 employeeCode = "APP001",
                 username = "approver",
-                fullName = "Alice Approver",
-                mobileNumber = "+1234567892",
+                fullName = "Ikram Sayyed",
+                mobileNumber = "+918591791959",
                 passwordHash = defaultPasswordHash,
                 role = UserRole.APPROVER,
+                status = UserStatus.ACTIVE,
+                createdAt = now
+            ),
+            User(
+                userId = "collector_01",
+                employeeCode = "COL001",
+                username = "collector1",
+                fullName = "Aftab Khan",
+                mobileNumber = "+9807654321",
+                passwordHash = defaultPasswordHash,
+                role = UserRole.COLLECTOR,
                 status = UserStatus.ACTIVE,
                 createdAt = now
             )
@@ -84,6 +108,7 @@ object DatabaseSeeder {
         val monthlyRations = listOf("Flour 10kg, Sugar 2kg", "Oil 5L, Pulse 2kg", "Full Package Type A", "Emergency Ration")
         val relationOptions = listOf("Wife", "Son", "Daughter", "Father", "Mother", "Brother", "Sister", "Husband", "Other")
         val educations = listOf("None", "Primary", "Metric", "Intermediate")
+        val dummyMobile = listOf("7303991959", "7977436375", "8591951595", "8591351595", "8591791959")
 
         val random = Random(42)
         for (i in 1..150) {
@@ -94,17 +119,19 @@ object DatabaseSeeder {
             val isRented = random.nextBoolean()
             val noDependents = random.nextInt(2, 5)
 
+            val addedDateTime = kotlinx.datetime.Instant.fromEpochMilliseconds(addedDate).toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
+
             val fMembers = arrayListOf<FamilyMember>()
-            for(i in 1..noDependents){
+            for(j in 1..noDependents){
 
                 val family = FamilyMember(
                     relation = "${relationOptions.random(random)}",
                     name = "${firstNames.random(random)}",
-                    age = random.nextInt(25, 75),
+                    age = random.nextInt(1, 75),
                     gender = if (random.nextBoolean()) "Male" else "Female",
-                    occupation = occupations.random(random),
+                    occupation = if (random.nextBoolean()) occupations.random(random) else "Student",
                     education = educations.random(random),
-                    diseaseInability = "NA",
+                    diseaseInability = if (random.nextFloat() > 0.8f) "Chronic Condition" else "NA",
                 )
 
                 fMembers.add(family)
@@ -116,7 +143,7 @@ object DatabaseSeeder {
                 headGender = if (random.nextBoolean()) "Male" else "Female",
                 headOccupation = occupations.random(random),
                 headEducation = educations.random(random),
-                phoneNumber = "79${random.nextInt(10000000, 99999999)}",
+                phoneNumber = dummyMobile.random(random),
                 address = "House $i, Street ${random.nextInt(1, 50)}, Block ${('A'..'E').random(random)}, ${areas.random(random)}",
                 areaCode = areas.random(random),
                 natureOfAddress = if (isRented) "Rented" else "Owned",
@@ -124,9 +151,13 @@ object DatabaseSeeder {
                 reasonForAid = reasons.random(random),
                 numberOfDependants = noDependents,
                 onboardingDate = addedDate,
+                startMonth = addedDateTime.month.number,
+                startYear = addedDateTime.year,
                 lastUpdated = addedDate + random.nextLong(0, 3600000),
                 onboardedBy = "employee_01",
                 status = status,
+                latitude = 19.1 + (random.nextDouble() * 0.1),
+                longitude = 72.8 + (random.nextDouble() * 0.1),
                 natureOfAid = if (status == BeneficiaryStatus.APPROVED) natureOfAidOptions.random(random) else null,
                 packetCount = if (status == BeneficiaryStatus.APPROVED) random.nextInt(1, 5) else null,
                 monthlyRation = if (status == BeneficiaryStatus.APPROVED) monthlyRations.random(random) else null,
@@ -230,6 +261,87 @@ object DatabaseSeeder {
             )
             println("DATABASE_SEEDER: Setting approval record ${record.approvalId}...")
             approvalsCollection.document(record.approvalId).set(ApprovalRecord.serializer(), record)
+        }
+    }
+
+    private suspend fun seedDonationBoxes(now: Long) {
+        val boxCollection = firestore.collection("donation_boxes")
+        val collectionsCollection = firestore.collection("collections")
+        val issuesCollection = firestore.collection("donation_box_issues")
+        val random = Random(42)
+
+        val areas = listOf("Gate no 5", "Azmi Nagar", "Ambojwadi", "Malad West", "Kandivali East")
+        val statusOptions = DonationBoxStatus.entries
+        val dummyMobile = listOf("7303991959", "7977436375", "8591951595", "8591351595", "8591791959")
+
+        for (i in 1..20) {
+            val boxId = "DBX_${i.toString().padStart(3, '0')}"
+            val status = statusOptions.random(random)
+            val installationDate = now - (random.nextLong(10, 100) * 24 * 60 * 60 * 1000)
+            
+            val box = DonationBox(
+                id = boxId,
+                address = "Shop $i, Sector ${random.nextInt(1, 10)}, ${areas.random(random)}",
+                personOfContact = "POC $i",
+                contactNumber = dummyMobile.random(random),
+                latitude = 19.1 + (random.nextDouble() * 0.1),
+                longitude = 72.8 + (random.nextDouble() * 0.1),
+                areaCode = areas.random(random),
+                installationDate = installationDate,
+                installedBy = "collector_01",
+                status = status,
+                lastUpdated = installationDate + 3600000
+            )
+
+            // Seed collections for approved boxes
+            if (status == DonationBoxStatus.APPROVED_ACTIVE) {
+                val collCount = random.nextInt(1, 5)
+                var lastDate = installationDate
+                var lastAmount = 0.0
+                for (j in 1..collCount) {
+                    val collDate = lastDate + (random.nextLong(7, 30) * 24 * 60 * 60 * 1000)
+                    if (collDate > now) break
+                    
+                    val amount = random.nextInt(50, 500) * 10.0
+                    val coll = DonationCollection(
+                        collectionId = "COLL_${boxId}_$j",
+                        donationBoxId = boxId,
+                        timestamp = collDate,
+                        amountCollected = amount,
+                        latitude = box.latitude,
+                        longitude = box.longitude,
+                        collectorId = "collector_01",
+                        collectorName = "Charlie Collector"
+                    )
+                    collectionsCollection.document(coll.collectionId).set(DonationCollection.serializer(), coll)
+                    lastDate = collDate
+                    lastAmount = amount
+                }
+                
+                val updatedBox = box.copy(
+                    lastCollectionDate = if (lastDate > installationDate) lastDate else null,
+                    lastCollectedAmount = if (lastAmount > 0) lastAmount else null
+                )
+                boxCollection.document(boxId).set(DonationBox.serializer(), updatedBox)
+            } else {
+                boxCollection.document(boxId).set(DonationBox.serializer(), box)
+            }
+
+            // Seed some issues
+            if (random.nextFloat() > 0.8f) {
+                val issue = DonationBoxIssue(
+                    issueId = "ISSUE_${boxId}_1",
+                    donationBoxId = boxId,
+                    reportType = IssueType.entries.random(random),
+                    description = "Issue reported for box $boxId",
+                    latitude = box.latitude,
+                    longitude = box.longitude,
+                    timestamp = now - 86400000,
+                    collectorId = "collector_01",
+                    status = IssueStatus.PENDING_REVIEW
+                )
+                issuesCollection.document(issue.issueId).set(DonationBoxIssue.serializer(), issue)
+            }
         }
     }
 }

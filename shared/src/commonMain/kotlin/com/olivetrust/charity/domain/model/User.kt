@@ -1,17 +1,19 @@
 package com.olivetrust.charity.domain.model
 
 import kotlinx.serialization.Serializable
+import com.olivetrust.charity.util.CommonSerializable
 
 @Serializable
-enum class UserRole {
+enum class UserRole : CommonSerializable {
     SUPER_ADMIN,
     APPROVER,
     EMPLOYEE,
-    BENEFICIARY
+    BENEFICIARY,
+    COLLECTOR
 }
 
 @Serializable
-enum class UserStatus {
+enum class UserStatus : CommonSerializable {
     ACTIVE,
     SUSPENDED,
     DISABLED
@@ -32,4 +34,4 @@ data class User(
     val deviceApproved: Boolean = false,
     val createdAt: Long = 0,
     val lastLoginAt: Long = 0
-)
+) : CommonSerializable

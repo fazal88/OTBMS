@@ -28,7 +28,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class ApproveBeneficiaryScreen(private val beneficiaryId: String, private val beneficiaryName: String) : Screen {
+data class ApproveBeneficiaryScreen(private val beneficiaryId: String, private val beneficiaryName: String) : Screen {
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable

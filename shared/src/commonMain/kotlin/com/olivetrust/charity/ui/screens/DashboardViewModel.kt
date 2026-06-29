@@ -3,10 +3,9 @@ package com.olivetrust.charity.ui.screens
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import com.olivetrust.charity.domain.model.BeneficiaryStatus
-import com.olivetrust.charity.domain.repository.AidRepository
-import com.olivetrust.charity.domain.repository.AuthRepository
-import com.olivetrust.charity.domain.repository.BeneficiaryRepository
-import com.olivetrust.charity.domain.repository.VisitRepository
+import com.olivetrust.charity.domain.model.DonationBoxStatus
+import com.olivetrust.charity.domain.model.IssueStatus
+import com.olivetrust.charity.domain.repository.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
@@ -17,7 +16,8 @@ class DashboardViewModel(
     private val authRepository: AuthRepository,
     private val beneficiaryRepository: BeneficiaryRepository,
     private val visitRepository: VisitRepository,
-    private val aidRepository: AidRepository
+    private val aidRepository: AidRepository,
+    private val donationBoxRepository: DonationBoxRepository
 ) : ScreenModel {
 
     private val _isRefreshing = MutableStateFlow(false)
@@ -68,11 +68,22 @@ class DashboardViewModel(
         }
     }
 
+    @Suppress("UNCHECKED_CAST")
     val stats: StateFlow<DashboardStats> = combine(
         beneficiaryRepository.getBeneficiaries(),
         visitRepository.getVisits(),
-        aidRepository.getDistributions()
-    ) { beneficiaries, visits, distributions ->
+        aidRepository.getDistributions(),
+        donationBoxRepository.getDonationBoxes(),
+        donationBoxRepository.getAllCollections(),
+        donationBoxRepository.getAllIssues()
+    ) { array ->
+        val beneficiaries = array[0] as List<com.olivetrust.charity.domain.model.Beneficiary>
+        val visits = array[1] as List<com.olivetrust.charity.domain.model.VerificationVisit>
+        val distributions = array[2] as List<com.olivetrust.charity.domain.model.AidDistribution>
+        val boxes = array[3] as List<com.olivetrust.charity.domain.model.DonationBox>
+        val collections = array[4] as List<com.olivetrust.charity.domain.model.DonationCollection>
+        val issues = array[5] as List<com.olivetrust.charity.domain.model.DonationBoxIssue>
+
         val now = kotlinx.datetime.Instant.fromEpochMilliseconds(Clock.System.now().toEpochMilliseconds()).toLocalDateTime(TimeZone.currentSystemDefault())
         val currentMonth = now.month.number
         val currentYear = now.year
@@ -80,6 +91,16 @@ class DashboardViewModel(
         val monthlyDistributions = distributions.count { dist ->
             val distDate = Instant.fromEpochMilliseconds(dist.date).toLocalDateTime(TimeZone.currentSystemDefault())
             distDate.month.number == currentMonth && distDate.year == currentYear
+        }
+
+        val monthlyCollections = collections.count { coll ->
+            val collDate = Instant.fromEpochMilliseconds(coll.timestamp).toLocalDateTime(TimeZone.currentSystemDefault())
+            collDate.month.number == currentMonth && collDate.year == currentYear
+        }
+
+        val collectionsToday = collections.count { coll ->
+            val collDate = Instant.fromEpochMilliseconds(coll.timestamp).toLocalDateTime(TimeZone.currentSystemDefault())
+            collDate.dayOfMonth == now.dayOfMonth && collDate.month.number == currentMonth && collDate.year == currentYear
         }
 
         DashboardStats(
@@ -94,7 +115,20 @@ class DashboardViewModel(
             deactivatedBeneficiaries = beneficiaries.count { it.status == BeneficiaryStatus.DEACTIVATED },
             draftBeneficiaries = beneficiaries.count { it.status == BeneficiaryStatus.DRAFT },
             expiredBeneficiaries = beneficiaries.count { it.status == BeneficiaryStatus.EXPIRED },
-            totalBeneficiaries = beneficiaries.size
+            totalBeneficiaries = beneficiaries.size,
+            
+            // Donation Box stats
+            totalDonationBoxes = boxes.size,
+            activeDonationBoxes = boxes.count { it.status == DonationBoxStatus.APPROVED_ACTIVE },
+            pendingDonationBoxes = boxes.count { it.status == DonationBoxStatus.PENDING_APPROVAL },
+            rejectedDonationBoxes = boxes.count { it.status == DonationBoxStatus.REJECTED },
+            outOfOrderDonationBoxes = boxes.count { it.status == DonationBoxStatus.OUT_OF_ORDER },
+            decommissionedDonationBoxes = boxes.count { it.status == DonationBoxStatus.DECOMMISSIONED },
+            collectionsToday = collectionsToday,
+            collectionsThisMonth = monthlyCollections,
+            totalAmountCollected = collections.sumOf { it.amountCollected },
+            averageCollectionPerBox = if (boxes.isNotEmpty()) collections.sumOf { it.amountCollected } / boxes.size.toDouble() else 0.0,
+            reportedIssues = issues.count { it.status == IssueStatus.PENDING_REVIEW }
         )
     }.stateIn(screenModelScope, SharingStarted.WhileSubscribed(5000), DashboardStats())
 }
@@ -111,5 +145,18 @@ data class DashboardStats(
     val deactivatedBeneficiaries: Int = 0,
     val draftBeneficiaries: Int = 0,
     val expiredBeneficiaries: Int = 0,
-    val totalBeneficiaries: Int = 0
+    val totalBeneficiaries: Int = 0,
+    
+    // Donation Box stats
+    val totalDonationBoxes: Int = 0,
+    val activeDonationBoxes: Int = 0,
+    val pendingDonationBoxes: Int = 0,
+    val rejectedDonationBoxes: Int = 0,
+    val outOfOrderDonationBoxes: Int = 0,
+    val decommissionedDonationBoxes: Int = 0,
+    val collectionsToday: Int = 0,
+    val collectionsThisMonth: Int = 0,
+    val totalAmountCollected: Double = 0.0,
+    val averageCollectionPerBox: Double = 0.0,
+    val reportedIssues: Int = 0
 )

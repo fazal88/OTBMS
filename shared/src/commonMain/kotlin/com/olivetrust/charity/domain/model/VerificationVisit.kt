@@ -1,6 +1,7 @@
 package com.olivetrust.charity.domain.model
 
 import kotlinx.serialization.Serializable
+import com.olivetrust.charity.util.CommonSerializable
 
 @Serializable
 data class VerificationVisit(
@@ -19,10 +20,10 @@ data class VerificationVisit(
     val misuseReport: MisuseReport? = null,
     val editRequest: EditRequest? = null,
     val reapprovalReason: String? = null
-)
+) : CommonSerializable
 
 @Serializable
-enum class VisitStatus {
+enum class VisitStatus : CommonSerializable {
     SUCCESSFUL,
     MISUSE_REPORTED,
     EDIT_REQUESTED,
@@ -33,10 +34,10 @@ enum class VisitStatus {
 data class MisuseReport(
     val description: String = "",
     val photoEvidenceUrl: String = ""
-)
+) : CommonSerializable
 
 @Serializable
 data class EditRequest(
     val requestedChange: String = "",
     val supportingNotes: String = ""
-)
+) : CommonSerializable

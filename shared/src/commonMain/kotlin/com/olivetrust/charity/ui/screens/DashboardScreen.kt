@@ -126,120 +126,204 @@ class DashboardScreen : Screen {
 
                     // View All Buttons - Quick Actions
                     item(span = { GridItemSpan(2) }) {
-                        QuickActionsRow(navigator)
+                        QuickActionsRow(user, navigator)
                     }
 
-                    item(span = { GridItemSpan(2) }) {
-                        SectionLabel("Key Metrics")
-                    }
-                    item {
-                        MainStatCard(
-                            label = "Approved",
-                            value = stats.approvedBeneficiaries.toString(),
-                            icon = Icons.Default.CheckCircle,
-                            color = Color(0xFF386B1D),
-                            onClick = {
-                                navigator.push(
-                                    BeneficiaryListScreen(
-                                        BeneficiaryFilters(
-                                            status = BeneficiaryStatus.APPROVED
+                    val role = user?.role
+                    val showDonation = role == UserRole.APPROVER || role == UserRole.COLLECTOR
+                    val showBeneficiary = role == UserRole.APPROVER || role == UserRole.EMPLOYEE
+
+                    if (showBeneficiary) {
+                        item(span = { GridItemSpan(2) }) {
+                            SectionLabel("Beneficiary Metrics")
+                        }
+                        item {
+                            MainStatCard(
+                                label = "Approved",
+                                value = stats.approvedBeneficiaries.toString(),
+                                icon = Icons.Default.CheckCircle,
+                                color = Color(0xFF386B1D),
+                                onClick = {
+                                    navigator.push(
+                                        BeneficiaryListScreen(
+                                            BeneficiaryFilters(
+                                                status = BeneficiaryStatus.APPROVED
+                                            )
                                         )
                                     )
-                                )
-                            }
-                        )
-                    }
-                    item {
-                        MainStatCard(
-                            label = "Visits",
-                            value = stats.totalVisits.toString(),
-                            icon = Icons.Default.LocationOn,
-                            color = Color(0xFF2E5B8E),
-                            onClick = { navigator.push(VisitListScreen()) }
-                        )
-                    }
-                    item(span = { GridItemSpan(2) }) {
-                        WideStatCard(
-                            label = "Aid Distributed",
-                            value = stats.monthlyAidDistributed.toString(),
-                            icon = Icons.AutoMirrored.Filled.List,
-                            color = MaterialTheme.colorScheme.tertiary,
-                            subtitle = "Performance for ${getCurrentMonthName()}",
-                            onClick = { navigator.push(AidListScreen()) }
-                        )
+                                }
+                            )
+                        }
+                        item {
+                            MainStatCard(
+                                label = "Visits",
+                                value = stats.totalVisits.toString(),
+                                icon = Icons.Default.LocationOn,
+                                color = Color(0xFF2E5B8E),
+                                onClick = { navigator.push(VisitListScreen()) }
+                            )
+                        }
+                        item(span = { GridItemSpan(2) }) {
+                            WideStatCard(
+                                label = "Aid Distributed",
+                                value = stats.monthlyAidDistributed.toString(),
+                                icon = Icons.AutoMirrored.Filled.List,
+                                color = MaterialTheme.colorScheme.tertiary,
+                                subtitle = "Performance for ${getCurrentMonthName()}",
+                                onClick = { navigator.push(AidListScreen()) }
+                            )
+                        }
+
+                        item(span = { GridItemSpan(2) }) {
+                            SectionLabel("Attention Required")
+                        }
+
+                        item {
+                            PendingCard(
+                                label = "Onboarding",
+                                value = stats.pendingOnboarding.toString(),
+                                icon = Icons.Default.Person,
+                                color = Color(0xFFB36200),
+                                onClick = {
+                                    navigator.push(
+                                        BeneficiaryListScreen(
+                                            BeneficiaryFilters(
+                                                status = BeneficiaryStatus.PENDING_APPROVAL
+                                            )
+                                        )
+                                    )
+                                }
+                            )
+                        }
+                        item {
+                            PendingCard(
+                                label = "Edit Requests",
+                                value = stats.pendingEdits.toString(),
+                                icon = Icons.Default.Edit,
+                                color = Color(0xFF7B2E8E),
+                                onClick = {
+                                    navigator.push(
+                                        BeneficiaryListScreen(
+                                            BeneficiaryFilters(
+                                                status = BeneficiaryStatus.EDIT_REQUESTED
+                                            )
+                                        )
+                                    )
+                                }
+                            )
+                        }
+                        item {
+                            PendingCard(
+                                label = "Misuse Reports",
+                                value = stats.misuseReports.toString(),
+                                icon = Icons.Default.Warning,
+                                color = Color(0xFFB3261E),
+                                onClick = {
+                                    navigator.push(
+                                        BeneficiaryListScreen(
+                                            BeneficiaryFilters(
+                                                status = BeneficiaryStatus.MISUSE_REPORTED
+                                            )
+                                        )
+                                    )
+                                }
+                            )
+                        }
+                        item {
+                            PendingCard(
+                                label = "Expired",
+                                value = stats.expiredBeneficiaries.toString(),
+                                icon = Icons.Default.Info,
+                                color = Color(0xFF44483D),
+                                onClick = {
+                                    navigator.push(
+                                        BeneficiaryListScreen(
+                                            BeneficiaryFilters(
+                                                status = BeneficiaryStatus.EXPIRED
+                                            )
+                                        )
+                                    )
+                                }
+                            )
+                        }
                     }
 
-                    item(span = { GridItemSpan(2) }) {
-                        SectionLabel("Attention Required")
-                    }
+                    if (showDonation) {
+                        item(span = { GridItemSpan(2) }) {
+                            SectionLabel("Donation Boxes")
+                        }
+                        item {
+                            MainStatCard(
+                                label = "Active Boxes",
+                                value = stats.activeDonationBoxes.toString(),
+                                icon = Icons.Default.CheckCircle,
+                                color = Color(0xFF386B1D),
+                                onClick = {
+                                    navigator.push(
+                                        DonationBoxListScreen(
+                                            DonationBoxFilters(
+                                                status = com.olivetrust.charity.domain.model.DonationBoxStatus.APPROVED_ACTIVE
+                                            )
+                                        )
+                                    )
+                                }
+                            )
+                        }
+                        item {
+                            MainStatCard(
+                                label = "Today's Collections",
+                                value = stats.collectionsToday.toString(),
+                                icon = Icons.Default.ShoppingCart,
+                                color = Color(0xFF2E5B8E),
+                                onClick = { navigator.push(DonationBoxListScreen()) }
+                            )
+                        }
+                        if (role == UserRole.APPROVER) {
+                            item(span = { GridItemSpan(2) }) {
+                                WideStatCard(
+                                    label = "Total Collected",
+                                    value = "₹ ${stats.totalAmountCollected}",
+                                    icon = Icons.Default.ShoppingCart,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    subtitle = "Cumulative collections across all boxes",
+                                    onClick = { navigator.push(DonationBoxListScreen()) }
+                                )
+                            }
+                        }
 
-                    item {
-                        PendingCard(
-                            label = "Onboarding",
-                            value = stats.pendingOnboarding.toString(),
-                            icon = Icons.Default.Person,
-                            color = Color(0xFFB36200),
-                            onClick = {
-                                navigator.push(
-                                    BeneficiaryListScreen(
-                                        BeneficiaryFilters(
-                                            status = BeneficiaryStatus.PENDING_APPROVAL
-                                        )
-                                    )
-                                )
+                        if (stats.pendingDonationBoxes > 0 || stats.reportedIssues > 0) {
+                            item(span = { GridItemSpan(2) }) {
+                                SectionLabel("Donation Box Attention")
                             }
-                        )
-                    }
-                    item {
-                        PendingCard(
-                            label = "Edit Requests",
-                            value = stats.pendingEdits.toString(),
-                            icon = Icons.Default.Edit,
-                            color = Color(0xFF7B2E8E),
-                            onClick = {
-                                navigator.push(
-                                    BeneficiaryListScreen(
-                                        BeneficiaryFilters(
-                                            status = BeneficiaryStatus.EDIT_REQUESTED
-                                        )
+                            if (stats.pendingDonationBoxes > 0) {
+                                item {
+                                    PendingCard(
+                                        label = "New Boxes",
+                                        value = stats.pendingDonationBoxes.toString(),
+                                        icon = Icons.Default.Add,
+                                        color = Color(0xFFB36200),
+                                        onClick = {
+                                            navigator.push(
+                                                DonationBoxListScreen(
+                                                    DonationBoxFilters(status = com.olivetrust.charity.domain.model.DonationBoxStatus.PENDING_APPROVAL)
+                                                )
+                                            )
+                                        }
                                     )
-                                )
+                                }
                             }
-                        )
-                    }
-                    item {
-                        PendingCard(
-                            label = "Misuse Reports",
-                            value = stats.misuseReports.toString(),
-                            icon = Icons.Default.Warning,
-                            color = Color(0xFFB3261E),
-                            onClick = {
-                                navigator.push(
-                                    BeneficiaryListScreen(
-                                        BeneficiaryFilters(
-                                            status = BeneficiaryStatus.MISUSE_REPORTED
-                                        )
+                            if (stats.reportedIssues > 0) {
+                                item {
+                                    PendingCard(
+                                        label = "Reported Issues",
+                                        value = stats.reportedIssues.toString(),
+                                        icon = Icons.Default.Warning,
+                                        color = Color(0xFFB3261E),
+                                        onClick = { navigator.push(DonationBoxListScreen()) }
                                     )
-                                )
+                                }
                             }
-                        )
-                    }
-                    item {
-                        PendingCard(
-                            label = "Expired",
-                            value = stats.expiredBeneficiaries.toString(),
-                            icon = Icons.Default.Info,
-                            color = Color(0xFF44483D),
-                            onClick = {
-                                navigator.push(
-                                    BeneficiaryListScreen(
-                                        BeneficiaryFilters(
-                                            status = BeneficiaryStatus.EXPIRED
-                                        )
-                                    )
-                                )
-                            }
-                        )
+                        }
                     }
 
                     item(span = { GridItemSpan(2) }) {
@@ -266,35 +350,49 @@ class DashboardScreen : Screen {
 }
 
 @Composable
-fun QuickActionsRow(navigator: cafe.adriel.voyager.navigator.Navigator) {
+fun QuickActionsRow(user: User?, navigator: cafe.adriel.voyager.navigator.Navigator) {
+    val role = user?.role
+    val showDonation = role == UserRole.APPROVER || role == UserRole.COLLECTOR
+    val showBeneficiary = role == UserRole.APPROVER || role == UserRole.EMPLOYEE
+
     Row(
         modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        AssistChip(
-            onClick = { navigator.push(BeneficiaryListScreen()) },
-            label = { Text("Beneficiaries") },
-            leadingIcon = { Icon(Icons.Default.Face, null, modifier = Modifier.size(18.dp)) },
-            shape = RoundedCornerShape(12.dp)
-        )
-        AssistChip(
-            onClick = { navigator.push(EventListScreen()) },
-            label = { Text("Events") },
-            leadingIcon = { Icon(Icons.Default.DateRange, null, modifier = Modifier.size(18.dp)) },
-            shape = RoundedCornerShape(12.dp)
-        )
-        AssistChip(
-            onClick = { navigator.push(VisitListScreen()) },
-            label = { Text("Visits") },
-            leadingIcon = { Icon(Icons.Default.LocationOn, null, modifier = Modifier.size(18.dp)) },
-            shape = RoundedCornerShape(12.dp)
-        )
-        AssistChip(
-            onClick = { navigator.push(AidListScreen()) },
-            label = { Text("Aid History") },
-            leadingIcon = { Icon(Icons.AutoMirrored.Filled.List, null, modifier = Modifier.size(18.dp)) },
-            shape = RoundedCornerShape(12.dp)
-        )
+        if (showDonation) {
+            AssistChip(
+                onClick = { navigator.push(DonationBoxListScreen()) },
+                label = { Text("Donation Boxes") },
+                leadingIcon = { Icon(Icons.Default.ShoppingCart, null, modifier = Modifier.size(18.dp)) },
+                shape = RoundedCornerShape(12.dp)
+            )
+        }
+        if (showBeneficiary) {
+            AssistChip(
+                onClick = { navigator.push(BeneficiaryListScreen()) },
+                label = { Text("Beneficiaries") },
+                leadingIcon = { Icon(Icons.Default.Face, null, modifier = Modifier.size(18.dp)) },
+                shape = RoundedCornerShape(12.dp)
+            )
+            AssistChip(
+                onClick = { navigator.push(EventListScreen()) },
+                label = { Text("Events") },
+                leadingIcon = { Icon(Icons.Default.DateRange, null, modifier = Modifier.size(18.dp)) },
+                shape = RoundedCornerShape(12.dp)
+            )
+            AssistChip(
+                onClick = { navigator.push(VisitListScreen()) },
+                label = { Text("Visits") },
+                leadingIcon = { Icon(Icons.Default.LocationOn, null, modifier = Modifier.size(18.dp)) },
+                shape = RoundedCornerShape(12.dp)
+            )
+            AssistChip(
+                onClick = { navigator.push(AidListScreen()) },
+                label = { Text("Aid History") },
+                leadingIcon = { Icon(Icons.AutoMirrored.Filled.List, null, modifier = Modifier.size(18.dp)) },
+                shape = RoundedCornerShape(12.dp)
+            )
+        }
     }
 }
 

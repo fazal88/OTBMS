@@ -1,9 +1,10 @@
 package com.olivetrust.charity.domain.model
 
 import kotlinx.serialization.Serializable
+import com.olivetrust.charity.util.CommonSerializable
 
 @Serializable
-enum class EventStatus {
+enum class EventStatus : CommonSerializable {
     PLANNED,
     ONGOING,
     COMPLETED,
@@ -23,4 +24,4 @@ data class DistributionEvent(
     val status: EventStatus = EventStatus.PLANNED,
     val createdBy: String = "",
     val createdAt: Long = 0
-)
+) : CommonSerializable
