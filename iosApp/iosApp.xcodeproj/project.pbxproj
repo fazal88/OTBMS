@@ -101,12 +101,12 @@
 			buildConfigurationList = E857FF1BD243CAAC7B94DB57 /* Build configuration list for PBXNativeTarget "iosApp" */;
 			buildPhases = (
 				42AF4DA133CE15A213DC87D6 /* [CP] Check Pods Manifest.lock */,
+				D1D4A8362FF177CB003217D3 /* ShellScript */,
 				F48006515185C8F47042475F /* Compile Kotlin Framework */,
 				D86C0CD8BE5C83C42D6F434D /* Sources */,
 				ECAA1A07CE1F8865CD952201 /* Frameworks */,
 				E0CF2809C8183C40BB458563 /* Resources */,
 				8A1BE58F6EAE5B66667DE293 /* [CP] Copy Pods Resources */,
-				D1D4A8362FF177CB003217D3 /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -315,6 +315,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 0F5CD87D63182FD2FC5FF2CC /* Pods-iosApp.release.xcconfig */;
 			buildSettings = {
+				APP_DISPLAY_NAME = "Olive Trust";
 				ARCHS = arm64;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -412,6 +413,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = B0C98481E6BD8A64CBAEC969 /* Pods-iosApp.debug.xcconfig */;
 			buildSettings = {
+				APP_DISPLAY_NAME = "OT-UAT";
 				ARCHS = arm64;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
