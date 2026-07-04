@@ -1,3 +1,4 @@
 <resources>
-    <string name="app_name">OliveTrustCharity</string>
+    <!-- Default app name (used if flavor doesn't provide one) -->
+    <string name="app_name">Olive Trust</string>
 </resources>
