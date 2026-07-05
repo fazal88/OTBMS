@@ -44,6 +44,9 @@ class NotificationTopicsViewModel(
                 val subscriptionMap = topics.associate { it.name to repository.isSubscribed(it.name) }
                 val subscribedIds = topics.filter { subscriptionMap[it.name] == true }.map { it.topicId }.toSet()
                 
+                // Seed system topics if they are missing
+                seedSystemTopics(topics)
+                
                 _state.update { it.copy(
                     topics = topics,
                     subscribedTopicIds = subscribedIds,
@@ -55,6 +58,17 @@ class NotificationTopicsViewModel(
             repository.logs.onEach { logs ->
                 _state.update { it.copy(logs = logs) }
             }.launchIn(screenModelScope)
+        }
+    }
+
+    private fun seedSystemTopics(existingTopics: List<NotificationTopic>) {
+        val existingNames = existingTopics.map { it.name }
+        com.olivetrust.charity.domain.model.SystemTopics.all.forEach { systemTopic ->
+            if (!existingNames.contains(systemTopic.name)) {
+                screenModelScope.launch {
+                    repository.createTopic(systemTopic)
+                }
+            }
         }
     }
 

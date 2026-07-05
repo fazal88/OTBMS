@@ -83,7 +83,7 @@ class FirestoreBeneficiaryRepository(
             
             // Trigger Notification
             notificationRepository.sendNotification(
-                topicName = "Onboard",
+                topicName = SystemTopics.ONBOARD,
                 title = "New Beneficiary Onboarded",
                 body = "${finalBeneficiary.headName} has been onboarded in area ${finalBeneficiary.areaCode}."
             )

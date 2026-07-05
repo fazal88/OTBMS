@@ -1,6 +1,7 @@
 package com.olivetrust.charity.data.repository
 
 import com.olivetrust.charity.domain.model.AuditLog
+import com.olivetrust.charity.domain.model.SystemTopics
 import com.olivetrust.charity.domain.model.VerificationVisit
 import com.olivetrust.charity.domain.repository.AuditRepository
 import com.olivetrust.charity.domain.repository.NotificationRepository
@@ -60,7 +61,7 @@ class FirestoreVisitRepository(
             ))
 
             notificationRepository.sendNotification(
-                topicName = "Verify Visit",
+                topicName = SystemTopics.VERIFY_VISIT,
                 title = "Verification Visit Recorded",
                 body = "Visit for beneficiary ${visit.beneficiaryName} recorded with status: ${visit.visitStatus}."
             )

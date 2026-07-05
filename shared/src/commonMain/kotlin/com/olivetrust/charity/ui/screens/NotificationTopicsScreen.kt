@@ -294,8 +294,10 @@ fun TopicItem(
                     Icon(Icons.Default.Edit, null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
                 }
                 
-                IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
-                    Icon(Icons.Default.Delete, null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.error)
+                if (!topic.isSystemTopic) {
+                    IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
+                        Icon(Icons.Default.Delete, null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.error)
+                    }
                 }
             }
         }
@@ -321,14 +323,15 @@ fun TopicDialog(
                     value = display,
                     onValueChange = { display = it },
                     label = { Text("Display Name") },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = topic?.isSystemTopic != true
                 )
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
                     label = { Text("Topic Name (FCM)") },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = topic == null // Topic name should be immutable
+                    enabled = topic == null
                 )
                 OutlinedTextField(
                     value = desc,

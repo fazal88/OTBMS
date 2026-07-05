@@ -1,6 +1,7 @@
 package com.olivetrust.charity.data.repository
 
 import com.olivetrust.charity.domain.model.*
+import com.olivetrust.charity.domain.model.SystemTopics
 import com.olivetrust.charity.domain.repository.AuditRepository
 import com.olivetrust.charity.domain.repository.DonationBoxRepository
 import com.olivetrust.charity.domain.repository.NotificationRepository
@@ -184,7 +185,7 @@ class FirestoreDonationBoxRepository(
             boxCollection.document(updatedBox.id).set(DonationBox.serializer(), updatedBox)
             
             notificationRepository.sendNotification(
-                topicName = "Collection",
+                topicName = SystemTopics.COLLECTION,
                 title = "Donation Collected",
                 body = "₹${finalCollection.amountCollected} collected from box at ${updatedBox.address}."
             )

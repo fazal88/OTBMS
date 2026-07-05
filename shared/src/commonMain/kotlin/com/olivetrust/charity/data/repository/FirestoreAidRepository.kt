@@ -2,6 +2,7 @@ package com.olivetrust.charity.data.repository
 
 import com.olivetrust.charity.domain.model.AidDistribution
 import com.olivetrust.charity.domain.model.AuditLog
+import com.olivetrust.charity.domain.model.SystemTopics
 import com.olivetrust.charity.domain.repository.AidRepository
 import com.olivetrust.charity.domain.repository.AuditRepository
 import com.olivetrust.charity.domain.repository.NotificationRepository
@@ -61,7 +62,7 @@ class FirestoreAidRepository(
             ))
 
             notificationRepository.sendNotification(
-                topicName = "aid distribution",
+                topicName = SystemTopics.AID_DISTRIBUTION,
                 title = "Aid Distributed",
                 body = "Aid delivered to ${distribution.beneficiaryName}. Type: ${distribution.natureOfAid}."
             )
