@@ -20,20 +20,18 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
             FirebaseApp.configure()
         }
 
-        // Only setup notifications for Production
-        if !isDebug {
-            print("APP_DELEGATE: Production mode. Setting up push notifications...")
-            UNUserNotificationCenter.current().delegate = self
-            let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
-            UNUserNotificationCenter.current().requestAuthorization(options: authOptions) { granted, error in
-                print("APP_DELEGATE: Authorization granted: \(granted), error: \(error?.localizedDescription ?? "none")")
-            }
-            
-            application.registerForRemoteNotifications()
-            Messaging.messaging().delegate = self
-        } else {
-            print("APP_DELEGATE: Debug mode (UAT). Skipping push notification setup as requested.")
+        // Setup push notifications for both Debug (UAT/sandbox) and Release (Production)
+        // APNs keys are configured for both sandbox and production environments
+        let modeStr = isDebug ? "DEBUG (UAT/Sandbox APNs)" : "RELEASE (Production APNs)"
+        print("APP_DELEGATE: Setting up push notifications in \(modeStr) mode...")
+        UNUserNotificationCenter.current().delegate = self
+        let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
+        UNUserNotificationCenter.current().requestAuthorization(options: authOptions) { granted, error in
+            print("APP_DELEGATE: Authorization granted: \(granted), error: \(error?.localizedDescription ?? "none")")
         }
+        
+        application.registerForRemoteNotifications()
+        Messaging.messaging().delegate = self
         
         return true
     }
@@ -49,7 +47,9 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 
     func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
         print("FCM_TOKEN: \(fcmToken ?? "nil")")
-        // Notify the app about the new token if needed
+        // Push token into Kotlin bridge so IosNotificationHelper.awaitFcmToken() resolves immediately.
+        // This fixes the "no APNs token specified before fetching FCM token" race condition.
+        IosNotificationHelper.shared.onFcmTokenReceived(token: fcmToken)
         NotificationCenter.default.post(name: Notification.Name("FCMTokenUpdated"), object: nil, userInfo: ["token": fcmToken ?? ""])
     }
 

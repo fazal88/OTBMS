@@ -111,3 +111,11 @@ actual fun openMaps(latitude: Double, longitude: Double, label: String) {
         UIApplication.sharedApplication.openURL(url, options = emptyMap<Any?, Any?>(), completionHandler = null)
     }
 }
+
+actual suspend fun getPlatformFcmToken(): String? {
+    // Delegates to the IosNotificationHelper bridge which waits for Swift's
+    // MessagingDelegate to push the token, avoiding the timing race condition
+    // that causes "no APNs token specified before fetching FCM token".
+    return IosNotificationHelper.awaitFcmToken(timeoutSeconds = 15)
+}
+

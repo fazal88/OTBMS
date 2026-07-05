@@ -88,3 +88,13 @@ actual fun openMaps(latitude: Double, longitude: Double, label: String) {
         println("ANDROID_MAPS_ERROR: ${e.message}")
     }
 }
+
+actual suspend fun getPlatformFcmToken(): String? {
+    return try {
+        com.google.firebase.messaging.FirebaseMessaging.getInstance().token.await()
+    } catch (e: Exception) {
+        println("ANDROID_FCM_ERROR: ${e.message}")
+        null
+    }
+}
+
