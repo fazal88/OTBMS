@@ -4,6 +4,7 @@ import com.olivetrust.charity.domain.model.AidDistribution
 import com.olivetrust.charity.domain.model.AuditLog
 import com.olivetrust.charity.domain.repository.AidRepository
 import com.olivetrust.charity.domain.repository.AuditRepository
+import com.olivetrust.charity.domain.repository.NotificationRepository
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.firestore
 import kotlinx.coroutines.flow.Flow
@@ -11,7 +12,8 @@ import kotlinx.coroutines.flow.map
 import kotlin.time.Clock
 
 class FirestoreAidRepository(
-    private val auditRepository: AuditRepository
+    private val auditRepository: AuditRepository,
+    private val notificationRepository: NotificationRepository
 ) : AidRepository {
     private val firestore by lazy { Firebase.firestore }
     private val collection by lazy { firestore.collection("aidDistributions") }
@@ -57,6 +59,13 @@ class FirestoreAidRepository(
                 timestamp = now,
                 deviceId = ""
             ))
+
+            notificationRepository.sendNotification(
+                topicName = "aid distribution",
+                title = "Aid Distributed",
+                body = "Aid delivered to ${distribution.beneficiaryName}. Type: ${distribution.natureOfAid}."
+            )
+
             println("FIRESTORE: Distribution recorded successfully")
             Result.success(distribution.distributionId)
         } catch (e: Exception) {

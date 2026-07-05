@@ -332,6 +332,41 @@ class DashboardScreen : Screen {
                     item(span = { GridItemSpan(2) }) {
                         Spacer(Modifier.height(80.dp))
                     }
+
+                    if (role == UserRole.APPROVER || role == UserRole.SUPER_ADMIN) {
+                        item(span = { GridItemSpan(2) }) {
+                            SectionLabel("User Management")
+                        }
+                        item {
+                            MainStatCard(
+                                label = "Total Users",
+                                value = stats.totalEmployees.toString(),
+                                icon = Icons.Default.AccountCircle,
+                                color = Color(0xFF6750A4),
+                                onClick = { navigator.push(EmployeeManagementScreen()) }
+                            )
+                        }
+                        item {
+                            MainStatCard(
+                                label = "Active Users",
+                                value = stats.activeEmployees.toString(),
+                                icon = Icons.Default.CheckCircle,
+                                color = Color(0xFF386B1D),
+                                onClick = { navigator.push(EmployeeManagementScreen()) }
+                            )
+                        }
+                        if (stats.pendingDeviceApprovals > 0) {
+                            item(span = { GridItemSpan(2) }) {
+                                PendingCard(
+                                    label = "Device Approval Pending",
+                                    value = stats.pendingDeviceApprovals.toString(),
+                                    icon = Icons.Default.Info,
+                                    color = Color(0xFFB36200),
+                                    onClick = { navigator.push(EmployeeManagementScreen()) }
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }

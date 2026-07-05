@@ -3,6 +3,7 @@ package com.olivetrust.charity.data.repository
 import com.olivetrust.charity.domain.model.AuditLog
 import com.olivetrust.charity.domain.model.VerificationVisit
 import com.olivetrust.charity.domain.repository.AuditRepository
+import com.olivetrust.charity.domain.repository.NotificationRepository
 import com.olivetrust.charity.domain.repository.VisitRepository
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.firestore
@@ -10,7 +11,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 class FirestoreVisitRepository(
-    private val auditRepository: AuditRepository
+    private val auditRepository: AuditRepository,
+    private val notificationRepository: NotificationRepository
 ) : VisitRepository {
     private val firestore by lazy { Firebase.firestore }
     private val collection by lazy { firestore.collection("verificationVisits") }
@@ -56,6 +58,13 @@ class FirestoreVisitRepository(
                 timestamp = now,
                 deviceId = ""
             ))
+
+            notificationRepository.sendNotification(
+                topicName = "Verify Visit",
+                title = "Verification Visit Recorded",
+                body = "Visit for beneficiary ${visit.beneficiaryName} recorded with status: ${visit.visitStatus}."
+            )
+
             println("FIRESTORE: Visit recorded successfully")
             Result.success(visit.visitId)
         } catch (e: Exception) {

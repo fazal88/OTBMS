@@ -45,6 +45,46 @@ class FirestoreEmployeeRepository(
         }
     }
 
+    override suspend fun updateEmployee(user: User): Result<Unit> {
+        return try {
+            collection.document(user.userId).set(User.serializer(), user)
+            val now = Clock.System.now().toEpochMilliseconds()
+            auditRepository.logAction(AuditLog(
+                auditId = "A_$now",
+                userId = "SYSTEM",
+                role = com.olivetrust.charity.domain.model.UserRole.APPROVER,
+                actionType = "UPDATE_EMPLOYEE",
+                entityType = "USER",
+                entityId = user.userId,
+                timestamp = now,
+                deviceId = ""
+            ))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun deleteEmployee(userId: String): Result<Unit> {
+        return try {
+            collection.document(userId).delete()
+            val now = Clock.System.now().toEpochMilliseconds()
+            auditRepository.logAction(AuditLog(
+                auditId = "A_$now",
+                userId = "SYSTEM",
+                role = com.olivetrust.charity.domain.model.UserRole.APPROVER,
+                actionType = "DELETE_EMPLOYEE",
+                entityType = "USER",
+                entityId = userId,
+                timestamp = now,
+                deviceId = ""
+            ))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     override suspend fun updateEmployeeStatus(userId: String, status: UserStatus): Result<Unit> {
         return try {
             val doc = collection.document(userId).get()

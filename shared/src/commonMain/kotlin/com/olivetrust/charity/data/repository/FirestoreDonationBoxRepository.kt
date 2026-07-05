@@ -3,6 +3,7 @@ package com.olivetrust.charity.data.repository
 import com.olivetrust.charity.domain.model.*
 import com.olivetrust.charity.domain.repository.AuditRepository
 import com.olivetrust.charity.domain.repository.DonationBoxRepository
+import com.olivetrust.charity.domain.repository.NotificationRepository
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.firestore
 import kotlinx.coroutines.flow.Flow
@@ -10,7 +11,8 @@ import kotlinx.coroutines.flow.map
 import kotlin.time.Clock
 
 class FirestoreDonationBoxRepository(
-    private val auditRepository: AuditRepository
+    private val auditRepository: AuditRepository,
+    private val notificationRepository: NotificationRepository
 ) : DonationBoxRepository {
     private val firestore by lazy { Firebase.firestore }
     private val boxCollection by lazy { firestore.collection("donation_boxes") }
@@ -181,6 +183,12 @@ class FirestoreDonationBoxRepository(
             )
             boxCollection.document(updatedBox.id).set(DonationBox.serializer(), updatedBox)
             
+            notificationRepository.sendNotification(
+                topicName = "Collection",
+                title = "Donation Collected",
+                body = "₹${finalCollection.amountCollected} collected from box at ${updatedBox.address}."
+            )
+
             log(finalCollection.collectionId, "COLLECTION", "RECORD", finalCollection.collectorId)
             Result.success(Unit)
         } catch (e: Exception) {

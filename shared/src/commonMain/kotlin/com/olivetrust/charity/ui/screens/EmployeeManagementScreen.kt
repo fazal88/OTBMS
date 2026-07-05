@@ -5,18 +5,18 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.tooling.preview.Preview
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.olivetrust.charity.domain.model.User
-import com.olivetrust.charity.domain.model.UserStatus
-import com.olivetrust.charity.ui.previews.PreviewMocks
 
 class EmployeeManagementScreen : Screen {
     @Composable
@@ -25,73 +25,74 @@ class EmployeeManagementScreen : Screen {
         val employees by viewModel.employees.collectAsState()
         val navigator = LocalNavigator.currentOrThrow
 
-        EmployeeManagementContent(
-            employees = employees,
-            onUpdateStatus = { userId, status -> viewModel.updateStatus(userId, status) },
-            onBack = { navigator.pop() }
-        )
-    }
-}
+        var employeeToDelete by remember { mutableStateOf<User?>(null) }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun EmployeeManagementContent(
-    employees: List<User>,
-    onUpdateStatus: (String, UserStatus) -> Unit,
-    onBack: () -> Unit
-) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Employee Management") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
-        }
-    ) { padding ->
-        LazyColumn(modifier = Modifier.padding(padding).fillMaxSize()) {
-            items(employees) { employee ->
-                ListItem(
-                    headlineContent = { Text(employee.fullName) },
-                    supportingContent = { Text("${employee.role} - ${employee.status}") },
-                    trailingContent = {
-                        Row {
-                            if (employee.status != UserStatus.ACTIVE) {
-                                Button(
-                                    onClick = { onUpdateStatus(employee.userId, UserStatus.ACTIVE) },
-                                    modifier = Modifier.padding(end = 4.dp)
-                                ) {
-                                    Text("Activate")
-                                }
-                            }
-                            if (employee.status != UserStatus.DISABLED) {
-                                OutlinedButton(onClick = { onUpdateStatus(employee.userId, UserStatus.DISABLED) }) {
-                                    Text("Disable")
-                                }
-                            }
+        Scaffold(
+            topBar = {
+                @OptIn(ExperimentalMaterial3Api::class)
+                TopAppBar(
+                    title = { Text("User Management") },
+                    navigationIcon = {
+                        IconButton(onClick = { navigator.pop() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                         }
                     }
                 )
-                HorizontalDivider()
+            },
+            floatingActionButton = {
+                FloatingActionButton(onClick = { navigator.push(EditUserScreen()) }) {
+                    Icon(Icons.Default.Add, contentDescription = "Add User")
+                }
+            }
+        ) { padding ->
+            LazyColumn(modifier = Modifier.padding(padding).fillMaxSize()) {
+                items(employees) { employee ->
+                    ListItem(
+                        headlineContent = { Text(employee.fullName) },
+                        supportingContent = { 
+                            Column {
+                                Text("Username: ${employee.username}")
+                                Text("Role: ${employee.role} | Status: ${employee.status}")
+                            }
+                        },
+                        trailingContent = {
+                            Row {
+                                IconButton(onClick = { navigator.push(EditUserScreen(employee)) }) {
+                                    Icon(Icons.Default.Edit, contentDescription = "Edit")
+                                }
+                                IconButton(onClick = { employeeToDelete = employee }) {
+                                    Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error)
+                                }
+                            }
+                        }
+                    )
+                    HorizontalDivider()
+                }
+            }
+
+            employeeToDelete?.let { employee ->
+                AlertDialog(
+                    onDismissRequest = { employeeToDelete = null },
+                    title = { Text("Delete User") },
+                    text = { Text("Are you sure you want to delete ${employee.fullName}?") },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                viewModel.deleteEmployee(employee.userId)
+                                employeeToDelete = null
+                            },
+                            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                        ) {
+                            Text("Delete")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { employeeToDelete = null }) {
+                            Text("Cancel")
+                        }
+                    }
+                )
             }
         }
-    }
-}
-
-@Preview
-@Composable
-fun EmployeeManagementContentPreview() {
-    MaterialTheme {
-        EmployeeManagementContent(
-            employees = listOf(
-                PreviewMocks.mockUser,
-                PreviewMocks.mockUser.copy(userId = "2", fullName = "Jane Smith", status = UserStatus.DISABLED)
-            ),
-            onUpdateStatus = { _, _ -> },
-            onBack = {}
-        )
     }
 }

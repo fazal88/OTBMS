@@ -18,5 +18,7 @@ interface NotificationRepository {
 
     suspend fun sendTestNotification(topicName: String, title: String, body: String): Result<Unit>
     
+    suspend fun sendNotification(topicName: String, title: String, body: String): Result<Unit>
+
     suspend fun getFcmToken(): String?
 }

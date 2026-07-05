@@ -14,17 +14,17 @@ val appModule = module {
     single { getDeviceInfo() }
     single { getLocationService() }
     singleOf(::FirestoreAuthRepository) bind AuthRepository::class
-    singleOf(::FirestoreBeneficiaryRepository) bind BeneficiaryRepository::class
-    singleOf(::FirestoreAidRepository) bind AidRepository::class
-    singleOf(::FirestoreVisitRepository) bind VisitRepository::class
+    single { FirestoreBeneficiaryRepository(get(), get()) } bind BeneficiaryRepository::class
+    single { FirestoreAidRepository(get(), get()) } bind AidRepository::class
+    single { FirestoreVisitRepository(get(), get()) } bind VisitRepository::class
     singleOf(::FirestoreEmployeeRepository) bind EmployeeRepository::class
     singleOf(::FirestoreAuditRepository) bind AuditRepository::class
     singleOf(::FirestoreEventRepository) bind EventRepository::class
-    singleOf(::FirestoreDonationBoxRepository) bind DonationBoxRepository::class
+    single { FirestoreDonationBoxRepository(get(), get()) } bind DonationBoxRepository::class
     single { FirestoreNotificationRepository(get(), get()) } bind NotificationRepository::class
     
     factory { LoginViewModel(get(), get()) }
-    factory { DashboardViewModel(get(), get(), get(), get(), get()) }
+    factory { DashboardViewModel(get(), get(), get(), get(), get(), get()) }
     factory { OnboardingViewModel(get(), get(), get()) }
     factory { AidDistributionViewModel(get(), get(), get(), get()) }
     factory { VerificationVisitViewModel(get(), get(), get(), get()) }

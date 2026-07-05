@@ -17,7 +17,8 @@ class DashboardViewModel(
     private val beneficiaryRepository: BeneficiaryRepository,
     private val visitRepository: VisitRepository,
     private val aidRepository: AidRepository,
-    private val donationBoxRepository: DonationBoxRepository
+    private val donationBoxRepository: DonationBoxRepository,
+    private val employeeRepository: EmployeeRepository
 ) : ScreenModel {
 
     private val _isRefreshing = MutableStateFlow(false)
@@ -75,7 +76,8 @@ class DashboardViewModel(
         aidRepository.getDistributions(),
         donationBoxRepository.getDonationBoxes(),
         donationBoxRepository.getAllCollections(),
-        donationBoxRepository.getAllIssues()
+        donationBoxRepository.getAllIssues(),
+        employeeRepository.getEmployees()
     ) { array ->
         val beneficiaries = array[0] as List<com.olivetrust.charity.domain.model.Beneficiary>
         val visits = array[1] as List<com.olivetrust.charity.domain.model.VerificationVisit>
@@ -83,6 +85,7 @@ class DashboardViewModel(
         val boxes = array[3] as List<com.olivetrust.charity.domain.model.DonationBox>
         val collections = array[4] as List<com.olivetrust.charity.domain.model.DonationCollection>
         val issues = array[5] as List<com.olivetrust.charity.domain.model.DonationBoxIssue>
+        val employees = array[6] as List<com.olivetrust.charity.domain.model.User>
 
         val now = kotlinx.datetime.Instant.fromEpochMilliseconds(Clock.System.now().toEpochMilliseconds()).toLocalDateTime(TimeZone.currentSystemDefault())
         val currentMonth = now.month.number
@@ -128,7 +131,12 @@ class DashboardViewModel(
             collectionsThisMonth = monthlyCollections,
             totalAmountCollected = collections.sumOf { it.amountCollected },
             averageCollectionPerBox = if (boxes.isNotEmpty()) collections.sumOf { it.amountCollected } / boxes.size.toDouble() else 0.0,
-            reportedIssues = issues.count { it.status == IssueStatus.PENDING_REVIEW }
+            reportedIssues = issues.count { it.status == IssueStatus.PENDING_REVIEW },
+
+            // Employee stats
+            totalEmployees = employees.size,
+            activeEmployees = employees.count { it.status == com.olivetrust.charity.domain.model.UserStatus.ACTIVE },
+            pendingDeviceApprovals = employees.count { !it.deviceApproved && it.deviceId != null }
         )
     }.stateIn(screenModelScope, SharingStarted.WhileSubscribed(5000), DashboardStats())
 }
@@ -158,5 +166,10 @@ data class DashboardStats(
     val collectionsThisMonth: Int = 0,
     val totalAmountCollected: Double = 0.0,
     val averageCollectionPerBox: Double = 0.0,
-    val reportedIssues: Int = 0
+    val reportedIssues: Int = 0,
+
+    // Employee stats
+    val totalEmployees: Int = 0,
+    val activeEmployees: Int = 0,
+    val pendingDeviceApprovals: Int = 0
 )

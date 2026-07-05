@@ -79,19 +79,21 @@ class FirestoreNotificationRepository(
 
     override suspend fun sendTestNotification(topicName: String, title: String, body: String): Result<Unit> {
         println("NOTIFICATION_REPO: Sending test notification for topic: $topicName")
+        return sendNotification(topicName, title, body)
+    }
+
+    override suspend fun sendNotification(topicName: String, title: String, body: String): Result<Unit> {
         return try {
             val data = mapOf(
                 "topic" to topicName,
                 "title" to title,
                 "body" to body
             )
-            println("NOTIFICATION_REPO: Calling Cloud Function 'sendTestNotification' with data: $data")
-            val result = functions.httpsCallable("sendTestNotification").invoke(data)
-            println("NOTIFICATION_REPO: Cloud Function call successful. Result: $result")
+            println("NOTIFICATION_REPO: Calling Cloud Function 'sendNotification' with data: $data")
+            functions.httpsCallable("sendNotification").invoke(data)
             Result.success(Unit)
         } catch (e: Exception) {
             println("NOTIFICATION_REPO_ERROR: Cloud Function call failed: ${e.message}")
-            e.printStackTrace()
             Result.failure(e)
         }
     }

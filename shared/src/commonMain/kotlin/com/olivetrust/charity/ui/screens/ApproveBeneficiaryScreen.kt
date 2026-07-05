@@ -1,7 +1,9 @@
 package com.olivetrust.charity.ui.screens
 
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -9,7 +11,11 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
@@ -37,6 +43,7 @@ data class ApproveBeneficiaryScreen(private val beneficiaryId: String, private v
         val viewModel = koinScreenModel<ApproveBeneficiaryViewModel>()
         val monitors by viewModel.monitors.collectAsState()
         val state by viewModel.state.collectAsState()
+        val focusManager = LocalFocusManager.current
 
         LaunchedEffect(state) {
             if (state is ApprovalState.Success) {
@@ -45,6 +52,9 @@ data class ApproveBeneficiaryScreen(private val beneficiaryId: String, private v
         }
 
         Scaffold(
+            modifier = Modifier.pointerInput(Unit) {
+                detectTapGestures(onTap = { focusManager.clearFocus() })
+            },
             topBar = {
                 TopAppBar(
                     title = { Text("Approve: $beneficiaryName") },
@@ -83,7 +93,8 @@ data class ApproveBeneficiaryScreen(private val beneficiaryId: String, private v
                     onValueChange = { notes = it },
                     label = { Text("Approval Notes") },
                     modifier = Modifier.fillMaxWidth(),
-                    minLines = 3
+                    minLines = 3,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
                 )
 
                 Text("Nature of Aid", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
@@ -113,13 +124,15 @@ data class ApproveBeneficiaryScreen(private val beneficiaryId: String, private v
                         value = monthlyRation,
                         onValueChange = { monthlyRation = it },
                         label = { Text("Monthly Ration Details") },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
                     )
                     OutlinedTextField(
                         value = packetCount,
                         onValueChange = { packetCount = it },
                         label = { Text("Packet Count") },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next)
                     )
                 }
 
@@ -128,7 +141,8 @@ data class ApproveBeneficiaryScreen(private val beneficiaryId: String, private v
                         value = monetaryAidAmount,
                         onValueChange = { monetaryAidAmount = it },
                         label = { Text("Monetary Aid Amount (in ₹)") },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next)
                     )
                 }
 
@@ -167,7 +181,8 @@ data class ApproveBeneficiaryScreen(private val beneficiaryId: String, private v
                         label = { Text("Expiry Year") },
                         modifier = Modifier.weight(1f),
                         placeholder = { Text("e.g. 2025") },
-                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+                        keyboardActions = androidx.compose.foundation.text.KeyboardActions(onDone = { focusManager.clearFocus() })
                     )
                 }
 
@@ -211,6 +226,7 @@ data class ApproveBeneficiaryScreen(private val beneficiaryId: String, private v
 
                 Button(
                     onClick = {
+                        focusManager.clearFocus()
                         viewModel.approve(
                             id = beneficiaryId,
                             notes = notes,

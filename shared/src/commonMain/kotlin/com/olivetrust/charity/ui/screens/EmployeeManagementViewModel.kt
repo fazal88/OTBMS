@@ -22,4 +22,22 @@ class EmployeeManagementViewModel(
             employeeRepository.updateEmployeeStatus(userId, status)
         }
     }
+
+    fun createEmployee(user: User, passwordHash: String) {
+        screenModelScope.launch {
+            employeeRepository.createEmployee(user, passwordHash)
+        }
+    }
+
+    fun updateEmployee(user: User) {
+        screenModelScope.launch {
+            employeeRepository.updateEmployee(user)
+        }
+    }
+
+    fun deleteEmployee(userId: String) {
+        screenModelScope.launch {
+            employeeRepository.deleteEmployee(userId)
+        }
+    }
 }

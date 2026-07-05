@@ -3,6 +3,7 @@ package com.olivetrust.charity.data.repository
 import com.olivetrust.charity.domain.model.*
 import com.olivetrust.charity.domain.repository.AuditRepository
 import com.olivetrust.charity.domain.repository.BeneficiaryRepository
+import com.olivetrust.charity.domain.repository.NotificationRepository
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.firestore
 import kotlinx.coroutines.flow.Flow
@@ -11,7 +12,8 @@ import kotlinx.datetime.TimeZone
 import kotlin.time.Clock
 
 class FirestoreBeneficiaryRepository(
-    private val auditRepository: AuditRepository
+    private val auditRepository: AuditRepository,
+    private val notificationRepository: NotificationRepository
 ) : BeneficiaryRepository {
     private val firestore by lazy { Firebase.firestore }
     private val collection by lazy { firestore.collection("beneficiaries") }
@@ -78,6 +80,14 @@ class FirestoreBeneficiaryRepository(
             )
             collection.document(finalBeneficiary.id).set(Beneficiary.serializer(), finalBeneficiary)
             log(finalBeneficiary, "CREATE", finalBeneficiary.onboardedBy)
+            
+            // Trigger Notification
+            notificationRepository.sendNotification(
+                topicName = "Onboard",
+                title = "New Beneficiary Onboarded",
+                body = "${finalBeneficiary.headName} has been onboarded in area ${finalBeneficiary.areaCode}."
+            )
+
             Result.success(finalBeneficiary.id)
         } catch (e: Exception) {
             Result.failure(e)
