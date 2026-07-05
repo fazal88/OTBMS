@@ -8,7 +8,6 @@ import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.firestore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlin.time.Clock
 
 class FirestoreVisitRepository(
     private val auditRepository: AuditRepository
@@ -46,7 +45,7 @@ class FirestoreVisitRepository(
         return try {
             println("FIRESTORE: Recording visit ${visit.visitId} for ${visit.beneficiaryId}")
             collection.document(visit.visitId).set(VerificationVisit.serializer(), visit)
-            val now = Clock.System.now().toEpochMilliseconds()
+            val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
             auditRepository.logAction(AuditLog(
                 auditId = "A_$now",
                 userId = visit.employeeId,

@@ -23,24 +23,11 @@ kotlin {
             baseName = "shared"
             isStatic = true
         }
-        pod("FirebaseCore") {
-            linkOnly = true
-        }
-        pod("FirebaseFirestore") {
-            linkOnly = true
-        }
-        pod("FirebaseAuth") {
-            linkOnly = true
-        }
-        pod("FirebaseStorage") {
-            linkOnly = true
-        }
-        pod("FirebaseFunctions") {
-            linkOnly = true
-        }
-        pod("FirebaseMessaging") {
-            linkOnly = true
-        }
+        pod("FirebaseFirestore") { linkOnly = true }
+        pod("FirebaseAuth") { linkOnly = true }
+        pod("FirebaseStorage") { linkOnly = true }
+        pod("FirebaseFunctions") { linkOnly = true }
+        pod("FirebaseMessaging") { linkOnly = true }
     }
     
     androidLibrary {

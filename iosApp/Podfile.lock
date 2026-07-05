@@ -1394,19 +1394,12 @@ PODS:
   - RecaptchaInterop (101.0.0)
   - shared (1.0):
     - FirebaseAuth
-    - FirebaseCore
     - FirebaseFirestore
     - FirebaseFunctions
     - FirebaseMessaging
     - FirebaseStorage
 
 DEPENDENCIES:
-  - FirebaseAuth
-  - FirebaseCore
-  - FirebaseFirestore
-  - FirebaseFunctions
-  - FirebaseMessaging
-  - FirebaseStorage
   - shared (from `../shared`)
 
 SPEC REPOS:
@@ -1467,8 +1460,8 @@ SPEC CHECKSUMS:
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
   PromisesObjC: 752c3227f599e3467650e47ea36f433eeb10c273
   RecaptchaInterop: 11e0b637842dfb48308d242afc3f448062325aba
-  shared: e581e13c9425d34c7a95e2b0276b3824167425d4
+  shared: 57ae41a269ca0a25ed4a133d217ce8b276b8c9f5
 
-PODFILE CHECKSUM: 3ce02adee977430131be69179469dcebdf211635
+PODFILE CHECKSUM: c77136d3490d0d60c0b101b6de45c9b6546136d8
 
 COCOAPODS: 1.16.2

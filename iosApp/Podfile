@@ -5,18 +5,23 @@ target 'iosApp' do
 
   pod 'shared', :path => '../shared'
 
-  pod 'FirebaseCore'
-  pod 'FirebaseFirestore'
-  pod 'FirebaseAuth'
-  pod 'FirebaseStorage'
-  pod 'FirebaseFunctions'
-  pod 'FirebaseMessaging'
+#  pod 'FirebaseCore'
+#  pod 'FirebaseFirestore'
+#  pod 'FirebaseAuth'
+#  pod 'FirebaseStorage'
+#  pod 'FirebaseFunctions'
+#  pod 'FirebaseMessaging'
 end
 
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     target.build_configurations.each do |config|
       config.build_settings['ENABLE_USER_SCRIPT_SANDBOXING'] = 'NO'
+    end
+    if target.name == 'shared'
+      target.build_configurations.each do |config|
+        config.build_settings['DEBUG_INFORMATION_FORMAT'] = 'dwarf'
+      end
     end
   end
 end

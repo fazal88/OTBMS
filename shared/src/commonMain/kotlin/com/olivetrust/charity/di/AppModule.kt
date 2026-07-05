@@ -21,6 +21,7 @@ val appModule = module {
     singleOf(::FirestoreAuditRepository) bind AuditRepository::class
     singleOf(::FirestoreEventRepository) bind EventRepository::class
     singleOf(::FirestoreDonationBoxRepository) bind DonationBoxRepository::class
+    singleOf(::FirestoreNotificationRepository) bind NotificationRepository::class
     
     factory { LoginViewModel(get(), get()) }
     factory { DashboardViewModel(get(), get(), get(), get(), get()) }
@@ -43,4 +44,5 @@ val appModule = module {
     factory { InstallDonationBoxViewModel(get(), get(), get()) }
     factory { (boxId: String) -> RecordCollectionViewModel(boxId, get(), get(), get()) }
     factory { (boxId: String) -> ReportIssueViewModel(boxId, get(), get(), get()) }
+    factory { NotificationTopicsViewModel(get(), get()) }
 }

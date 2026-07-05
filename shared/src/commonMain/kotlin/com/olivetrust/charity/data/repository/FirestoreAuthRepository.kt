@@ -11,7 +11,6 @@ import dev.gitlive.firebase.firestore.firestore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.json.Json
-import kotlin.time.Clock
 
 class FirestoreAuthRepository(
     private val settings: Settings = Settings()
@@ -72,7 +71,7 @@ class FirestoreAuthRepository(
                 return Result.failure(Exception("Device not approved. This account is registered on another device."))
             }
             
-            val now = Clock.System.now().toEpochMilliseconds()
+            val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
             
             val updatedUser = if (user.deviceId == null) {
                 user.copy(
@@ -128,7 +127,7 @@ class FirestoreAuthRepository(
 
     override suspend fun requestDeviceChange(userId: String, oldDeviceId: String?, newDeviceId: String, deviceModel: String): Result<Unit> {
         return try {
-            val now = Clock.System.now().toEpochMilliseconds()
+            val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
             val requestId = "REQ_${userId}_${now}"
             val request = DeviceChangeRequest(
                 requestId = requestId,

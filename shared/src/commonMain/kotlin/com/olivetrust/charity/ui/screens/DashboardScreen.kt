@@ -67,6 +67,9 @@ class DashboardScreen : Screen {
                     },
                     actions = {
                         if (user?.role == UserRole.APPROVER || user?.role == UserRole.SUPER_ADMIN) {
+                            IconButton(onClick = { navigator.push(NotificationTopicsScreen()) }) {
+                                Icon(Icons.Default.Notifications, contentDescription = "Notifications")
+                            }
                             IconButton(onClick = { navigator.push(EmployeeManagementScreen()) }) {
                                 Icon(Icons.Default.AccountCircle, contentDescription = "Employees")
                             }
