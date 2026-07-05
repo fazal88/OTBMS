@@ -21,7 +21,7 @@ val appModule = module {
     singleOf(::FirestoreAuditRepository) bind AuditRepository::class
     singleOf(::FirestoreEventRepository) bind EventRepository::class
     singleOf(::FirestoreDonationBoxRepository) bind DonationBoxRepository::class
-    singleOf(::FirestoreNotificationRepository) bind NotificationRepository::class
+    single { FirestoreNotificationRepository(get(), get()) } bind NotificationRepository::class
     
     factory { LoginViewModel(get(), get()) }
     factory { DashboardViewModel(get(), get(), get(), get(), get()) }

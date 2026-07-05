@@ -37,6 +37,7 @@ fabric.properties
 # iOS
 iosApp/Pods/
 iosApp/DerivedData/
+iosApp/build_output/
 iosApp/*.xcworkspace
 iosApp/.xcuserstatedata
 **/xcuserdata/

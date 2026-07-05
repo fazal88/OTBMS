@@ -1,5 +1,7 @@
 package com.olivetrust.charity.data.repository
 
+import com.olivetrust.charity.AppConfig
+import com.olivetrust.charity.Environment
 import com.olivetrust.charity.domain.model.NotificationLog
 import com.olivetrust.charity.domain.model.NotificationTopic
 import com.olivetrust.charity.domain.repository.NotificationRepository
@@ -13,10 +15,13 @@ import dev.gitlive.firebase.functions.functions
 import dev.gitlive.firebase.messaging.messaging
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.seconds
 
 class FirestoreNotificationRepository(
-    private val settings: Settings
+    private val settings: Settings,
+    private val config: AppConfig
 ) : NotificationRepository {
     private val firestore by lazy { Firebase.firestore }
     private val functions by lazy { Firebase.functions }
@@ -55,11 +60,16 @@ class FirestoreNotificationRepository(
     }
 
     override suspend fun subscribeToTopic(topicName: String): Result<Unit> = runCatching {
+        if (config.environment != Environment.PRODUCTION) {
+            println("NOTIFICATION_REPO: Subscription skipped in non-production environment.")
+            return@runCatching
+        }
         messaging.subscribeToTopic(topicName)
         settings["sub_$topicName"] = true
     }
 
     override suspend fun unsubscribeFromTopic(topicName: String): Result<Unit> = runCatching {
+        if (config.environment != Environment.PRODUCTION) return@runCatching
         messaging.unsubscribeFromTopic(topicName)
         settings["sub_$topicName"] = false
     }
@@ -87,9 +97,28 @@ class FirestoreNotificationRepository(
         }
     }
 
-    override suspend fun getFcmToken(): String? = try {
-        messaging.getToken()
-    } catch (_: Exception) {
-        null
+    override suspend fun getFcmToken(): String? {
+        println("NOTIFICATION_REPO: Environment check - config.environment: ${config.environment}")
+        if (config.environment != Environment.PRODUCTION) {
+            println("NOTIFICATION_REPO: Bypassing FCM token fetch in non-production environment (${config.environment}).")
+            return "Disabled in ${config.environment}"
+        }
+        
+        println("NOTIFICATION_REPO: Attempting to get FCM token with 10s timeout...")
+        return try {
+            val token = withTimeoutOrNull(10.seconds) {
+                messaging.getToken()
+            }
+            if (token != null) {
+                println("NOTIFICATION_REPO: Successfully got FCM token: $token")
+            } else {
+                println("NOTIFICATION_REPO: Token fetch timed out after 10 seconds. Is APNs configured?")
+            }
+            token ?: "Timed Out"
+        } catch (e: Exception) {
+            println("NOTIFICATION_REPO_ERROR: Failed to get FCM token: ${e.message}")
+            e.printStackTrace()
+            "Error: ${e.message}"
+        }
     }
 }
