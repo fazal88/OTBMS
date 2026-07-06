@@ -91,14 +91,6 @@ class EditUserScreen(private val userToEdit: User? = null) : Screen {
                         IconButton(onClick = { navigator.pop() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                         }
-                    },
-                    actions = {
-                        TextButton(
-                            onClick = { saveUser() },
-                            enabled = fullName.isNotBlank() && username.isNotBlank() && (userToEdit != null || password.isNotBlank())
-                        ) {
-                            Text("SAVE", fontWeight = FontWeight.Bold)
-                        }
                     }
                 )
             }
@@ -212,8 +204,6 @@ class EditUserScreen(private val userToEdit: User? = null) : Screen {
                     }
                 }
 
-                Spacer(modifier = Modifier.weight(1f))
-                
                 Button(
                     onClick = { saveUser() },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
@@ -223,6 +213,23 @@ class EditUserScreen(private val userToEdit: User? = null) : Screen {
                     Icon(Icons.Default.Check, null)
                     Spacer(Modifier.width(8.dp))
                     Text(if (userToEdit == null) "Create Account" else "Update Profile", fontWeight = FontWeight.Bold)
+                }
+
+                if (userToEdit != null) {
+                    OutlinedButton(
+                        onClick = {
+                            val updatedUser = userToEdit.copy(deviceId = null)
+                            viewModel.updateEmployee(updatedUser)
+                            navigator.pop()
+                        },
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Icon(Icons.Default.Delete, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Reset Device", fontWeight = FontWeight.Bold)
+                    }
                 }
             }
         }
