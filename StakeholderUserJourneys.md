@@ -18,7 +18,7 @@ This document outlines the core operational flows and the robust accountability 
 *   **Process**:
     *   Assigns **Aid Type**: Ration, Monetary, or Both.
     *   Sets **Aid Expiry**: Defines a clear re-evaluation timeline (e.g., 6 months).
-    *   **Monitor Assignment**: Assigns a specific Monitor (Employee) to the beneficiary for long-term tracking.
+    *   **Monitor Assignment**: Assigns a specific Employee as a Monitor for each beneficiary.
 *   **Outcome**: Beneficiary is "Approved."
 
 ### Phase C: Distribution Events (Approver & Employee)
@@ -57,12 +57,13 @@ This document outlines the core operational flows and the robust accountability 
 *   **Outcome**: Box status changes to "Active."
 
 ### Step 3: Collection & Transparency (Collector)
-*   **Action**: Visit to collect funds.
+*   **Action**: Visit to collect funds, report issues, or request edits.
 *   **Process**:
-    *   Records the collected amount.
-    *   **Location Verification**: GPS is recorded to prove the collector visited the shop.
-    *   **Instant Transparency**: The app generates a message for the shop owner.
-    *   **WhatsApp Integration**: Shares collection details (Amount + Box ID + Date) directly with the partner for immediate trust building.
+    *   **Record Collection**: Records amount, location, and sends WhatsApp receipt.
+    *   **Report Inactive**: If a shop is closed or a box is no longer needed, the collector can report it as **INACTIVE** with a reason.
+    *   **Request Edit**: If box details need updating (e.g., new POC or change of address), the collector reports **EDIT REQUIRED**.
+    *   **Self-Correction Flow**: Reporting "Edit Required" automatically moves the box back to **PENDING APPROVAL**, allowing the collector to correct the data and resubmit for approval.
+    *   **Location Verification**: GPS is recorded at every interaction to prove the collector's presence.
 
 ---
 
@@ -74,18 +75,19 @@ The app acts as a "silent auditor" by recording **Latitude and Longitude** at ev
 *   Approving aid (records approver's login location).
 *   Distributing aid (delivery location).
 *   Performing verification visits.
-*   Installing/Collecting from donation boxes.
+*   Installing/Collecting/Reporting issues from donation boxes.
 
 ### Full Audit Trail
 Every single action (Creating, Editing, Deleting, or Approving) is captured in the **Audit Log**:
 *   **WHO**: The user ID and role.
-*   **WHAT**: The action taken (e.g., "UPDATE_EMPLOYEE_STATUS").
+*   **WHAT**: The action taken (e.g., "COLLECTION_RECORDED" or "ISSUE_REPORTED").
 *   **WHEN**: Precise timestamp.
 *   **WHERE**: GPS coordinates and Device ID.
-*   **CHANGE**: Before/After values (e.g., "Status changed from ACTIVE to SUSPENDED").
+*   **CHANGE**: Before/After values (e.g., "Box status changed from ACTIVE to PENDING_APPROVAL").
 
 ### Stakeholder Dashboard
 Admins and Approvers have a bird's-eye view:
 *   **Performance Metrics**: Monthly aid distributed vs. monthly collections.
-*   **Attention Required**: Real-time alerts for "Misuse Reported", "Expired Aid", or "Pending Device Approvals".
+*   **Box Health**: Track active vs. inactive donation boxes.
+*   **Attention Required**: Real-time alerts for "Misuse Reported", "New Issues", or "Pending Device Approvals".
 *   **Geographical Oversight**: Visualizing where activities are happening across the city.

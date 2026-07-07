@@ -9,6 +9,7 @@ import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.firestore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.datetime.*
 import kotlin.time.Clock
 
 class FirestoreDonationBoxRepository(
@@ -26,7 +27,6 @@ class FirestoreDonationBoxRepository(
                 try {
                     it.data(DonationBox.serializer())
                 } catch (e: Exception) {
-                    println("FIRESTORE_ERROR: Failed to decode donation box ${it.id}: ${e.message}")
                     null
                 }
             }
@@ -38,7 +38,6 @@ class FirestoreDonationBoxRepository(
             try {
                 if (it.exists) it.data(DonationBox.serializer()) else null
             } catch (e: Exception) {
-                println("FIRESTORE_ERROR: Failed to decode donation box $id: ${e.message}")
                 null
             }
         }
@@ -124,9 +123,14 @@ class FirestoreDonationBoxRepository(
     }
 
     override suspend fun updateDonationBox(box: DonationBox): Result<Unit> {
+        if (box.id.isBlank()) return Result.failure(Exception("Donation Box ID cannot be blank"))
         return try {
-            val updated = box.copy(lastUpdated = Clock.System.now().toEpochMilliseconds())
-            boxCollection.document(updated.id).set(DonationBox.serializer(), updated)
+            val now = Clock.System.now().toEpochMilliseconds()
+            val updated = box.copy(lastUpdated = now)
+            boxCollection.document(box.id).set(DonationBox.serializer(), updated)
+            
+            log(box.id, "DONATION_BOX", "UPDATE", "SYSTEM", UserRole.APPROVER)
+            
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -202,6 +206,21 @@ class FirestoreDonationBoxRepository(
             val now = Clock.System.now().toEpochMilliseconds()
             val finalIssue = issue.copy(timestamp = now, status = IssueStatus.PENDING_REVIEW)
             issuesCollection.document(finalIssue.issueId).set(DonationBoxIssue.serializer(), finalIssue)
+            
+            // Update box status based on issue type
+            val boxDoc = boxCollection.document(issue.donationBoxId).get()
+            val box = boxDoc.data(DonationBox.serializer())
+            val newStatus = when (issue.reportType) {
+                IssueType.EDIT_REQUIRED -> DonationBoxStatus.PENDING_APPROVAL
+                IssueType.INACTIVE -> DonationBoxStatus.INACTIVE
+                else -> box.status
+            }
+            
+            if (newStatus != box.status) {
+                val updatedBox = box.copy(status = newStatus, lastUpdated = now)
+                boxCollection.document(box.id).set(DonationBox.serializer(), updatedBox)
+            }
+
             log(finalIssue.issueId, "ISSUE", "REPORT", finalIssue.collectorId)
             Result.success(Unit)
         } catch (e: Exception) {

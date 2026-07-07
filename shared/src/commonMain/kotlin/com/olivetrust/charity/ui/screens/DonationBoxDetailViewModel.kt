@@ -23,25 +23,25 @@ class DonationBoxDetailViewModel(
 
     val box = boxRepository.getDonationBoxById(boxId).stateIn(
         screenModelScope,
-        SharingStarted.WhileSubscribed(5000),
+        SharingStarted.Eagerly,
         null
     )
 
     val collections = boxRepository.getCollectionsByBoxId(boxId).stateIn(
         screenModelScope,
-        SharingStarted.WhileSubscribed(5000),
+        SharingStarted.Eagerly,
         emptyList()
     )
 
     val issues = boxRepository.getIssuesByBoxId(boxId).stateIn(
         screenModelScope,
-        SharingStarted.WhileSubscribed(5000),
+        SharingStarted.Eagerly,
         emptyList()
     )
 
     val auditLogs = auditRepository.getLogsByEntity("DONATION_BOX", boxId).stateIn(
         screenModelScope,
-        SharingStarted.WhileSubscribed(5000),
+        SharingStarted.Eagerly,
         emptyList()
     )
 
@@ -51,25 +51,30 @@ class DonationBoxDetailViewModel(
     private val _error = MutableStateFlow<String?>(null)
     val error = _error.asStateFlow()
 
+    private val _updateSuccess = MutableStateFlow(false)
+    val updateSuccess = _updateSuccess.asStateFlow()
+
     fun requestEditAccess() {
-        val user = currentUser.value ?: return
+        // ...
+    }
+
+    fun submitUpdate(box: DonationBox) {
         screenModelScope.launch {
             _isProcessing.value = true
-            // Implementation: update box status to PENDING_UPDATE
-            // boxRepository.updateBoxStatus(boxId, DonationBoxStatus.PENDING_UPDATE, user.userId)
+            _updateSuccess.value = false
+            boxRepository.updateDonationBox(box)
+                .onSuccess { 
+                    _updateSuccess.value = true
+                }
+                .onFailure { 
+                    _error.value = it.message 
+                }
             _isProcessing.value = false
         }
     }
 
-    fun submitUpdate(box: DonationBox) {
-        // ...
-        val user = currentUser.value ?: return
-        screenModelScope.launch {
-            _isProcessing.value = true
-            boxRepository.updateDonationBox(box)
-                .onFailure { _error.value = it.message }
-            _isProcessing.value = false
-        }
+    fun resetUpdateSuccess() {
+        _updateSuccess.value = false
     }
 
     fun approveBox() {

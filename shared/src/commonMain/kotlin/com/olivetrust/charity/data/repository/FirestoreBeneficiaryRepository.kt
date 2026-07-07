@@ -1,6 +1,7 @@
 package com.olivetrust.charity.data.repository
 
 import com.olivetrust.charity.domain.model.*
+import com.olivetrust.charity.domain.model.SystemTopics
 import com.olivetrust.charity.domain.repository.AuditRepository
 import com.olivetrust.charity.domain.repository.BeneficiaryRepository
 import com.olivetrust.charity.domain.repository.NotificationRepository
@@ -8,8 +9,7 @@ import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.firestore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlinx.datetime.TimeZone
-import kotlin.time.Clock
+import kotlinx.datetime.Clock
 
 class FirestoreBeneficiaryRepository(
     private val auditRepository: AuditRepository,
@@ -58,7 +58,7 @@ class FirestoreBeneficiaryRepository(
     }
 
     private suspend fun log(beneficiary: Beneficiary, action: String, userId: String) {
-        val now = Clock.System.now().toEpochMilliseconds()
+        val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
         auditRepository.logAction(AuditLog(
             auditId = "A_$now",
             userId = userId,
@@ -73,7 +73,7 @@ class FirestoreBeneficiaryRepository(
 
     override suspend fun createBeneficiary(beneficiary: Beneficiary): Result<String> {
         return try {
-            val now = Clock.System.now().toEpochMilliseconds()
+            val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
             val finalBeneficiary = beneficiary.copy(
                 onboardingDate = now, 
                 lastUpdated = now
@@ -96,7 +96,8 @@ class FirestoreBeneficiaryRepository(
 
     override suspend fun updateBeneficiary(beneficiary: Beneficiary): Result<Unit> {
         return try {
-            val updated = beneficiary.copy(lastUpdated = Clock.System.now().toEpochMilliseconds())
+            val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
+            val updated = beneficiary.copy(lastUpdated = now)
             collection.document(updated.id).set(Beneficiary.serializer(), updated)
             Result.success(Unit)
         } catch (e: Exception) {
@@ -132,7 +133,7 @@ class FirestoreBeneficiaryRepository(
                 if (monitorDoc.exists) monitorDoc.data(User.serializer()).fullName else "Unknown Monitor"
             } else "Unknown Monitor"
 
-            val now = Clock.System.now().toEpochMilliseconds()
+            val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
             
             // 1. Update Beneficiary
             val updated = beneficiary.copy(
@@ -182,7 +183,7 @@ class FirestoreBeneficiaryRepository(
         return try {
             val doc = collection.document(id).get()
             val beneficiary = doc.data(Beneficiary.serializer())
-            val now = Clock.System.now().toEpochMilliseconds()
+            val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
             val updated = beneficiary.copy(
                 status = BeneficiaryStatus.REJECTED,
                 rejectionReason = reason,
@@ -205,7 +206,7 @@ class FirestoreBeneficiaryRepository(
             val updated = beneficiary.copy(
                 status = BeneficiaryStatus.EDIT_REQUESTED,
                 editRequestNotes = notes,
-                lastUpdated = Clock.System.now().toEpochMilliseconds()
+                lastUpdated = kotlin.time.Clock.System.now().toEpochMilliseconds()
             )
             collection.document(id).set(Beneficiary.serializer(), updated)
             Result.success(Unit)
@@ -220,7 +221,7 @@ class FirestoreBeneficiaryRepository(
             val beneficiary = doc.data(Beneficiary.serializer())
             val updated = beneficiary.copy(
                 status = status,
-                lastUpdated = Clock.System.now().toEpochMilliseconds()
+                lastUpdated = kotlin.time.Clock.System.now().toEpochMilliseconds()
             )
             collection.document(id).set(Beneficiary.serializer(), updated)
             Result.success(Unit)

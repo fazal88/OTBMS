@@ -9,7 +9,8 @@ enum class IssueType : CommonSerializable {
     INACTIVE,
     DAMAGED,
     MISSING,
-    RELOCATION_REQUIRED
+    RELOCATION_REQUIRED,
+    EDIT_REQUIRED
 }
 
 @Serializable

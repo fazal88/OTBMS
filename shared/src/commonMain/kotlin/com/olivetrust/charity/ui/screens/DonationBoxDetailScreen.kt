@@ -58,7 +58,6 @@ class DonationBoxDetailScreen(private val boxId: String) : Screen {
             onApproveIssue = viewModel::approveIssue,
             onRejectIssue = viewModel::rejectIssue,
             onClearError = viewModel::clearError,
-            onRequestEditAccess = viewModel::requestEditAccess,
             navigator = navigator
         )
     }
@@ -77,7 +76,6 @@ fun DonationBoxDetailContent(
     onBack: () -> Unit,
     onRecordCollection: () -> Unit,
     onReportIssue: () -> Unit,
-    onRequestEditAccess: () -> Unit,
     onApprove: () -> Unit,
     onReject: (String) -> Unit,
     onApproveIssue: (String, DonationBoxStatus, String) -> Unit,
@@ -140,15 +138,6 @@ fun DonationBoxDetailContent(
                                 Icon(Icons.Default.Warning, null)
                                 Spacer(Modifier.width(8.dp))
                                 Text("Report Issue")
-                            }
-                            Button(
-                                onClick = onRequestEditAccess,
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
-                            ) {
-                                Icon(Icons.Default.Edit, null)
-                                Spacer(Modifier.width(8.dp))
-                                Text("Request Edit Access")
                             }
                         } else if (user.role == UserRole.COLLECTOR && box.status == DonationBoxStatus.PENDING_APPROVAL) {
                             Button(
@@ -251,7 +240,7 @@ fun DonationBoxDetailContent(
     if (showIssueReviewDialog != null) {
         val issue = showIssueReviewDialog!!
         var notes by remember { mutableStateOf("") }
-        var selectedStatus by remember { mutableStateOf(DonationBoxStatus.INACTIVE) }
+        var selectedStatus by remember { mutableStateOf(DonationBoxStatus.ACTIVE) }
         
         AlertDialog(
             onDismissRequest = { showIssueReviewDialog = null },
@@ -262,7 +251,7 @@ fun DonationBoxDetailContent(
                     Spacer(Modifier.height(16.dp))
                     Text("Set Box Status To:")
                     Row(Modifier.horizontalScroll(rememberScrollState())) {
-                        listOf(DonationBoxStatus.ACTIVE, DonationBoxStatus.INACTIVE, DonationBoxStatus.INACTIVE).forEach { status ->
+                        listOf(DonationBoxStatus.ACTIVE, DonationBoxStatus.INACTIVE).forEach { status ->
                             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { selectedStatus = status }) {
                                 RadioButton(selected = selectedStatus == status, onClick = { selectedStatus = status })
                                 Text(status.name.lowercase().replaceFirstChar { it.titlecase() })
@@ -319,7 +308,7 @@ fun BoxInfoTab(box: DonationBox, uriHandler: UriHandler) {
                 DetailItem("Status", when(box.status) {
                     DonationBoxStatus.ACTIVE -> "Active"
                     DonationBoxStatus.PENDING_APPROVAL -> "Pending"
-                    else -> box.status.name.replace("_", " ")
+                    DonationBoxStatus.INACTIVE -> "Inactive"
                 })
             }
         }

@@ -94,7 +94,11 @@ class InstallDonationBoxScreen : Screen {
 
                 OutlinedTextField(
                     value = pocNumber,
-                    onValueChange = { pocNumber = it },
+                    onValueChange = { 
+                        if (it.length <= 10 && it.all { char -> char.isDigit() }) {
+                            pocNumber = it
+                        }
+                    },
                     label = { Text("Contact Number") },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
