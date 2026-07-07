@@ -5,11 +5,7 @@ import com.olivetrust.charity.util.CommonSerializable
 
 @Serializable
 enum class IssueType : CommonSerializable {
-    MISUSE,
     INACTIVE,
-    DAMAGED,
-    MISSING,
-    RELOCATION_REQUIRED,
     EDIT_REQUIRED
 }
 
@@ -24,7 +20,7 @@ enum class IssueStatus : CommonSerializable {
 data class DonationBoxIssue(
     val issueId: String = "",
     val donationBoxId: String = "",
-    val reportType: IssueType = IssueType.DAMAGED,
+    val reportType: IssueType = IssueType.INACTIVE,
     val description: String = "",
     val latitude: Double = 0.0,
     val longitude: Double = 0.0,

@@ -33,7 +33,7 @@ class ReportIssueScreen(private val boxId: String) : Screen {
             }
         }
 
-        var selectedType by remember { mutableStateOf(IssueType.DAMAGED) }
+        var selectedType by remember { mutableStateOf(IssueType.INACTIVE) }
         var description by remember { mutableStateOf("") }
 
         Scaffold(
@@ -61,11 +61,11 @@ class ReportIssueScreen(private val boxId: String) : Screen {
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
-                    "Report an issue with Box $boxId. Your current location will be captured.",
+                    "Select the action for Box $boxId. Your current location will be captured.",
                     style = MaterialTheme.typography.bodyMedium
                 )
 
-                Text("Issue Type", fontWeight = FontWeight.Bold)
+                Text("Report Type", fontWeight = FontWeight.Bold)
                 IssueType.entries.forEach { type ->
                     Row(
                         modifier = Modifier
@@ -77,7 +77,12 @@ class ReportIssueScreen(private val boxId: String) : Screen {
                             selected = selectedType == type,
                             onClick = { selectedType = type }
                         )
-                        Text(type.name.replace("_", " ").lowercase().replaceFirstChar { it.titlecase() })
+                        Text(
+                            text = when (type) {
+                                IssueType.INACTIVE -> "Mark as Inactive"
+                                IssueType.EDIT_REQUIRED -> "Edit Required (Resubmit for Approval)"
+                            }
+                        )
                     }
                 }
 
