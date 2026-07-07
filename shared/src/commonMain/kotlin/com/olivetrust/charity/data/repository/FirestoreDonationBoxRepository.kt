@@ -139,7 +139,7 @@ class FirestoreDonationBoxRepository(
             val box = doc.data(DonationBox.serializer())
             val now = Clock.System.now().toEpochMilliseconds()
             val updated = box.copy(
-                status = DonationBoxStatus.APPROVED_ACTIVE,
+                status = DonationBoxStatus.ACTIVE,
                 lastUpdated = now
             )
             boxCollection.document(id).set(DonationBox.serializer(), updated)
@@ -156,7 +156,7 @@ class FirestoreDonationBoxRepository(
             val box = doc.data(DonationBox.serializer())
             val now = Clock.System.now().toEpochMilliseconds()
             val updated = box.copy(
-                status = DonationBoxStatus.REJECTED,
+                status = DonationBoxStatus.INACTIVE,
                 rejectionReason = reason,
                 lastUpdated = now
             )

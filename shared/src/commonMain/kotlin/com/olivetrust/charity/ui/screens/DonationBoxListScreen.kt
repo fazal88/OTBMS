@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -18,7 +17,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalUriHandler
@@ -179,7 +177,7 @@ fun DonationBoxListContent(
                                 onClick = { onFiltersChange(filters.copy(status = null)) },
                                 label = { 
                                     Text(when (filters.status) {
-                                        DonationBoxStatus.APPROVED_ACTIVE -> "Active"
+                                        DonationBoxStatus.ACTIVE -> "Active"
                                         DonationBoxStatus.PENDING_APPROVAL -> "Pending"
                                         else -> filters.status.name.replace("_", " ").lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
                                     })
@@ -486,11 +484,12 @@ fun BoxInfoItem(modifier: Modifier = Modifier, icon: ImageVector, label: String,
 @Composable
 fun DonationBoxStatusBadge(status: DonationBoxStatus) {
     val (color, icon) = when (status) {
-        DonationBoxStatus.APPROVED_ACTIVE -> Color(0xFF4CAF50) to Icons.Default.CheckCircle
+        DonationBoxStatus.ACTIVE -> Color(0xFF4CAF50) to Icons.Default.CheckCircle
         DonationBoxStatus.PENDING_APPROVAL -> Color(0xFFFF9800) to Icons.Default.Refresh
-        DonationBoxStatus.REJECTED -> MaterialTheme.colorScheme.error to Icons.Default.Close
-        DonationBoxStatus.OUT_OF_ORDER -> Color(0xFFFF5722) to Icons.Default.Warning
-        DonationBoxStatus.DECOMMISSIONED -> Color(0xFF607D8B) to Icons.Default.Warning
+        DonationBoxStatus.PENDING_APPROVAL -> Color(0xFF2196F3) to Icons.Default.Edit
+        DonationBoxStatus.INACTIVE -> MaterialTheme.colorScheme.error to Icons.Default.Close
+        DonationBoxStatus.INACTIVE -> Color(0xFFFF5722) to Icons.Default.Warning
+        DonationBoxStatus.INACTIVE -> Color(0xFF607D8B) to Icons.Default.Warning
     }
     Surface(
         color = color.copy(alpha = 0.1f),
@@ -505,7 +504,7 @@ fun DonationBoxStatusBadge(status: DonationBoxStatus) {
             Icon(icon, null, modifier = Modifier.size(12.dp), tint = color)
             Text(
                 text = when (status) {
-                    DonationBoxStatus.APPROVED_ACTIVE -> "Active"
+                    DonationBoxStatus.ACTIVE -> "Active"
                     DonationBoxStatus.PENDING_APPROVAL -> "Pending"
                     else -> status.name.replace("_", " ").lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
                 },
@@ -569,7 +568,7 @@ fun DonationBoxFilterBottomSheet(
                         onClick = { tempFilters = tempFilters.copy(status = if (tempFilters.status == status) null else status) },
                         label = { 
                             Text(when (status) {
-                                DonationBoxStatus.APPROVED_ACTIVE -> "Active"
+                                DonationBoxStatus.ACTIVE -> "Active"
                                 DonationBoxStatus.PENDING_APPROVAL -> "Pending"
                                 else -> status.name.replace("_", " ").lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
                             })

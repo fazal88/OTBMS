@@ -294,7 +294,7 @@ object DatabaseSeeder {
             )
 
             // Seed collections for approved boxes
-            if (status == DonationBoxStatus.APPROVED_ACTIVE) {
+            if (status == DonationBoxStatus.ACTIVE) {
                 val collCount = random.nextInt(1, 5)
                 var lastDate = installationDate
                 var lastAmount = 0.0

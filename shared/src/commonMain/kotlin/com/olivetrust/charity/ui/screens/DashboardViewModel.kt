@@ -122,11 +122,11 @@ class DashboardViewModel(
             
             // Donation Box stats
             totalDonationBoxes = boxes.size,
-            activeDonationBoxes = boxes.count { it.status == DonationBoxStatus.APPROVED_ACTIVE },
+            activeDonationBoxes = boxes.count { it.status == DonationBoxStatus.ACTIVE },
             pendingDonationBoxes = boxes.count { it.status == DonationBoxStatus.PENDING_APPROVAL },
-            rejectedDonationBoxes = boxes.count { it.status == DonationBoxStatus.REJECTED },
-            outOfOrderDonationBoxes = boxes.count { it.status == DonationBoxStatus.OUT_OF_ORDER },
-            decommissionedDonationBoxes = boxes.count { it.status == DonationBoxStatus.DECOMMISSIONED },
+            rejectedDonationBoxes = boxes.count { it.status == DonationBoxStatus.INACTIVE },
+            outOfOrderDonationBoxes = boxes.count { it.status == DonationBoxStatus.INACTIVE },
+            decommissionedDonationBoxes = boxes.count { it.status == DonationBoxStatus.INACTIVE },
             collectionsToday = collectionsToday,
             collectionsThisMonth = monthlyCollections,
             totalAmountCollected = collections.sumOf { it.amountCollected },

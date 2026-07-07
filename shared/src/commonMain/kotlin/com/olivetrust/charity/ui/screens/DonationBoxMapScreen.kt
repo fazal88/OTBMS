@@ -3,8 +3,6 @@ package com.olivetrust.charity.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -18,7 +16,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -130,11 +127,9 @@ data class DonationBoxMapScreen(private val filters: DonationBoxFilters) : Scree
 @Composable
 fun BoxMarker(modifier: Modifier, status: DonationBoxStatus, onClick: () -> Unit) {
     val color = when (status) {
-        DonationBoxStatus.APPROVED_ACTIVE -> Color(0xFF4CAF50)
+        DonationBoxStatus.ACTIVE -> Color(0xFF4CAF50)
         DonationBoxStatus.PENDING_APPROVAL -> Color(0xFFFF9800)
-        DonationBoxStatus.REJECTED -> Color(0xFFF44336)
-        DonationBoxStatus.OUT_OF_ORDER -> Color(0xFFFF5722)
-        DonationBoxStatus.DECOMMISSIONED -> Color(0xFF607D8B)
+        DonationBoxStatus.INACTIVE -> Color(0xFFF44336)
     }
     
     IconButton(onClick = onClick, modifier = modifier.background(color, CircleShape)) {

@@ -265,7 +265,7 @@ class DashboardScreen : Screen {
                                     navigator.push(
                                         DonationBoxListScreen(
                                             DonationBoxFilters(
-                                                status = com.olivetrust.charity.domain.model.DonationBoxStatus.APPROVED_ACTIVE
+                                                status = com.olivetrust.charity.domain.model.DonationBoxStatus.ACTIVE
                                             )
                                         )
                                     )

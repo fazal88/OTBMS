@@ -51,6 +51,27 @@ class DonationBoxDetailViewModel(
     private val _error = MutableStateFlow<String?>(null)
     val error = _error.asStateFlow()
 
+    fun requestEditAccess() {
+        val user = currentUser.value ?: return
+        screenModelScope.launch {
+            _isProcessing.value = true
+            // Implementation: update box status to PENDING_UPDATE
+            // boxRepository.updateBoxStatus(boxId, DonationBoxStatus.PENDING_UPDATE, user.userId)
+            _isProcessing.value = false
+        }
+    }
+
+    fun submitUpdate(box: DonationBox) {
+        // ...
+        val user = currentUser.value ?: return
+        screenModelScope.launch {
+            _isProcessing.value = true
+            boxRepository.updateDonationBox(box)
+                .onFailure { _error.value = it.message }
+            _isProcessing.value = false
+        }
+    }
+
     fun approveBox() {
         val user = currentUser.value ?: return
         screenModelScope.launch {

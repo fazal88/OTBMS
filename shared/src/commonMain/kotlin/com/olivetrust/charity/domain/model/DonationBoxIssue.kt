@@ -6,7 +6,7 @@ import com.olivetrust.charity.util.CommonSerializable
 @Serializable
 enum class IssueType : CommonSerializable {
     MISUSE,
-    OUT_OF_ORDER,
+    INACTIVE,
     DAMAGED,
     MISSING,
     RELOCATION_REQUIRED

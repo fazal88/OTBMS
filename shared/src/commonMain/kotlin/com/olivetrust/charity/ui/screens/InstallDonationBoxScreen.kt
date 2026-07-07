@@ -12,6 +12,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
@@ -26,6 +29,7 @@ class InstallDonationBoxScreen : Screen {
         val error by viewModel.error.collectAsState()
         val success by viewModel.success.collectAsState()
         val navigator = LocalNavigator.currentOrThrow
+        val focusManager = LocalFocusManager.current
 
         LaunchedEffect(success) {
             if (success) {
@@ -57,6 +61,9 @@ class InstallDonationBoxScreen : Screen {
         ) { padding ->
             Column(
                 modifier = Modifier
+                    .pointerInput(Unit) {
+                        detectTapGestures(onTap = { focusManager.clearFocus() })
+                    }
                     .padding(padding)
                     .padding(16.dp)
                     .fillMaxSize()

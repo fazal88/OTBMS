@@ -6,10 +6,8 @@ import com.olivetrust.charity.util.CommonSerializable
 @Serializable
 enum class DonationBoxStatus : CommonSerializable {
     PENDING_APPROVAL,
-    APPROVED_ACTIVE,
-    REJECTED,
-    OUT_OF_ORDER,
-    DECOMMISSIONED
+    ACTIVE,
+    INACTIVE
 }
 
 @Serializable

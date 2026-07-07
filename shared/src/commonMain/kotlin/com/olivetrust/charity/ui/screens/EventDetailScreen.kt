@@ -37,6 +37,7 @@ class EventDetailScreen(private val eventId: String) : Screen {
         
         val navigator = LocalNavigator.currentOrThrow
         var showAddUninvited by remember { mutableStateOf(false) }
+        var showAidConfirmation by remember { mutableStateOf<Beneficiary?>(null) }
 
         Scaffold(
             topBar = {
@@ -87,11 +88,7 @@ class EventDetailScreen(private val eventId: String) : Screen {
                     items(invitees) { status ->
                         InviteeRow(
                             status = status,
-                            onMarkDistributed = { 
-                                currentUser?.let { user ->
-                                    viewModel.recordAid(status.beneficiary, user.userId)
-                                }
-                            }
+                            onMarkDistributed = { showAidConfirmation = status.beneficiary }
                         )
                     }
                 }
@@ -133,6 +130,25 @@ class EventDetailScreen(private val eventId: String) : Screen {
                 },
                 confirmButton = {
                     TextButton(onClick = { showAddUninvited = false }) { Text("Close") }
+                }
+            )
+        }
+
+        showAidConfirmation?.let { bene ->
+            AlertDialog(
+                onDismissRequest = { showAidConfirmation = null },
+                title = { Text("Confirm Distribution") },
+                text = { Text("Are you sure you want to mark aid as distributed for ${bene.headName}?") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        currentUser?.let { user ->
+                            viewModel.recordAid(bene, user.userId)
+                        }
+                        showAidConfirmation = null
+                    }) { Text("Confirm") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showAidConfirmation = null }) { Text("Cancel") }
                 }
             )
         }

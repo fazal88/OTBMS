@@ -1,6 +1,5 @@
 package com.olivetrust.charity.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -17,12 +16,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -60,7 +57,9 @@ class DonationBoxDetailScreen(private val boxId: String) : Screen {
             onReject = viewModel::rejectBox,
             onApproveIssue = viewModel::approveIssue,
             onRejectIssue = viewModel::rejectIssue,
-            onClearError = viewModel::clearError
+            onClearError = viewModel::clearError,
+            onRequestEditAccess = viewModel::requestEditAccess,
+            navigator = navigator
         )
     }
 }
@@ -78,11 +77,13 @@ fun DonationBoxDetailContent(
     onBack: () -> Unit,
     onRecordCollection: () -> Unit,
     onReportIssue: () -> Unit,
+    onRequestEditAccess: () -> Unit,
     onApprove: () -> Unit,
     onReject: (String) -> Unit,
     onApproveIssue: (String, DonationBoxStatus, String) -> Unit,
     onRejectIssue: (String, String) -> Unit,
-    onClearError: () -> Unit
+    onClearError: () -> Unit,
+    navigator: cafe.adriel.voyager.navigator.Navigator
 ) {
     val uriHandler = LocalUriHandler.current
     val snackbarHostState = remember { SnackbarHostState() }
@@ -122,7 +123,7 @@ fun DonationBoxDetailContent(
                             .navigationBarsPadding(),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        if (user.role == UserRole.COLLECTOR && box.status == DonationBoxStatus.APPROVED_ACTIVE) {
+                        if (user.role == UserRole.COLLECTOR && box.status == DonationBoxStatus.ACTIVE) {
                             Button(
                                 onClick = onRecordCollection,
                                 modifier = Modifier.fillMaxWidth()
@@ -139,6 +140,25 @@ fun DonationBoxDetailContent(
                                 Icon(Icons.Default.Warning, null)
                                 Spacer(Modifier.width(8.dp))
                                 Text("Report Issue")
+                            }
+                            Button(
+                                onClick = onRequestEditAccess,
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                            ) {
+                                Icon(Icons.Default.Edit, null)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Request Edit Access")
+                            }
+                        } else if (user.role == UserRole.COLLECTOR && box.status == DonationBoxStatus.PENDING_APPROVAL) {
+                            Button(
+                                onClick = { navigator.push(EditDonationBoxScreen(box)) },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                            ) {
+                                Icon(Icons.Default.Edit, null)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Edit Donation Box")
                             }
                         } else if (user.role == UserRole.APPROVER && box.status == DonationBoxStatus.PENDING_APPROVAL) {
                             Button(
@@ -231,7 +251,7 @@ fun DonationBoxDetailContent(
     if (showIssueReviewDialog != null) {
         val issue = showIssueReviewDialog!!
         var notes by remember { mutableStateOf("") }
-        var selectedStatus by remember { mutableStateOf(DonationBoxStatus.OUT_OF_ORDER) }
+        var selectedStatus by remember { mutableStateOf(DonationBoxStatus.INACTIVE) }
         
         AlertDialog(
             onDismissRequest = { showIssueReviewDialog = null },
@@ -242,7 +262,7 @@ fun DonationBoxDetailContent(
                     Spacer(Modifier.height(16.dp))
                     Text("Set Box Status To:")
                     Row(Modifier.horizontalScroll(rememberScrollState())) {
-                        listOf(DonationBoxStatus.APPROVED_ACTIVE, DonationBoxStatus.OUT_OF_ORDER, DonationBoxStatus.DECOMMISSIONED).forEach { status ->
+                        listOf(DonationBoxStatus.ACTIVE, DonationBoxStatus.INACTIVE, DonationBoxStatus.INACTIVE).forEach { status ->
                             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { selectedStatus = status }) {
                                 RadioButton(selected = selectedStatus == status, onClick = { selectedStatus = status })
                                 Text(status.name.lowercase().replaceFirstChar { it.titlecase() })
@@ -297,7 +317,7 @@ fun BoxInfoTab(box: DonationBox, uriHandler: UriHandler) {
                 DetailItem("Installation Date", formatDate(box.installationDate))
                 DetailItem("Installed By", box.installedBy)
                 DetailItem("Status", when(box.status) {
-                    DonationBoxStatus.APPROVED_ACTIVE -> "Active"
+                    DonationBoxStatus.ACTIVE -> "Active"
                     DonationBoxStatus.PENDING_APPROVAL -> "Pending"
                     else -> box.status.name.replace("_", " ")
                 })
