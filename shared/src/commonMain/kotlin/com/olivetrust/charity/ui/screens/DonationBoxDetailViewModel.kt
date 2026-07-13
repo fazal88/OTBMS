@@ -153,6 +153,16 @@ class DonationBoxDetailViewModel(
         }
     }
 
+    fun confirmCollectionReceived(collectionId: String) {
+        val user = currentUser.value ?: return
+        screenModelScope.launch {
+            _isProcessing.value = true
+            boxRepository.confirmCollectionReceived(collectionId, user.userId)
+                .onFailure { _error.value = it.message }
+            _isProcessing.value = false
+        }
+    }
+
     fun clearError() {
         _error.value = null
     }

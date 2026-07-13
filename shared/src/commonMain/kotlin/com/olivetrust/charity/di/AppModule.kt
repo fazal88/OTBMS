@@ -44,5 +44,6 @@ val appModule = module {
     factory { InstallDonationBoxViewModel(get(), get(), get()) }
     factory { (boxId: String) -> RecordCollectionViewModel(boxId, get(), get(), get()) }
     factory { (boxId: String) -> ReportIssueViewModel(boxId, get(), get(), get()) }
+    factory { DonationCollectionListViewModel(get(), get()) }
     factory { NotificationTopicsViewModel(get(), get()) }
 }

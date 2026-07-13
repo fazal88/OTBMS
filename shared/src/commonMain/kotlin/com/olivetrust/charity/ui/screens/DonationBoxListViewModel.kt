@@ -13,6 +13,7 @@ import com.olivetrust.charity.util.CommonSerializable
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.datetime.*
+import kotlin.time.Clock
 
 enum class BoxSortOrder : CommonSerializable {
     ID_ASC, ID_DESC,
@@ -29,7 +30,8 @@ data class DonationBoxFilters(
     val minInstallationDate: Long? = null,
     val maxInstallationDate: Long? = null,
     val minLastCollectionDate: Long? = null,
-    val maxLastCollectionDate: Long? = null
+    val maxLastCollectionDate: Long? = null,
+    val overdueOnly: Boolean = false
 ) : CommonSerializable
 
 class DonationBoxListViewModel(
@@ -58,6 +60,8 @@ class DonationBoxListViewModel(
 
     private val _error = MutableStateFlow<String?>(null)
     val error = _error.asStateFlow()
+
+    val currentTime = Clock.System.now().toEpochMilliseconds()
 
     init {
         loadCurrentLocation()
@@ -114,6 +118,14 @@ class DonationBoxListViewModel(
         
         if (f.minLastCollectionDate != null && (b.lastCollectionDate ?: 0) < f.minLastCollectionDate) return false
         if (f.maxLastCollectionDate != null && (b.lastCollectionDate ?: 0) > f.maxLastCollectionDate) return false
+
+        if (f.overdueOnly) {
+            val now = Clock.System.now().toEpochMilliseconds()
+            val sixtyDaysAgo = now - (60L * 24 * 60 * 60 * 1000)
+            // If never collected, installation date acts as last collection date for overdue calculation
+            val lastActivity = b.lastCollectionDate ?: b.installationDate
+            if (lastActivity > sixtyDaysAgo) return false
+        }
         
         return true
     }

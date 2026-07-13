@@ -16,6 +16,7 @@ interface DonationBoxRepository {
     suspend fun approveDonationBox(id: String, approverId: String): Result<Unit>
     suspend fun rejectDonationBox(id: String, rejectedBy: String, reason: String): Result<Unit>
     suspend fun recordCollection(collection: DonationCollection): Result<Unit>
+    suspend fun confirmCollectionReceived(collectionId: String, receivedBy: String): Result<Unit>
     suspend fun reportIssue(issue: DonationBoxIssue): Result<Unit>
     suspend fun approveIssue(issueId: String, boxId: String, reviewerId: String, newStatus: DonationBoxStatus, notes: String): Result<Unit>
     suspend fun rejectIssue(issueId: String, reviewerId: String, notes: String): Result<Unit>

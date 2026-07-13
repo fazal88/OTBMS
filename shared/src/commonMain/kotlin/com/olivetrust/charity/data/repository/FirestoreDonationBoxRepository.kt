@@ -175,7 +175,10 @@ class FirestoreDonationBoxRepository(
     override suspend fun recordCollection(collection: DonationCollection): Result<Unit> {
         return try {
             val now = Clock.System.now().toEpochMilliseconds()
-            val finalCollection = collection.copy(timestamp = now)
+            val finalCollection = collection.copy(
+                timestamp = now,
+                status = CollectionStatus.PENDING
+            )
             collectionsCollection.document(finalCollection.collectionId).set(DonationCollection.serializer(), finalCollection)
             
             // Update box metadata
@@ -195,6 +198,24 @@ class FirestoreDonationBoxRepository(
             )
 
             log(finalCollection.collectionId, "COLLECTION", "RECORD", finalCollection.collectorId)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun confirmCollectionReceived(collectionId: String, receivedBy: String): Result<Unit> {
+        return try {
+            val now = Clock.System.now().toEpochMilliseconds()
+            val collectionDoc = collectionsCollection.document(collectionId).get()
+            val collection = collectionDoc.data(DonationCollection.serializer())
+            val updated = collection.copy(
+                status = CollectionStatus.RECEIVED,
+                receivedBy = receivedBy,
+                receivedTimestamp = now
+            )
+            collectionsCollection.document(collectionId).set(DonationCollection.serializer(), updated)
+            log(collectionId, "COLLECTION", "CONFIRM_RECEIVED", receivedBy, UserRole.APPROVER)
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)

@@ -66,6 +66,7 @@ data class DonationBoxListScreen(private val initialFilters: DonationBoxFilters 
             error = error,
             user = user,
             currentLocation = currentLocation,
+            currentTime = viewModel.currentTime,
             onBoxClick = { id -> navigator.push(DonationBoxDetailScreen(id)) },
             onInstallClick = { navigator.push(InstallDonationBoxScreen()) },
             onMapClick = { navigator.push(DonationBoxMapScreen(filters)) }
@@ -88,6 +89,7 @@ fun DonationBoxListContent(
     error: String?,
     user: User?,
     currentLocation: Location?,
+    currentTime: Long,
     onBoxClick: (String) -> Unit,
     onInstallClick: () -> Unit,
     onMapClick: () -> Unit
@@ -133,6 +135,13 @@ fun DonationBoxListContent(
                             )
                         } else {
                             Text("Donation Boxes", fontWeight = FontWeight.ExtraBold)
+                            if (boxes.isNotEmpty()) {
+                                Text(
+                                    text = "${boxes.size} boxes found",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                                )
+                            }
                         }
                     },
                     actions = {
@@ -190,6 +199,14 @@ fun DonationBoxListContent(
                                 selected = true,
                                 onClick = { onFiltersChange(filters.copy(areaCode = null)) },
                                 label = { Text("Area: ${filters.areaCode}") },
+                                trailingIcon = { Icon(Icons.Default.Close, null, Modifier.size(14.dp)) }
+                            )
+                        }
+                        if (filters.overdueOnly) {
+                            FilterChip(
+                                selected = true,
+                                onClick = { onFiltersChange(filters.copy(overdueOnly = false)) },
+                                label = { Text("Overdue (>60 days)") },
                                 trailingIcon = { Icon(Icons.Default.Close, null, Modifier.size(14.dp)) }
                             )
                         }
@@ -319,6 +336,7 @@ fun DonationBoxListContent(
                     DonationBoxCard(
                         box = box,
                         currentLocation = currentLocation,
+                        currentTime = currentTime,
                         onClick = { onBoxClick(box.id) },
                         onCallClick = {
                             if (box.contactNumber.isNotEmpty()) {
@@ -350,6 +368,7 @@ fun DonationBoxListContent(
 fun DonationBoxCard(
     box: DonationBox,
     currentLocation: Location?,
+    currentTime: Long,
     onClick: () -> Unit,
     onCallClick: () -> Unit,
     onDirectionsClick: () -> Unit
@@ -383,11 +402,23 @@ fun DonationBoxCard(
                             modifier = Modifier.padding(end = 8.dp)
                         )
                     }
-                    Text(
-                        text = box.id,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline
-                    )
+                    
+                    val daysSince = remember(box.lastCollectionDate, box.installationDate, currentTime) {
+                        val last = box.lastCollectionDate ?: box.installationDate
+                        ((currentTime - last) / (24L * 60 * 60 * 1000)).toInt()
+                    }
+                    
+                    Surface(
+                        color = if (daysSince > 60) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceVariant,
+                        shape = RoundedCornerShape(4.dp)
+                    ) {
+                        Text(
+                            text = "$daysSince days due",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (daysSince > 60) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                        )
+                    }
                 }
             }
 
@@ -486,10 +517,7 @@ fun DonationBoxStatusBadge(status: DonationBoxStatus) {
     val (color, icon) = when (status) {
         DonationBoxStatus.ACTIVE -> Color(0xFF4CAF50) to Icons.Default.CheckCircle
         DonationBoxStatus.PENDING_APPROVAL -> Color(0xFFFF9800) to Icons.Default.Refresh
-        DonationBoxStatus.PENDING_APPROVAL -> Color(0xFF2196F3) to Icons.Default.Edit
         DonationBoxStatus.INACTIVE -> MaterialTheme.colorScheme.error to Icons.Default.Close
-        DonationBoxStatus.INACTIVE -> Color(0xFFFF5722) to Icons.Default.Warning
-        DonationBoxStatus.INACTIVE -> Color(0xFF607D8B) to Icons.Default.Warning
     }
     Surface(
         color = color.copy(alpha = 0.1f),
@@ -586,6 +614,16 @@ fun DonationBoxFilterBottomSheet(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp)
             )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(
+                    checked = tempFilters.overdueOnly,
+                    onCheckedChange = { tempFilters = tempFilters.copy(overdueOnly = it) }
+                )
+                Text("Show Overdue Only (>60 days since last collection)")
+            }
 
             Spacer(modifier = Modifier.height(40.dp))
         }

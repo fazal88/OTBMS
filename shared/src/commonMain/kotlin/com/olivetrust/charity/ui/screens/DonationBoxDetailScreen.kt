@@ -1,5 +1,6 @@
 package com.olivetrust.charity.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -57,6 +58,7 @@ class DonationBoxDetailScreen(private val boxId: String) : Screen {
             onReject = viewModel::rejectBox,
             onApproveIssue = viewModel::approveIssue,
             onRejectIssue = viewModel::rejectIssue,
+            onConfirmCollectionReceived = viewModel::confirmCollectionReceived,
             onClearError = viewModel::clearError,
             navigator = navigator
         )
@@ -80,6 +82,7 @@ fun DonationBoxDetailContent(
     onReject: (String) -> Unit,
     onApproveIssue: (String, DonationBoxStatus, String) -> Unit,
     onRejectIssue: (String, String) -> Unit,
+    onConfirmCollectionReceived: (String) -> Unit,
     onClearError: () -> Unit,
     navigator: cafe.adriel.voyager.navigator.Navigator
 ) {
@@ -200,7 +203,7 @@ fun DonationBoxDetailContent(
 
                 when (selectedTab) {
                     0 -> BoxInfoTab(box, uriHandler)
-                    1 -> BoxCollectionsTab(collections, box, user)
+                    1 -> BoxCollectionsTab(collections, box, user, onConfirmCollectionReceived)
                     2 -> BoxIssuesTab(issues, user, onReviewIssue = { showIssueReviewDialog = it })
                     3 -> BoxLogsTab(auditLogs)
                 }
@@ -353,7 +356,12 @@ fun BoxInfoTab(box: DonationBox, uriHandler: UriHandler) {
 }
 
 @Composable
-fun BoxCollectionsTab(collections: List<DonationCollection>, box: DonationBox, user: User?) {
+fun BoxCollectionsTab(
+    collections: List<DonationCollection>,
+    box: DonationBox,
+    user: User?,
+    onConfirmReceived: (String) -> Unit
+) {
     val uriHandler = LocalUriHandler.current
     if (collections.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -366,14 +374,39 @@ fun BoxCollectionsTab(collections: List<DonationCollection>, box: DonationBox, u
                     Column(Modifier.padding(16.dp)) {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text(formatDate(collection.timestamp), fontWeight = FontWeight.Bold)
-                            Text("₹ ${collection.amountCollected}", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.ExtraBold)
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text("₹ ${collection.amountCollected}", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.ExtraBold)
+                                CollectionStatusBadge(collection.status)
+                            }
                         }
                         Text("Collected by: ${collection.collectorName}", style = MaterialTheme.typography.bodySmall)
                         if (!collection.remarks.isNullOrBlank()) {
                             Text("Remarks: ${collection.remarks}", style = MaterialTheme.typography.bodySmall)
                         }
                         
-                        Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.End) {
+                        Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            val canApprove = user?.role == UserRole.APPROVER || user?.role == UserRole.SUPER_ADMIN
+                            if (collection.status == CollectionStatus.PENDING) {
+                                if (canApprove) {
+                                    Button(
+                                        onClick = { onConfirmReceived(collection.collectionId) },
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                        modifier = Modifier.height(32.dp)
+                                    ) {
+                                        Text("Mark Received", style = MaterialTheme.typography.labelSmall)
+                                    }
+                                } else {
+                                    Spacer(Modifier.width(1.dp))
+                                }
+                            } else {
+                                Text(
+                                    "Received",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Color(0xFF386B1D),
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
                             IconButton(onClick = { 
                                 val message = """
                                     Dear ${box.personOfContact},
@@ -394,6 +427,27 @@ fun BoxCollectionsTab(collections: List<DonationCollection>, box: DonationBox, u
                 }
             }
         }
+    }
+}
+
+@Composable
+fun CollectionStatusBadge(status: CollectionStatus) {
+    val color = when (status) {
+        CollectionStatus.PENDING -> Color(0xFFB36200)
+        CollectionStatus.RECEIVED -> Color(0xFF386B1D)
+    }
+    Surface(
+        color = color.copy(alpha = 0.1f),
+        shape = RoundedCornerShape(4.dp),
+        border = BorderStroke(0.5.dp, color.copy(alpha = 0.5f))
+    ) {
+        Text(
+            text = status.name,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+            style = MaterialTheme.typography.labelSmall,
+            color = color,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 

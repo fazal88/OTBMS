@@ -33,6 +33,7 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import com.olivetrust.charity.domain.model.UserRole
 import com.olivetrust.charity.domain.model.User
 import com.olivetrust.charity.domain.model.BeneficiaryStatus
+import com.olivetrust.charity.domain.model.CollectionStatus
 import kotlinx.datetime.*
 import kotlin.time.Clock
 
@@ -292,9 +293,19 @@ class DashboardScreen : Screen {
                                     onClick = { navigator.push(DonationBoxListScreen()) }
                                 )
                             }
+                            item(span = { GridItemSpan(2) }) {
+                                WideStatCard(
+                                    label = "Total Received",
+                                    value = "₹ ${stats.totalAmountReceived}",
+                                    icon = Icons.Default.CheckCircle,
+                                    color = Color(0xFF386B1D),
+                                    subtitle = "Amount confirmed as received by treasury",
+                                    onClick = { navigator.push(DonationBoxListScreen()) }
+                                )
+                            }
                         }
 
-                        if (stats.pendingDonationBoxes > 0 || stats.reportedIssues > 0) {
+                        if (stats.pendingDonationBoxes > 0 || stats.reportedIssues > 0 || stats.pendingCollections > 0) {
                             item(span = { GridItemSpan(2) }) {
                                 SectionLabel("Donation Box Attention")
                             }
@@ -311,6 +322,23 @@ class DashboardScreen : Screen {
                                                     DonationBoxFilters(status = com.olivetrust.charity.domain.model.DonationBoxStatus.PENDING_APPROVAL)
                                                 )
                                             )
+                                        }
+                                    )
+                                }
+                            }
+                            if (stats.pendingCollections > 0) {
+                                item {
+                                    PendingCard(
+                                        label = "Pending Collections",
+                                        value = stats.pendingCollections.toString(),
+                                        icon = Icons.Default.ShoppingCart,
+                                        color = Color(0xFFB36200),
+                                        onClick = { 
+                                            navigator.push(
+                                                DonationCollectionListScreen(
+                                                    DonationCollectionFilters(status = CollectionStatus.PENDING)
+                                                )
+                                            ) 
                                         }
                                     )
                                 }
@@ -402,6 +430,12 @@ fun QuickActionsRow(user: User?, navigator: cafe.adriel.voyager.navigator.Naviga
                 onClick = { navigator.push(DonationBoxListScreen()) },
                 label = { Text("Donation Boxes") },
                 leadingIcon = { Icon(Icons.Default.ShoppingCart, null, modifier = Modifier.size(18.dp)) },
+                shape = RoundedCornerShape(12.dp)
+            )
+            AssistChip(
+                onClick = { navigator.push(DonationCollectionListScreen()) },
+                label = { Text("Collections") },
+                leadingIcon = { Icon(Icons.Default.List, null, modifier = Modifier.size(18.dp)) },
                 shape = RoundedCornerShape(12.dp)
             )
         }

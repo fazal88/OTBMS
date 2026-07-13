@@ -2,9 +2,7 @@ package com.olivetrust.charity.ui.screens
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
-import com.olivetrust.charity.domain.model.BeneficiaryStatus
-import com.olivetrust.charity.domain.model.DonationBoxStatus
-import com.olivetrust.charity.domain.model.IssueStatus
+import com.olivetrust.charity.domain.model.*
 import com.olivetrust.charity.domain.repository.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -43,7 +41,7 @@ class DashboardViewModel(
 
     fun updateProfile(fullName: String, mobileNumber: String) {
         val user = currentUser.value ?: return
-        if (user.role == com.olivetrust.charity.domain.model.UserRole.SUPER_ADMIN) return
+        if (user.role == UserRole.SUPER_ADMIN) return
         
         screenModelScope.launch {
             authRepository.updateProfile(user.userId, fullName, mobileNumber)
@@ -79,13 +77,13 @@ class DashboardViewModel(
         donationBoxRepository.getAllIssues(),
         employeeRepository.getEmployees()
     ) { array ->
-        val beneficiaries = array[0] as List<com.olivetrust.charity.domain.model.Beneficiary>
-        val visits = array[1] as List<com.olivetrust.charity.domain.model.VerificationVisit>
-        val distributions = array[2] as List<com.olivetrust.charity.domain.model.AidDistribution>
-        val boxes = array[3] as List<com.olivetrust.charity.domain.model.DonationBox>
-        val collections = array[4] as List<com.olivetrust.charity.domain.model.DonationCollection>
-        val issues = array[5] as List<com.olivetrust.charity.domain.model.DonationBoxIssue>
-        val employees = array[6] as List<com.olivetrust.charity.domain.model.User>
+        val beneficiaries = array[0] as List<Beneficiary>
+        val visits = array[1] as List<VerificationVisit>
+        val distributions = array[2] as List<AidDistribution>
+        val boxes = array[3] as List<DonationBox>
+        val collections = array[4] as List<DonationCollection>
+        val issues = array[5] as List<DonationBoxIssue>
+        val employees = array[6] as List<User>
 
         val now = kotlinx.datetime.Instant.fromEpochMilliseconds(Clock.System.now().toEpochMilliseconds()).toLocalDateTime(TimeZone.currentSystemDefault())
         val currentMonth = now.month.number
@@ -130,12 +128,14 @@ class DashboardViewModel(
             collectionsToday = collectionsToday,
             collectionsThisMonth = monthlyCollections,
             totalAmountCollected = collections.sumOf { it.amountCollected },
+            totalAmountReceived = collections.filter { it.status == CollectionStatus.RECEIVED }.sumOf { it.amountCollected },
+            pendingCollections = collections.count { it.status == CollectionStatus.PENDING },
             averageCollectionPerBox = if (boxes.isNotEmpty()) collections.sumOf { it.amountCollected } / boxes.size.toDouble() else 0.0,
             reportedIssues = issues.count { it.status == IssueStatus.PENDING_REVIEW },
 
             // Employee stats
             totalEmployees = employees.size,
-            activeEmployees = employees.count { it.status == com.olivetrust.charity.domain.model.UserStatus.ACTIVE },
+            activeEmployees = employees.count { it.status == UserStatus.ACTIVE },
             pendingDeviceApprovals = employees.count { !it.deviceApproved && it.deviceId != null }
         )
     }.stateIn(screenModelScope, SharingStarted.WhileSubscribed(5000), DashboardStats())
@@ -165,6 +165,8 @@ data class DashboardStats(
     val collectionsToday: Int = 0,
     val collectionsThisMonth: Int = 0,
     val totalAmountCollected: Double = 0.0,
+    val totalAmountReceived: Double = 0.0,
+    val pendingCollections: Int = 0,
     val averageCollectionPerBox: Double = 0.0,
     val reportedIssues: Int = 0,
 
