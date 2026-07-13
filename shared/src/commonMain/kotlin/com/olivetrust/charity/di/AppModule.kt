@@ -35,7 +35,7 @@ val appModule = module {
     factory { VisitListViewModel(get()) }
     factory { AidListViewModel(get(), get()) }
     factory { ApprovalListViewModel(get()) }
-    factory { EventListViewModel(get()) }
+    factory { EventListViewModel(get(), get()) }
     factory { CreateEventViewModel(get(), get()) }
     factory { (eventId: String) -> EventDetailViewModel(eventId, get(), get(), get(), get()) }
 

@@ -385,7 +385,7 @@ fun BoxCollectionsTab(collections: List<DonationCollection>, box: DonationBox, u
                                     • Collected By: ${collection.collectorName}
                                     Thank you for your generous support.
                                 """.trimIndent()
-                                uriHandler.openUri("whatsapp://send?phone=${box.contactNumber}&text=${message.encodeURL()}")
+                                uriHandler.openUri("whatsapp://send?phone=+91${box.contactNumber}&text=${message.encodeURL()}")
                             }) {
                                 Icon(Icons.Default.Share, "Share Receipt")
                             }

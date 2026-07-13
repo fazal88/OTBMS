@@ -24,6 +24,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.olivetrust.charity.domain.model.DistributionEvent
 import com.olivetrust.charity.domain.model.EventStatus
+import com.olivetrust.charity.domain.model.UserRole
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -34,6 +35,7 @@ class EventListScreen : Screen {
     override fun Content() {
         val viewModel = koinScreenModel<EventListViewModel>()
         val events by viewModel.events.collectAsState()
+        val user by viewModel.currentUser.collectAsState()
         val navigator = LocalNavigator.currentOrThrow
 
         Scaffold(
@@ -48,8 +50,10 @@ class EventListScreen : Screen {
                 )
             },
             floatingActionButton = {
-                FloatingActionButton(onClick = { navigator.push(CreateEventScreen()) }) {
-                    Icon(Icons.Default.Add, contentDescription = "Create Event")
+                if (user?.role == UserRole.APPROVER || user?.role == UserRole.SUPER_ADMIN) {
+                    FloatingActionButton(onClick = { navigator.push(CreateEventScreen()) }) {
+                        Icon(Icons.Default.Add, contentDescription = "Create Event")
+                    }
                 }
             }
         ) { padding ->

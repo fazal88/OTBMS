@@ -2,6 +2,7 @@ package com.olivetrust.charity.ui.screens
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
+import com.olivetrust.charity.Location
 import com.olivetrust.charity.domain.model.*
 import com.olivetrust.charity.domain.repository.AuthRepository
 import com.olivetrust.charity.domain.repository.DonationBoxRepository
@@ -54,15 +55,50 @@ class DonationBoxDetailViewModel(
     private val _updateSuccess = MutableStateFlow(false)
     val updateSuccess = _updateSuccess.asStateFlow()
 
-    fun requestEditAccess() {
-        // ...
+    private val _selectedLocation = MutableStateFlow<Location?>(null)
+    val selectedLocation = _selectedLocation.asStateFlow()
+
+    init {
+        screenModelScope.launch {
+            box.collect { b ->
+                if (b != null && _selectedLocation.value == null) {
+                    _selectedLocation.value = Location(b.latitude, b.longitude)
+                }
+            }
+        }
+    }
+
+    fun updateLocation(location: Location) {
+        _selectedLocation.value = location
+    }
+
+    fun requestCurrentLocation() {
+        val locationService = com.olivetrust.charity.getLocationService()
+        screenModelScope.launch {
+            try {
+                val location = locationService.getCurrentLocation()
+                location?.let {
+                    _selectedLocation.value = it
+                }
+            } catch (e: Exception) {
+                _error.value = "Failed to get current location: ${e.message}"
+            }
+        }
     }
 
     fun submitUpdate(box: DonationBox) {
         screenModelScope.launch {
             _isProcessing.value = true
             _updateSuccess.value = false
-            boxRepository.updateDonationBox(box)
+            
+            val location = _selectedLocation.value
+            val finalBox = if (location != null) {
+                box.copy(latitude = location.latitude, longitude = location.longitude)
+            } else {
+                box
+            }
+            
+            boxRepository.updateDonationBox(finalBox)
                 .onSuccess { 
                     _updateSuccess.value = true
                 }

@@ -21,10 +21,10 @@ This document outlines the core operational flows and the robust accountability 
     *   **Monitor Assignment**: Assigns a specific Employee as a Monitor for each beneficiary.
 *   **Outcome**: Beneficiary is "Approved."
 
-### Phase C: Distribution Events (Approver & Employee)
-*   **Planning**: Approvers can create **Planned Distribution Events** (e.g., "Ramadan Ration Drive").
-*   **Invitees**: Specific approved beneficiaries are added to these events as invitees.
-*   **Execution**:
+### Phase C: Distribution Events (Approver Role Only)
+*   **Planning**: **Only Approvers** have the authority to create **Planned Distribution Events** (e.g., "Ramadan Ration Drive") via the specialized event planning dashboard.
+*   **Invitees**: Specific approved beneficiaries are added to these events as invitees by the Approver.
+*   **Execution (Employee)**:
     *   Employee records the distribution during the event.
     *   **Evidence Collection**: Captures receiver's name, signature, and optional evidence photo.
     *   **Event Tracking**: Links individual aid delivery to the specific planned event for bulk reporting.

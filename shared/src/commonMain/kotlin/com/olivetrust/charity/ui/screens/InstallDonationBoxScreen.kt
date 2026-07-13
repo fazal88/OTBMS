@@ -1,5 +1,6 @@
 package com.olivetrust.charity.ui.screens
 
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -10,24 +11,26 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.olivetrust.charity.ui.components.LocationSelectionComponent
 
 class InstallDonationBoxScreen : Screen {
+    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
         val viewModel = koinScreenModel<InstallDonationBoxViewModel>()
         val isSubmitting by viewModel.isSubmitting.collectAsState()
         val error by viewModel.error.collectAsState()
         val success by viewModel.success.collectAsState()
+        val selectedLocation by viewModel.selectedLocation.collectAsState()
         val navigator = LocalNavigator.currentOrThrow
         val focusManager = LocalFocusManager.current
 
@@ -46,7 +49,7 @@ class InstallDonationBoxScreen : Screen {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Install Donation Box") },
+                    title = { Text("Install Donation Box", fontWeight = FontWeight.Bold) },
                     navigationIcon = {
                         IconButton(onClick = { navigator.pop() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
@@ -65,15 +68,21 @@ class InstallDonationBoxScreen : Screen {
                         detectTapGestures(onTap = { focusManager.clearFocus() })
                     }
                     .padding(padding)
-                    .padding(16.dp)
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState()),
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
-                    "Enter installation details. Your current GPS location will be captured automatically.",
+                    "Register a new donation box location. Move the map to refine the location.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.secondary
+                )
+
+                LocationSelectionComponent(
+                    selectedLocation = selectedLocation,
+                    onLocationChanged = { viewModel.updateLocation(it) },
+                    onMyLocationClick = { viewModel.requestCurrentLocation() }
                 )
 
                 OutlinedTextField(
@@ -99,10 +108,11 @@ class InstallDonationBoxScreen : Screen {
                             pocNumber = it
                         }
                     },
-                    label = { Text("Contact Number") },
+                    label = { Text("Contact Number (10 digits)") },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    isError = pocNumber.length != 10 && pocNumber.isNotEmpty()
                 )
 
                 OutlinedTextField(
@@ -123,21 +133,22 @@ class InstallDonationBoxScreen : Screen {
                 )
 
                 if (error != null) {
-                    Text(error!!, color = MaterialTheme.colorScheme.error)
+                    Text(error!!, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                 }
 
                 Button(
                     onClick = {
+                        focusManager.clearFocus()
                         viewModel.installBox(address, pocName, pocNumber, areaCode, remarks)
                     },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    enabled = !isSubmitting && address.isNotBlank() && pocName.isNotBlank() && pocNumber.isNotBlank() && areaCode.isNotBlank()
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    enabled = !isSubmitting && address.isNotBlank() && pocName.isNotBlank() && pocNumber.length == 10 && areaCode.isNotBlank()
                 ) {
                     if (isSubmitting) {
                         CircularProgressIndicator(Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
                     } else {
-                        Text("Register Installation")
+                        Text("Confirm Installation", fontWeight = FontWeight.Bold)
                     }
                 }
             }

@@ -21,6 +21,7 @@ import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.olivetrust.charity.domain.model.DonationBox
+import com.olivetrust.charity.ui.components.LocationSelectionComponent
 import org.koin.core.parameter.parametersOf
 
 class EditDonationBoxScreen(private val box: DonationBox) : Screen {
@@ -39,6 +40,7 @@ class EditDonationBoxScreen(private val box: DonationBox) : Screen {
         val updateSuccess by viewModel.updateSuccess.collectAsState()
         val isProcessing by viewModel.isProcessing.collectAsState()
         val error by viewModel.error.collectAsState()
+        val selectedLocation by viewModel.selectedLocation.collectAsState()
 
         LaunchedEffect(updateSuccess) {
             if (updateSuccess) {
@@ -53,7 +55,7 @@ class EditDonationBoxScreen(private val box: DonationBox) : Screen {
             },
             topBar = {
                 TopAppBar(
-                    title = { Text("Edit Donation Box") },
+                    title = { Text("Edit Donation Box", fontWeight = FontWeight.Bold) },
                     navigationIcon = {
                         IconButton(onClick = { navigator.pop() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
@@ -65,11 +67,23 @@ class EditDonationBoxScreen(private val box: DonationBox) : Screen {
             Column(
                 modifier = Modifier
                     .padding(padding)
-                    .padding(16.dp)
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState()),
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                Text(
+                    "Update box details. Move the map to refine the location.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+
+                LocationSelectionComponent(
+                    selectedLocation = selectedLocation,
+                    onLocationChanged = { viewModel.updateLocation(it) },
+                    onMyLocationClick = { viewModel.requestCurrentLocation() }
+                )
+
                 OutlinedTextField(
                     value = address,
                     onValueChange = { address = it },
@@ -77,6 +91,7 @@ class EditDonationBoxScreen(private val box: DonationBox) : Screen {
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
                 )
+
                 OutlinedTextField(
                     value = pocName,
                     onValueChange = { pocName = it },
@@ -84,6 +99,7 @@ class EditDonationBoxScreen(private val box: DonationBox) : Screen {
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
                 )
+
                 OutlinedTextField(
                     value = pocNumber,
                     onValueChange = { 
@@ -98,6 +114,7 @@ class EditDonationBoxScreen(private val box: DonationBox) : Screen {
                     shape = RoundedCornerShape(12.dp),
                     isError = pocNumber.length != 10 && pocNumber.isNotEmpty()
                 )
+
                 OutlinedTextField(
                     value = areaCode,
                     onValueChange = { areaCode = it },
@@ -110,19 +127,16 @@ class EditDonationBoxScreen(private val box: DonationBox) : Screen {
                     Text(error!!, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                 }
 
-                val currentBoxState by viewModel.box.collectAsState()
-
-        Button(
-            onClick = {
-                focusManager.clearFocus()
-                val boxToUpdate = currentBoxState ?: box
-                viewModel.submitUpdate(boxToUpdate.copy(
-                    address = address,
-                    personOfContact = pocName,
-                    contactNumber = pocNumber,
-                    areaCode = areaCode
-                ))
-            },
+                Button(
+                    onClick = {
+                        focusManager.clearFocus()
+                        viewModel.submitUpdate(box.copy(
+                            address = address,
+                            personOfContact = pocName,
+                            contactNumber = pocNumber,
+                            areaCode = areaCode
+                        ))
+                    },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
                     shape = RoundedCornerShape(16.dp),
                     enabled = !isProcessing && 

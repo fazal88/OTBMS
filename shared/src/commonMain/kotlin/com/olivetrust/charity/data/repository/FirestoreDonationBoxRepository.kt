@@ -213,7 +213,6 @@ class FirestoreDonationBoxRepository(
             val newStatus = when (issue.reportType) {
                 IssueType.EDIT_REQUIRED -> DonationBoxStatus.PENDING_APPROVAL
                 IssueType.INACTIVE -> DonationBoxStatus.INACTIVE
-                else -> box.status
             }
             
             if (newStatus != box.status) {

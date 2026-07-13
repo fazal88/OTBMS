@@ -31,6 +31,7 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.olivetrust.charity.isDebug
 import com.olivetrust.charity.ui.theme.OliveLogo
 
 
@@ -60,7 +61,7 @@ fun LoginContent(
     onLogin: (String, String) -> Unit
 ) {
     var username by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf((if (isDebug) "Password@12" else "")) }
     var passwordVisible by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
 
@@ -100,7 +101,7 @@ fun LoginContent(
             // Olive Trust Branding Header
             OliveLogo(size = 100.dp)
             Spacer(modifier = Modifier.height(24.dp))
-            
+
             Text(
                 text = "Olive Trust",
                 style = MaterialTheme.typography.displaySmall,
@@ -108,7 +109,7 @@ fun LoginContent(
                 fontWeight = FontWeight.Black,
                 letterSpacing = 1.sp
             )
-            
+
             Text(
                 text = "COMMUNITY FIRST",
                 style = MaterialTheme.typography.labelLarge,
@@ -116,7 +117,7 @@ fun LoginContent(
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 4.sp
             )
-            
+
             Spacer(modifier = Modifier.height(48.dp))
 
             // Premium Login Card
@@ -147,14 +148,20 @@ fun LoginContent(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    
+
                     Spacer(modifier = Modifier.height(32.dp))
 
                     OutlinedTextField(
                         value = username,
                         onValueChange = { username = it },
                         label = { Text("Username") },
-                        leadingIcon = { Icon(Icons.Default.Person, null, tint = MaterialTheme.colorScheme.primary) },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.Person,
+                                null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
                         colors = OutlinedTextFieldDefaults.colors(
@@ -173,7 +180,13 @@ fun LoginContent(
                         value = password,
                         onValueChange = { password = it },
                         label = { Text("Password") },
-                        leadingIcon = { Icon(Icons.Default.Lock, null, tint = MaterialTheme.colorScheme.primary) },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.Lock,
+                                null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        },
                         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         trailingIcon = {
                             TextButton(onClick = { passwordVisible = !passwordVisible }) {
@@ -207,7 +220,10 @@ fun LoginContent(
                     Spacer(modifier = Modifier.height(32.dp))
 
                     if (state is LoginState.Loading) {
-                        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
                             CircularProgressIndicator()
                         }
                     } else {
@@ -246,9 +262,9 @@ fun LoginContent(
                     }
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(48.dp))
-            
+
             Text(
                 text = "v1.0.0",
                 style = MaterialTheme.typography.labelSmall,

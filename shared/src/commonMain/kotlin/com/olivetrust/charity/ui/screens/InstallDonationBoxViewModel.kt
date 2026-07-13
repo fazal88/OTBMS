@@ -2,6 +2,7 @@ package com.olivetrust.charity.ui.screens
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
+import com.olivetrust.charity.Location
 import com.olivetrust.charity.domain.model.DonationBox
 import com.olivetrust.charity.domain.repository.AuthRepository
 import com.olivetrust.charity.domain.repository.DonationBoxRepository
@@ -25,6 +26,28 @@ class InstallDonationBoxViewModel(
     private val _success = MutableStateFlow(false)
     val success = _success.asStateFlow()
 
+    private val _selectedLocation = MutableStateFlow<Location?>(null)
+    val selectedLocation = _selectedLocation.asStateFlow()
+
+    init {
+        requestCurrentLocation()
+    }
+
+    fun requestCurrentLocation() {
+        screenModelScope.launch {
+            try {
+                val location = locationService.getCurrentLocation()
+                _selectedLocation.value = location
+            } catch (e: Exception) {
+                _error.value = "Failed to get location: ${e.message}"
+            }
+        }
+    }
+
+    fun updateLocation(location: Location) {
+        _selectedLocation.value = location
+    }
+
     fun installBox(
         address: String,
         personOfContact: String,
@@ -44,7 +67,7 @@ class InstallDonationBoxViewModel(
                     return@launch
                 }
 
-                val location = locationService.getCurrentLocation()
+                val location = _selectedLocation.value
                 val now = Clock.System.now().toEpochMilliseconds()
                 val box = DonationBox(
                     id = "DBX_$now",
@@ -62,7 +85,7 @@ class InstallDonationBoxViewModel(
                     .onSuccess { _success.value = true }
                     .onFailure { _error.value = it.message }
             } catch (e: Exception) {
-                _error.value = "Failed to get location: ${e.message}"
+                _error.value = "Failed to submit: ${e.message}"
             } finally {
                 _isSubmitting.value = false
             }
