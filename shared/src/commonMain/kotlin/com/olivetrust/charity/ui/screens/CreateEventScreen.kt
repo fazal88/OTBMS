@@ -33,9 +33,7 @@ class CreateEventScreen : Screen {
         
         val name by viewModel.name.collectAsState()
         val reason by viewModel.reason.collectAsState()
-        val natureOfAid by viewModel.natureOfAid.collectAsState()
-        val packetCount by viewModel.packetCount.collectAsState()
-        val monetaryAmount by viewModel.monetaryAmount.collectAsState()
+        val aidDescription by viewModel.aidDescription.collectAsState()
         val areaCodeFilter by viewModel.areaCodeFilter.collectAsState()
         val selectedIds by viewModel.selectedBeneficiaryIds.collectAsState()
         val filteredBenes by viewModel.filteredBeneficiaries.collectAsState()
@@ -61,7 +59,7 @@ class CreateEventScreen : Screen {
                                     }
                                 }
                             },
-                            enabled = name.isNotBlank() && reason.isNotBlank() && selectedIds.isNotEmpty()
+                            enabled = name.isNotBlank() && reason.isNotBlank() && aidDescription.isNotBlank() && selectedIds.isNotEmpty()
                         ) {
                             Text("SAVE")
                         }
@@ -97,34 +95,15 @@ class CreateEventScreen : Screen {
                 }
 
                 item {
-                    Text("Aid Type", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        RadioButton(selected = natureOfAid == "Ration", onClick = { viewModel.onNatureOfAidChange("Ration") })
-                        Text("Ration")
-                        Spacer(Modifier.width(8.dp))
-                        RadioButton(selected = natureOfAid == "Monetary", onClick = { viewModel.onNatureOfAidChange("Monetary") })
-                        Text("Monetary")
-                        Spacer(Modifier.width(8.dp))
-                        RadioButton(selected = natureOfAid == "Both", onClick = { viewModel.onNatureOfAidChange("Both") })
-                        Text("Both")
-                    }
-                    
-                    if (natureOfAid == "Ration" || natureOfAid == "Both") {
-                        OutlinedTextField(
-                            value = packetCount?.toString() ?: "",
-                            onValueChange = { viewModel.onPacketCountChange(it.toIntOrNull()) },
-                            label = { Text("Packet Count") },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                    if (natureOfAid == "Monetary" || natureOfAid == "Both") {
-                        OutlinedTextField(
-                            value = monetaryAmount?.toString() ?: "",
-                            onValueChange = { viewModel.onMonetaryAmountChange(it.toDoubleOrNull()) },
-                            label = { Text("Amount (Rs)") },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
+                    Text("Aid Details", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    OutlinedTextField(
+                        value = aidDescription,
+                        onValueChange = { viewModel.onAidDescriptionChange(it) },
+                        label = { Text("Aid Description") },
+                        placeholder = { Text("e.g. 5kg Ration Packet + 2000 Cash") },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 2
+                    )
                 }
 
                 item {

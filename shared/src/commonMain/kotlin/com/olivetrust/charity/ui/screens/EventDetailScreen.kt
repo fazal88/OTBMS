@@ -8,6 +8,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,7 +20,6 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import com.olivetrust.charity.domain.model.Beneficiary
 import org.koin.core.parameter.parametersOf
 
 class EventDetailScreen(private val eventId: String) : Screen {
@@ -27,17 +27,15 @@ class EventDetailScreen(private val eventId: String) : Screen {
     @Composable
     override fun Content() {
         val viewModel = koinScreenModel<EventDetailViewModel> { parametersOf(eventId) }
-        val authViewModel = koinScreenModel<DashboardViewModel>()
-        val currentUser by authViewModel.currentUser.collectAsState()
         
         val event by viewModel.event.collectAsState()
         val invitees by viewModel.invitees.collectAsState()
+        val inviteeSearchQuery by viewModel.inviteeSearchQuery.collectAsState()
         val searchResults by viewModel.searchResults.collectAsState()
         val searchQuery by viewModel.searchQuery.collectAsState()
         
         val navigator = LocalNavigator.currentOrThrow
         var showAddUninvited by remember { mutableStateOf(false) }
-        var showAidConfirmation by remember { mutableStateOf<Beneficiary?>(null) }
 
         Scaffold(
             topBar = {
@@ -62,7 +60,7 @@ class EventDetailScreen(private val eventId: String) : Screen {
                     Card(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(e.reason, style = MaterialTheme.typography.titleMedium)
-                            Text("Type: ${e.natureOfAid}", style = MaterialTheme.typography.bodyMedium)
+                            Text("Aid: ${if (e.aidDescription.isNotBlank()) e.aidDescription else e.natureOfAid}", style = MaterialTheme.typography.bodyMedium)
                             Text("Aided: ${invitees.count { it.hasReceivedAid }} / ${invitees.size}", fontWeight = FontWeight.Bold)
                         }
                     }
@@ -80,6 +78,15 @@ class EventDetailScreen(private val eventId: String) : Screen {
                     }
                 }
 
+                OutlinedTextField(
+                    value = inviteeSearchQuery,
+                    onValueChange = { viewModel.onInviteeSearchQueryChange(it) },
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                    placeholder = { Text("Search invitees by name or number") },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    shape = MaterialTheme.shapes.medium
+                )
+
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(16.dp),
@@ -88,7 +95,9 @@ class EventDetailScreen(private val eventId: String) : Screen {
                     items(invitees) { status ->
                         InviteeRow(
                             status = status,
-                            onMarkDistributed = { showAidConfirmation = status.beneficiary }
+                            onMarkDistributed = { 
+                                navigator.push(EventAidDistributionScreen(eventId, status.beneficiary.id))
+                            }
                         )
                     }
                 }
@@ -115,10 +124,8 @@ class EventDetailScreen(private val eventId: String) : Screen {
                                     supportingContent = { Text(bene.phoneNumber) },
                                     trailingContent = {
                                         Button(onClick = { 
-                                            currentUser?.let { user ->
-                                                viewModel.addUninvitedAndDistribute(bene, user.userId)
-                                                showAddUninvited = false
-                                            }
+                                            navigator.push(EventAidDistributionScreen(eventId, bene.id))
+                                            showAddUninvited = false
                                         }) {
                                             Text("Add & Aid")
                                         }
@@ -130,25 +137,6 @@ class EventDetailScreen(private val eventId: String) : Screen {
                 },
                 confirmButton = {
                     TextButton(onClick = { showAddUninvited = false }) { Text("Close") }
-                }
-            )
-        }
-
-        showAidConfirmation?.let { bene ->
-            AlertDialog(
-                onDismissRequest = { showAidConfirmation = null },
-                title = { Text("Confirm Distribution") },
-                text = { Text("Are you sure you want to mark aid as distributed for ${bene.headName}?") },
-                confirmButton = {
-                    TextButton(onClick = {
-                        currentUser?.let { user ->
-                            viewModel.recordAid(bene, user.userId)
-                        }
-                        showAidConfirmation = null
-                    }) { Text("Confirm") }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showAidConfirmation = null }) { Text("Cancel") }
                 }
             )
         }

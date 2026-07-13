@@ -20,6 +20,7 @@ data class DistributionEvent(
     val natureOfAid: String = "",
     val packetCount: Int? = null,
     val monetaryAidAmount: Double? = null,
+    val aidDescription: String = "",
     val inviteeIds: List<String> = emptyList(),
     val status: EventStatus = EventStatus.PLANNED,
     val createdBy: String = "",

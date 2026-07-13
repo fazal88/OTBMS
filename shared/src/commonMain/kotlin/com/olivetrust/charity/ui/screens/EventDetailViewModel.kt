@@ -2,7 +2,6 @@ package com.olivetrust.charity.ui.screens
 
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
-import com.olivetrust.charity.LocationService
 import com.olivetrust.charity.domain.model.AidDistribution
 import com.olivetrust.charity.domain.model.Beneficiary
 import com.olivetrust.charity.domain.model.DistributionEvent
@@ -23,8 +22,7 @@ class EventDetailViewModel(
     private val eventId: String,
     private val eventRepository: EventRepository,
     private val beneficiaryRepository: BeneficiaryRepository,
-    private val aidRepository: AidRepository,
-    private val locationService: LocationService
+    private val aidRepository: AidRepository
 ) : ScreenModel {
 
     val event: StateFlow<DistributionEvent?> = eventRepository.getEventById(eventId)
@@ -34,18 +32,32 @@ class EventDetailViewModel(
         .map { list -> list.filter { it.eventId == eventId } }
         .stateIn(screenModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    // For invitee list search
+    private val _inviteeSearchQuery = MutableStateFlow("")
+    val inviteeSearchQuery: StateFlow<String> = _inviteeSearchQuery
+
     val invitees: StateFlow<List<InviteeStatus>> = combine(
         event,
         beneficiaryRepository.getBeneficiaries(),
-        eventDistributions
-    ) { event, beneficiaries, distributions ->
+        eventDistributions,
+        _inviteeSearchQuery
+    ) { event, beneficiaries, distributions, query ->
         if (event == null) return@combine emptyList()
         
         val aidedBeneficiaryIds = distributions.map { it.beneficiaryId }.toSet()
         
-        event.inviteeIds.mapNotNull { id ->
+        val allInvitees = event.inviteeIds.mapNotNull { id ->
             val bene = beneficiaries.find { it.id == id }
             bene?.let { InviteeStatus(it, aidedBeneficiaryIds.contains(id)) }
+        }
+
+        if (query.isBlank()) {
+            allInvitees
+        } else {
+            allInvitees.filter { 
+                it.beneficiary.headName.contains(query, ignoreCase = true) || 
+                it.beneficiary.phoneNumber.contains(query)
+            }
         }
     }.stateIn(screenModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -68,45 +80,12 @@ class EventDetailViewModel(
 
     fun onSearchQueryChange(query: String) { _searchQuery.value = query }
 
-    fun addUninvitedAndDistribute(beneficiary: Beneficiary, userId: String) {
-        screenModelScope.launch {
-            eventRepository.addInvitee(eventId, beneficiary.id).onSuccess {
-                recordAid(beneficiary, userId)
-                _searchQuery.value = ""
-            }
-        }
-    }
-
-    fun recordAid(beneficiary: Beneficiary, userId: String) {
-        screenModelScope.launch {
-            val currentEvent = event.value ?: return@launch
-            val location = locationService.getCurrentLocation()
-            val now = Clock.System.now().toEpochMilliseconds()
-            
-            val distribution = AidDistribution(
-                distributionId = "AID_${now}_${beneficiary.id}",
-                date = now,
-                beneficiaryId = beneficiary.id,
-                beneficiaryName = beneficiary.headName,
-                areaCode = beneficiary.areaCode,
-                natureOfAid = currentEvent.natureOfAid,
-                aidAmount = currentEvent.monetaryAidAmount ?: 0.0,
-                packetCount = currentEvent.packetCount ?: 0,
-                reason = currentEvent.reason,
-                familyCount = beneficiary.numberOfDependants + 1,
-                distributedBy = userId,
-                distributionLocationLat = location?.latitude ?: 0.0,
-                distributionLocationLng = location?.longitude ?: 0.0,
-                eventId = eventId
-            )
-            
-            aidRepository.recordDistribution(distribution)
-        }
-    }
+    fun onInviteeSearchQueryChange(query: String) { _inviteeSearchQuery.value = query }
 
     fun notifyAllInvitees() {
         val currentEvent = event.value ?: return
-        val message = "Dear Beneficiary, please come for aid distribution: ${currentEvent.name} on ${currentEvent.reason}. Type: ${currentEvent.natureOfAid}"
+        val aidInfo = if (currentEvent.aidDescription.isNotBlank()) currentEvent.aidDescription else currentEvent.natureOfAid
+        val message = "Dear Beneficiary, please come for aid distribution: ${currentEvent.name} on ${currentEvent.reason}. Aid: $aidInfo"
         
         screenModelScope.launch {
             invitees.value.forEach { 

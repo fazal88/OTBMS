@@ -368,9 +368,6 @@ fun DashboardContent(
                     }
                 }
 
-                item(span = { GridItemSpan(2) }) {
-                    Spacer(Modifier.height(80.dp))
-                }
 
                 if (role == UserRole.APPROVER || role == UserRole.SUPER_ADMIN) {
                     item(span = { GridItemSpan(2) }) {

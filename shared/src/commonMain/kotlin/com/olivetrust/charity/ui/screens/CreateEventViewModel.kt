@@ -25,14 +25,8 @@ class CreateEventViewModel(
     private val _reason = MutableStateFlow("")
     val reason: StateFlow<String> = _reason
 
-    private val _natureOfAid = MutableStateFlow("Ration")
-    val natureOfAid: StateFlow<String> = _natureOfAid
-
-    private val _packetCount = MutableStateFlow<Int?>(null)
-    val packetCount: StateFlow<Int?> = _packetCount
-
-    private val _monetaryAmount = MutableStateFlow<Double?>(null)
-    val monetaryAmount: StateFlow<Double?> = _monetaryAmount
+    private val _aidDescription = MutableStateFlow("")
+    val aidDescription: StateFlow<String> = _aidDescription
 
     private val _areaCodeFilter = MutableStateFlow("")
     val areaCodeFilter: StateFlow<String> = _areaCodeFilter
@@ -52,9 +46,7 @@ class CreateEventViewModel(
 
     fun onNameChange(value: String) { _name.value = value }
     fun onReasonChange(value: String) { _reason.value = value }
-    fun onNatureOfAidChange(value: String) { _natureOfAid.value = value }
-    fun onPacketCountChange(value: Int?) { _packetCount.value = value }
-    fun onMonetaryAmountChange(value: Double?) { _monetaryAmount.value = value }
+    fun onAidDescriptionChange(value: String) { _aidDescription.value = value }
     fun onAreaCodeFilterChange(value: String) { _areaCodeFilter.value = value }
 
     fun toggleBeneficiarySelection(id: String) {
@@ -78,9 +70,7 @@ class CreateEventViewModel(
                 name = _name.value,
                 date = now,
                 reason = _reason.value,
-                natureOfAid = _natureOfAid.value,
-                packetCount = _packetCount.value,
-                monetaryAidAmount = _monetaryAmount.value,
+                aidDescription = _aidDescription.value,
                 inviteeIds = _selectedBeneficiaryIds.value.toList(),
                 createdBy = userId
             )
