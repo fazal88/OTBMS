@@ -52,7 +52,7 @@ class DashboardViewModel(
         // Auto-expire beneficiaries if needed - moved out of combine to avoid side-effect loops
         screenModelScope.launch {
             beneficiaryRepository.getBeneficiaries().collect { beneficiaries ->
-                val now = Instant.fromEpochMilliseconds(Clock.System.now().toEpochMilliseconds()).toLocalDateTime(TimeZone.currentSystemDefault())
+                val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
                 val currentMonth = now.month.number
                 val currentYear = now.year
 
@@ -85,13 +85,18 @@ class DashboardViewModel(
         val issues = array[5] as List<DonationBoxIssue>
         val employees = array[6] as List<User>
 
-        val now = kotlinx.datetime.Instant.fromEpochMilliseconds(Clock.System.now().toEpochMilliseconds()).toLocalDateTime(TimeZone.currentSystemDefault())
+        val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
         val currentMonth = now.month.number
         val currentYear = now.year
 
         val monthlyDistributions = distributions.count { dist ->
             val distDate = Instant.fromEpochMilliseconds(dist.date).toLocalDateTime(TimeZone.currentSystemDefault())
-            distDate.month.number == currentMonth && distDate.year == currentYear
+            distDate.month.number == currentMonth && distDate.year == currentYear && dist.eventId == null
+        }
+
+        val monthlyVisits = visits.count { visit ->
+            val visitDate = Instant.fromEpochMilliseconds(visit.date).toLocalDateTime(TimeZone.currentSystemDefault())
+            visitDate.month.number == currentMonth && visitDate.year == currentYear
         }
 
         val monthlyCollections = collections.count { coll ->
@@ -101,13 +106,13 @@ class DashboardViewModel(
 
         val collectionsToday = collections.count { coll ->
             val collDate = Instant.fromEpochMilliseconds(coll.timestamp).toLocalDateTime(TimeZone.currentSystemDefault())
-            collDate.dayOfMonth == now.dayOfMonth && collDate.month.number == currentMonth && collDate.year == currentYear
+            collDate.day == now.day && collDate.month.number == currentMonth && collDate.year == currentYear
         }
 
         DashboardStats(
             approvedBeneficiaries = beneficiaries.count { it.status == BeneficiaryStatus.APPROVED },
             monthlyAidDistributed = monthlyDistributions,
-            totalVisits = visits.size,
+            monthlyVisits = monthlyVisits,
             pendingOnboarding = beneficiaries.count { it.status == BeneficiaryStatus.PENDING_APPROVAL },
             pendingEdits = beneficiaries.count { it.status == BeneficiaryStatus.EDIT_REQUESTED },
             pendingReapprovals = beneficiaries.count { it.status == BeneficiaryStatus.REAPPROVAL_PENDING },
@@ -144,7 +149,7 @@ class DashboardViewModel(
 data class DashboardStats(
     val approvedBeneficiaries: Int = 0,
     val monthlyAidDistributed: Int = 0,
-    val totalVisits: Int = 0,
+    val monthlyVisits: Int = 0,
     val pendingOnboarding: Int = 0,
     val pendingEdits: Int = 0,
     val pendingReapprovals: Int = 0,

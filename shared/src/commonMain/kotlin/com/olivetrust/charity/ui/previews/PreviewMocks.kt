@@ -13,7 +13,7 @@ object PreviewMocks {
         fullName = "John Doe",
         username = "johndoe",
         mobileNumber = "1234567890",
-        role = UserRole.SUPER_ADMIN,
+        role = UserRole.APPROVER,
         status = UserStatus.ACTIVE
     )
 
