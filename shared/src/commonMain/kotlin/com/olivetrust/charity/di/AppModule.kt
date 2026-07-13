@@ -16,7 +16,7 @@ val appModule = module {
     singleOf(::FirestoreAuthRepository) bind AuthRepository::class
     single { FirestoreBeneficiaryRepository(get(), get()) } bind BeneficiaryRepository::class
     single { FirestoreAidRepository(get(), get()) } bind AidRepository::class
-    single { FirestoreVisitRepository(get(), get()) } bind VisitRepository::class
+    single { FirestoreVisitRepository(get(), get(), get()) } bind VisitRepository::class
     singleOf(::FirestoreEmployeeRepository) bind EmployeeRepository::class
     singleOf(::FirestoreAuditRepository) bind AuditRepository::class
     singleOf(::FirestoreEventRepository) bind EventRepository::class

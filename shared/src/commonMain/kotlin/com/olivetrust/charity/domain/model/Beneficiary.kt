@@ -46,6 +46,7 @@ data class Beneficiary(
     val deviceUsed: String = "",
     val status: BeneficiaryStatus = BeneficiaryStatus.PENDING_APPROVAL,
     val lastUpdated: Long = 0,
+    val lastVisitDate: Long? = null,
     
     // Expiry info
     val expiryMonth: Int? = null,

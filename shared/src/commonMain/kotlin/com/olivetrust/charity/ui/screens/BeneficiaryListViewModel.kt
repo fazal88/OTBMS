@@ -9,6 +9,7 @@ import com.olivetrust.charity.domain.repository.BeneficiaryRepository
 import com.olivetrust.charity.util.CommonSerializable
 import kotlinx.coroutines.flow.*
 import kotlinx.datetime.*
+import kotlin.time.Clock
 
 enum class SortOrder : CommonSerializable {
     NAME_ASC, NAME_DESC, 
@@ -27,7 +28,8 @@ data class BeneficiaryFilters(
     val minAmount: Double? = null,
     val maxAmount: Double? = null,
     val month: Int? = null,
-    val year: Int? = null
+    val year: Int? = null,
+    val visitDue: Boolean = false
 ) : CommonSerializable
 
 class BeneficiaryListViewModel(
@@ -128,6 +130,18 @@ class BeneficiaryListViewModel(
             
             if (f.month != null && dateTime.month.number != f.month) return false
             if (f.year != null && dateTime.year != f.year) return false
+        }
+
+        if (f.visitDue) {
+            if (b.status != BeneficiaryStatus.APPROVED) return false
+            
+            val lastActionDate = b.lastVisitDate ?: b.approvalDate ?: b.onboardingDate
+            val now = Clock.System.now()
+            val visitInstant = Instant.fromEpochMilliseconds(lastActionDate)
+            
+            val twoMonthsAgo = now.minus(2, DateTimeUnit.MONTH, TimeZone.currentSystemDefault())
+            
+            if (visitInstant > twoMonthsAgo) return false
         }
         
         return true

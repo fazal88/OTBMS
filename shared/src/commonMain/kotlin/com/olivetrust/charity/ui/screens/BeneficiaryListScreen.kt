@@ -211,6 +211,14 @@ fun BeneficiaryListContent(
                                 trailingIcon = { Icon(Icons.Default.Close, null, Modifier.size(14.dp)) }
                             )
                         }
+                        if (filters.visitDue) {
+                            FilterChip(
+                                selected = true,
+                                onClick = { onFiltersChange(filters.copy(visitDue = false)) },
+                                label = { Text("Visit Due") },
+                                trailingIcon = { Icon(Icons.Default.Close, null, Modifier.size(14.dp)) }
+                            )
+                        }
                         if (filters.areaCode != null) {
                             FilterChip(
                                 selected = true,
@@ -691,6 +699,18 @@ fun FilterBottomSheet(
                     )
                 }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text("Visit Status", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            FilterChip(
+                selected = tempFilters.visitDue,
+                onClick = { tempFilters = tempFilters.copy(visitDue = !tempFilters.visitDue) },
+                label = { Text("Visit Due (> 2 months)") },
+                leadingIcon = if (tempFilters.visitDue) {
+                    { Icon(Icons.Default.Check, null, Modifier.size(18.dp)) }
+                } else null
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 

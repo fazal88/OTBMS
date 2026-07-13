@@ -4,6 +4,7 @@ import com.olivetrust.charity.domain.model.AuditLog
 import com.olivetrust.charity.domain.model.SystemTopics
 import com.olivetrust.charity.domain.model.VerificationVisit
 import com.olivetrust.charity.domain.repository.AuditRepository
+import com.olivetrust.charity.domain.repository.BeneficiaryRepository
 import com.olivetrust.charity.domain.repository.NotificationRepository
 import com.olivetrust.charity.domain.repository.VisitRepository
 import dev.gitlive.firebase.Firebase
@@ -13,7 +14,8 @@ import kotlinx.coroutines.flow.map
 
 class FirestoreVisitRepository(
     private val auditRepository: AuditRepository,
-    private val notificationRepository: NotificationRepository
+    private val notificationRepository: NotificationRepository,
+    private val beneficiaryRepository: BeneficiaryRepository
 ) : VisitRepository {
     private val firestore by lazy { Firebase.firestore }
     private val collection by lazy { firestore.collection("verificationVisits") }
@@ -59,6 +61,9 @@ class FirestoreVisitRepository(
                 timestamp = now,
                 deviceId = ""
             ))
+
+            // Update beneficiary's last visit date
+            beneficiaryRepository.updateLastVisitDate(visit.beneficiaryId, visit.date)
 
             notificationRepository.sendNotification(
                 topicName = SystemTopics.VERIFY_VISIT,
