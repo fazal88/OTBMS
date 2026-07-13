@@ -1,9 +1,17 @@
 package com.olivetrust.charity.ui.components
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
@@ -14,7 +22,10 @@ actual fun InteractiveMap(
     modifier: Modifier,
     initialLocation: Location?,
     onCameraIdle: (Location) -> Unit,
-    showMyLocationButton: Boolean
+    onPinClick: (Location) -> Unit,
+    showMyLocationButton: Boolean,
+    pins: List<Location>,
+    isSelectorMode: Boolean
 ) {
     val cameraPositionState = rememberCameraPositionState {
         initialLocation?.let {
@@ -40,16 +51,41 @@ actual fun InteractiveMap(
         }
     }
 
-    GoogleMap(
-        modifier = modifier.fillMaxSize(),
-        cameraPositionState = cameraPositionState,
-        uiSettings = MapUiSettings(
-            myLocationButtonEnabled = showMyLocationButton,
-            zoomControlsEnabled = false,
-            mapToolbarEnabled = false
-        ),
-        properties = MapProperties(
-            isMyLocationEnabled = showMyLocationButton
-        )
-    )
+    Box(modifier = modifier) {
+        GoogleMap(
+            modifier = Modifier.fillMaxSize(),
+            cameraPositionState = cameraPositionState,
+            uiSettings = MapUiSettings(
+                myLocationButtonEnabled = showMyLocationButton,
+                zoomControlsEnabled = false,
+                mapToolbarEnabled = false
+            ),
+            properties = MapProperties(
+                isMyLocationEnabled = showMyLocationButton
+            )
+        ) {
+            pins.forEach { pin ->
+                val markerState = rememberMarkerState(position = LatLng(pin.latitude, pin.longitude))
+                Marker(
+                    state = markerState,
+                    title = "Location",
+                    onClick = {
+                        onPinClick(pin)
+                        true
+                    }
+                )
+            }
+        }
+
+        if (isSelectorMode) {
+            Icon(
+                imageVector = Icons.Default.LocationOn,
+                contentDescription = "Select Location",
+                tint = Color.Red,
+                modifier = Modifier
+                    .size(40.dp)
+                    .align(Alignment.Center)
+            )
+        }
+    }
 }

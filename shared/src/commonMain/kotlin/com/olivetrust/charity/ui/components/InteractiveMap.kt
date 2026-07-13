@@ -8,6 +8,9 @@ import com.olivetrust.charity.Location
 expect fun InteractiveMap(
     modifier: Modifier = Modifier,
     initialLocation: Location?,
-    onCameraIdle: (Location) -> Unit,
-    showMyLocationButton: Boolean = true
+    onCameraIdle: (Location) -> Unit = {},
+    onPinClick: (Location) -> Unit = {},
+    showMyLocationButton: Boolean = true,
+    pins: List<Location> = emptyList(),
+    isSelectorMode: Boolean = false
 )
