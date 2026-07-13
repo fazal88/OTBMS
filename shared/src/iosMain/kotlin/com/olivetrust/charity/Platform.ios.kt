@@ -119,3 +119,9 @@ actual suspend fun getPlatformFcmToken(): String? {
     return IosNotificationHelper.awaitFcmToken(timeoutSeconds = 15)
 }
 
+actual fun setScreenshotProtection(enabled: Boolean) {
+    // Note: True screenshot prevention is not natively supported on iOS in the same way as Android's FLAG_SECURE.
+    // Common workarounds include overlaying the screen when backgrounded or using a hidden UITextField.
+    println("IOS_SCREENSHOT_PROTECTION: ${if (enabled) "Enabled" else "Disabled"} (Not fully implemented on iOS)")
+}
+

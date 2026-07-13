@@ -30,6 +30,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         instance = this
+        ActivityHolder.init(this)
 
         requestPermissions()
 

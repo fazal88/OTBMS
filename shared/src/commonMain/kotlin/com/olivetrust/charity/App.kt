@@ -10,6 +10,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.olivetrust.charity.data.util.DatabaseSeeder
 import org.koin.compose.KoinApplication
 import org.koin.dsl.module
+import org.koin.compose.koinInject
+import com.olivetrust.charity.domain.repository.AuthRepository
+import com.olivetrust.charity.domain.model.UserRole
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 
 @Composable
 @Preview
@@ -23,6 +28,15 @@ fun App(config: AppConfig? = null) {
         }
         modules(appModule)
     }) {
+        val authRepository: AuthRepository = koinInject()
+        val user by authRepository.currentUser.collectAsState(null)
+        
+        LaunchedEffect(user) {
+            val role = user?.role
+            val isSensitiveRole = role == UserRole.EMPLOYEE || role == UserRole.COLLECTOR
+            setScreenshotProtection(isSensitiveRole)
+        }
+
         OliveTheme {
             Navigator(SplashScreen())
         }

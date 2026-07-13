@@ -8,6 +8,7 @@ import android.content.pm.ApplicationInfo
 import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.tasks.await
 import android.annotation.SuppressLint
+import android.view.WindowManager
 
 class AndroidPlatform : Platform {
     override val name: String = "Android ${Build.VERSION.SDK_INT}"
@@ -95,6 +96,20 @@ actual suspend fun getPlatformFcmToken(): String? {
     } catch (e: Exception) {
         println("ANDROID_FCM_ERROR: ${e.message}")
         null
+    }
+}
+
+actual fun setScreenshotProtection(enabled: Boolean) {
+    ActivityHolder.get()?.let { activity ->
+        activity.runOnUiThread {
+            if (enabled) {
+                activity.window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                println("SCREENSHOT_PROTECTION: Enabled")
+            } else {
+                activity.window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                println("SCREENSHOT_PROTECTION: Disabled")
+            }
+        }
     }
 }
 

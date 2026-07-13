@@ -35,3 +35,5 @@ expect fun openMaps(latitude: Double, longitude: Double, label: String = "")
  */
 expect suspend fun getPlatformFcmToken(): String?
 
+expect fun setScreenshotProtection(enabled: Boolean)
+
