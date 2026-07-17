@@ -230,12 +230,15 @@ fun DashboardContent(
                         )
                     }
                     item(span = { GridItemSpan(2) }) {
-                        WideStatCard(
-                            label = "Aid Distributed",
-                            value = stats.monthlyAidDistributed.toString(),
-                            icon = Icons.AutoMirrored.Filled.List,
-                            color = MaterialTheme.colorScheme.tertiary,
-                            subtitle = "Performance for ${getCurrentMonthName()}",
+                        AidBifurcationSection(
+                            rationCount = stats.monthlyRationCount,
+                            monetaryCount = stats.monthlyMonetaryCount,
+                            monetaryAmount = stats.monthlyMonetaryAmount,
+                            medicalCount = stats.monthlyMedicalCount,
+                            medicalAmount = stats.monthlyMedicalAmount,
+                            educationCount = stats.monthlyEducationCount,
+                            educationAmount = stats.monthlyEducationAmount,
+                            monthName = getCurrentMonthName(),
                             onClick = onAidListClick
                         )
                     }
@@ -648,6 +651,133 @@ private fun formatCurrency(amount: Double): String {
 }
 
 @Composable
+fun AidBifurcationSection(
+    rationCount: Int,
+    monetaryCount: Int,
+    monetaryAmount: Double,
+    medicalCount: Int,
+    medicalAmount: Double,
+    educationCount: Int,
+    educationAmount: Double,
+    monthName: String,
+    onClick: () -> Unit
+) {
+    val rationColor = Color(0xFF5D4037)       // Brown
+    val monetaryColor = Color(0xFF1B6E3C)      // Green
+    val medicalColor = Color(0xFF1565C0)       // Blue
+    val educationColor = Color(0xFF6A1B9A)     // Purple
+
+    Surface(
+        modifier = Modifier.fillMaxWidth().clickable { onClick() },
+        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+    ) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "Aid Distribution",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    monthName,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                AidCategoryMiniCard(
+                    modifier = Modifier.weight(1f),
+                    emoji = "🧵",
+                    label = "Ration",
+                    count = rationCount,
+                    amount = null,
+                    color = rationColor
+                )
+                AidCategoryMiniCard(
+                    modifier = Modifier.weight(1f),
+                    emoji = "💰",
+                    label = "Monetary",
+                    count = monetaryCount,
+                    amount = monetaryAmount,
+                    color = monetaryColor
+                )
+                AidCategoryMiniCard(
+                    modifier = Modifier.weight(1f),
+                    emoji = "🏥",
+                    label = "Medical",
+                    count = medicalCount,
+                    amount = medicalAmount,
+                    color = medicalColor
+                )
+                AidCategoryMiniCard(
+                    modifier = Modifier.weight(1f),
+                    emoji = "🎓",
+                    label = "Education",
+                    count = educationCount,
+                    amount = educationAmount,
+                    color = educationColor
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AidCategoryMiniCard(
+    modifier: Modifier = Modifier,
+    emoji: String,
+    label: String,
+    count: Int,
+    amount: Double?,
+    color: Color
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        color = color.copy(alpha = 0.08f),
+        border = BorderStroke(1.dp, color.copy(alpha = 0.18f))
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(emoji, fontSize = 20.sp)
+            Text(
+                count.toString(),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Black,
+                color = color
+            )
+            Text(
+                label,
+                style = MaterialTheme.typography.labelSmall,
+                color = color.copy(alpha = 0.7f),
+                fontWeight = FontWeight.SemiBold
+            )
+            if (amount != null && amount > 0.0) {
+                Text(
+                    "₹${formatCurrency(amount)}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = color.copy(alpha = 0.6f),
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
+    }
+}
+
+@Composable
 fun WideStatCard(
     label: String,
     value: String,
@@ -917,7 +1047,13 @@ fun DashboardPreview() {
             user = PreviewMocks.mockUser,
             stats = DashboardStats(
                 approvedBeneficiaries = 120,
-                monthlyAidDistributed = 45,
+                monthlyRationCount = 20,
+                monthlyMonetaryCount = 15,
+                monthlyMonetaryAmount = 45000.0,
+                monthlyMedicalCount = 6,
+                monthlyMedicalAmount = 12000.0,
+                monthlyEducationCount = 4,
+                monthlyEducationAmount = 8000.0,
                 monthlyVisits = 30,
                 pendingOnboarding = 5,
                 pendingEdits = 3,

@@ -20,6 +20,8 @@ interface BeneficiaryRepository {
         monthlyRation: String?,
         packetCount: Int?,
         monetaryAidAmount: Double?,
+        medicalAidAmount: Double?,
+        educationAidAmount: Double?,
         monitorId: String,
         expiryMonth: Int?,
         expiryYear: Int?

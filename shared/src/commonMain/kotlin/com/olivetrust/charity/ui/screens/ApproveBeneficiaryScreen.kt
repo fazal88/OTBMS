@@ -79,6 +79,8 @@ data class ApproveBeneficiaryScreen(private val beneficiaryId: String, private v
                 var monthlyRation by remember { mutableStateOf("") }
                 var packetCount by remember { mutableStateOf("") }
                 var monetaryAidAmount by remember { mutableStateOf("") }
+                var medicalAidAmount by remember { mutableStateOf("") }
+                var educationAidAmount by remember { mutableStateOf("") }
                 var selectedMonitorId by remember { mutableStateOf("") }
                 var monitorExpanded by remember { mutableStateOf(false) }
 
@@ -98,6 +100,7 @@ data class ApproveBeneficiaryScreen(private val beneficiaryId: String, private v
                 )
 
                 Text("Nature of Aid", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                // Row 1: Ration, Monetary, Both
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf("Ration", "Monetary", "Both").forEach { option ->
                         FilterChip(
@@ -108,10 +111,37 @@ data class ApproveBeneficiaryScreen(private val beneficiaryId: String, private v
                                     "Monetary" -> {
                                         monthlyRation = ""
                                         packetCount = ""
+                                        medicalAidAmount = ""
+                                        educationAidAmount = ""
                                     }
                                     "Ration" -> {
                                         monetaryAidAmount = ""
+                                        medicalAidAmount = ""
+                                        educationAidAmount = ""
                                     }
+                                    "Both" -> {
+                                        medicalAidAmount = ""
+                                        educationAidAmount = ""
+                                    }
+                                }
+                            },
+                            label = { Text(option) }
+                        )
+                    }
+                }
+                // Row 2: Medical, Education
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf("Medical", "Education").forEach { option ->
+                        FilterChip(
+                            selected = natureOfAid == option,
+                            onClick = {
+                                natureOfAid = option
+                                monthlyRation = ""
+                                packetCount = ""
+                                monetaryAidAmount = ""
+                                when (option) {
+                                    "Medical" -> educationAidAmount = ""
+                                    "Education" -> medicalAidAmount = ""
                                 }
                             },
                             label = { Text(option) }
@@ -141,6 +171,26 @@ data class ApproveBeneficiaryScreen(private val beneficiaryId: String, private v
                         value = monetaryAidAmount,
                         onValueChange = { monetaryAidAmount = it },
                         label = { Text("Monetary Aid Amount (in ₹)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next)
+                    )
+                }
+
+                if (natureOfAid == "Medical") {
+                    OutlinedTextField(
+                        value = medicalAidAmount,
+                        onValueChange = { medicalAidAmount = it },
+                        label = { Text("Medical Aid Amount (in ₹)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next)
+                    )
+                }
+
+                if (natureOfAid == "Education") {
+                    OutlinedTextField(
+                        value = educationAidAmount,
+                        onValueChange = { educationAidAmount = it },
+                        label = { Text("Education Aid Amount (in ₹)") },
                         modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next)
                     )
@@ -231,9 +281,11 @@ data class ApproveBeneficiaryScreen(private val beneficiaryId: String, private v
                             id = beneficiaryId,
                             notes = notes,
                             natureOfAid = natureOfAid,
-                            monthlyRation = if (natureOfAid != "Monetary") monthlyRation.ifBlank { null } else null,
-                            packetCount = if (natureOfAid != "Monetary") packetCount.toIntOrNull() else null,
-                            monetaryAidAmount = if (natureOfAid != "Ration") monetaryAidAmount.toDoubleOrNull() else null,
+                            monthlyRation = if (natureOfAid == "Ration" || natureOfAid == "Both") monthlyRation.ifBlank { null } else null,
+                            packetCount = if (natureOfAid == "Ration" || natureOfAid == "Both") packetCount.toIntOrNull() else null,
+                            monetaryAidAmount = if (natureOfAid == "Monetary" || natureOfAid == "Both") monetaryAidAmount.toDoubleOrNull() else null,
+                            medicalAidAmount = if (natureOfAid == "Medical") medicalAidAmount.toDoubleOrNull() else null,
+                            educationAidAmount = if (natureOfAid == "Education") educationAidAmount.toDoubleOrNull() else null,
                             monitorId = selectedMonitorId,
                             expiryMonth = expiryMonth.toIntOrNull(),
                             expiryYear = expiryYear.toIntOrNull()
@@ -278,6 +330,8 @@ class ApproveBeneficiaryViewModel(
         monthlyRation: String?,
         packetCount: Int?,
         monetaryAidAmount: Double?,
+        medicalAidAmount: Double?,
+        educationAidAmount: Double?,
         monitorId: String,
         expiryMonth: Int?,
         expiryYear: Int?
@@ -293,6 +347,8 @@ class ApproveBeneficiaryViewModel(
                 monthlyRation = monthlyRation,
                 packetCount = packetCount,
                 monetaryAidAmount = monetaryAidAmount,
+                medicalAidAmount = medicalAidAmount,
+                educationAidAmount = educationAidAmount,
                 monitorId = monitorId,
                 expiryMonth = expiryMonth,
                 expiryYear = expiryYear

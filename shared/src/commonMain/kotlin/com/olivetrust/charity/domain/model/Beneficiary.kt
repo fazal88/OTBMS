@@ -58,6 +58,8 @@ data class Beneficiary(
     val monthlyRation: String? = null,
     val packetCount: Int? = null,
     val monetaryAidAmount: Double? = null,
+    val medicalAidAmount: Double? = null,
+    val educationAidAmount: Double? = null,
     val approvedBy: String? = null,
     val assignedMonitor: String? = null,
     val approvalDate: Long? = null,

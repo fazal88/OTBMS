@@ -89,10 +89,20 @@ class DashboardViewModel(
         val currentMonth = now.month.number
         val currentYear = now.year
 
-        val monthlyDistributions = distributions.count { dist ->
+        val monthlyDists = distributions.filter { dist ->
             val distDate = Instant.fromEpochMilliseconds(dist.date).toLocalDateTime(TimeZone.currentSystemDefault())
             distDate.month.number == currentMonth && distDate.year == currentYear && dist.eventId == null
         }
+
+        val monthlyRationCount = monthlyDists.count { it.natureOfAid.equals("Ration", ignoreCase = true) }
+        val monthlyMonetaryCount = monthlyDists.count { it.natureOfAid.equals("Monetary", ignoreCase = true) }
+        val monthlyMonetaryAmount = monthlyDists.filter { it.natureOfAid.equals("Monetary", ignoreCase = true) }.sumOf { it.aidAmount }
+        val monthlyBothCount = monthlyDists.count { it.natureOfAid.equals("Both", ignoreCase = true) }
+        val monthlyBothAmount = monthlyDists.filter { it.natureOfAid.equals("Both", ignoreCase = true) }.sumOf { it.aidAmount }
+        val monthlyMedicalCount = monthlyDists.count { it.natureOfAid.equals("Medical", ignoreCase = true) }
+        val monthlyMedicalAmount = monthlyDists.filter { it.natureOfAid.equals("Medical", ignoreCase = true) }.sumOf { it.aidAmount }
+        val monthlyEducationCount = monthlyDists.count { it.natureOfAid.equals("Education", ignoreCase = true) }
+        val monthlyEducationAmount = monthlyDists.filter { it.natureOfAid.equals("Education", ignoreCase = true) }.sumOf { it.aidAmount }
 
         val monthlyVisits = visits.count { visit ->
             val visitDate = Instant.fromEpochMilliseconds(visit.date).toLocalDateTime(TimeZone.currentSystemDefault())
@@ -111,7 +121,13 @@ class DashboardViewModel(
 
         DashboardStats(
             approvedBeneficiaries = beneficiaries.count { it.status == BeneficiaryStatus.APPROVED },
-            monthlyAidDistributed = monthlyDistributions,
+            monthlyRationCount = monthlyRationCount,
+            monthlyMonetaryCount = monthlyMonetaryCount + monthlyBothCount,
+            monthlyMonetaryAmount = monthlyMonetaryAmount + monthlyBothAmount,
+            monthlyMedicalCount = monthlyMedicalCount,
+            monthlyMedicalAmount = monthlyMedicalAmount,
+            monthlyEducationCount = monthlyEducationCount,
+            monthlyEducationAmount = monthlyEducationAmount,
             monthlyVisits = monthlyVisits,
             pendingOnboarding = beneficiaries.count { it.status == BeneficiaryStatus.PENDING_APPROVAL },
             pendingEdits = beneficiaries.count { it.status == BeneficiaryStatus.EDIT_REQUESTED },
@@ -148,7 +164,13 @@ class DashboardViewModel(
 
 data class DashboardStats(
     val approvedBeneficiaries: Int = 0,
-    val monthlyAidDistributed: Int = 0,
+    val monthlyRationCount: Int = 0,
+    val monthlyMonetaryCount: Int = 0,
+    val monthlyMonetaryAmount: Double = 0.0,
+    val monthlyMedicalCount: Int = 0,
+    val monthlyMedicalAmount: Double = 0.0,
+    val monthlyEducationCount: Int = 0,
+    val monthlyEducationAmount: Double = 0.0,
     val monthlyVisits: Int = 0,
     val pendingOnboarding: Int = 0,
     val pendingEdits: Int = 0,
