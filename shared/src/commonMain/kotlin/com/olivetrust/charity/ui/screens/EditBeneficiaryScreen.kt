@@ -21,6 +21,15 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.*
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import coil3.compose.AsyncImage
+import com.olivetrust.charity.getFilePicker
+import kotlinx.coroutines.launch
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -48,7 +57,7 @@ data class EditBeneficiaryScreen(private val initialBeneficiary: Beneficiary) : 
             initialBeneficiary = initialBeneficiary,
             state = state,
             onBack = { navigator.pop() },
-            onSubmit = { viewModel.submit(it, isEdit = true) }
+            onSubmit = { b, photo -> viewModel.submit(b, profilePhotoData = photo, isEdit = true) }
         )
     }
 }
@@ -59,9 +68,14 @@ fun EditBeneficiaryContent(
     initialBeneficiary: Beneficiary,
     state: OnboardingState,
     onBack: () -> Unit,
-    onSubmit: (Beneficiary) -> Unit
+    onSubmit: (Beneficiary, ByteArray?) -> Unit
 ) {
     val focusManager = LocalFocusManager.current
+    val scope = rememberCoroutineScope()
+
+    // Photo State
+    var photoBytes by remember { mutableStateOf<ByteArray?>(null) }
+    var photoUrl by remember { mutableStateOf(initialBeneficiary.photoUrl) }
 
     // State
     var headName by remember { mutableStateOf(initialBeneficiary.headName) }
@@ -117,6 +131,24 @@ fun EditBeneficiaryContent(
     ) { padding ->
         LazyColumn(modifier = Modifier.padding(padding).padding(16.dp)) {
             item {
+                ProfilePhotoSection(
+                    photoUrl = photoUrl,
+                    photoBytes = photoBytes,
+                    onAddClick = {
+                        scope.launch {
+                            val picked = getFilePicker().pickImage()
+                            if (picked != null) {
+                                photoBytes = picked
+                            }
+                        }
+                    },
+                    onRemoveClick = { 
+                        photoBytes = null
+                        photoUrl = "" 
+                    }
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+                
                 Text("Personal Information", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(8.dp))
                 
@@ -530,9 +562,10 @@ fun EditBeneficiaryContent(
                                 numberOfDependants = numberOfDependants.toIntOrNull() ?: 0,
                                 familyMembers = familyMembers.toList(),
                                 startMonth = startMonth.toIntOrNull(),
-                                startYear = startYear.toIntOrNull()
+                                startYear = startYear.toIntOrNull(),
+                                photoUrl = photoUrl
                             )
-                            onSubmit(updatedBeneficiary)
+                            onSubmit(updatedBeneficiary, photoBytes)
                         },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(8.dp)
@@ -554,6 +587,71 @@ fun EditBeneficiaryContent(
     }
 }
 
+@Composable
+fun ProfilePhotoSection(
+    photoUrl: String?,
+    photoBytes: ByteArray?,
+    onAddClick: () -> Unit,
+    onRemoveClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier
+                .size(100.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center
+        ) {
+            if (photoBytes != null) {
+                AsyncImage(
+                    model = photoBytes,
+                    contentDescription = "New Profile Photo",
+                    modifier = Modifier.fillMaxSize().clip(CircleShape),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                )
+            } else if (!photoUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = photoUrl,
+                    contentDescription = "Existing Profile Photo",
+                    modifier = Modifier.fillMaxSize().clip(CircleShape),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                )
+            } else {
+                Icon(
+                    Icons.Default.AccountCircle,
+                    contentDescription = "Placeholder",
+                    modifier = Modifier.size(80.dp),
+                    tint = MaterialTheme.colorScheme.outline
+                )
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            TextButton(onClick = onAddClick) {
+                Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(4.dp))
+                Text(if (photoBytes == null && photoUrl.isNullOrBlank()) "Add Profile Pic" else "Change Photo")
+            }
+            
+            if (photoBytes != null || !photoUrl.isNullOrBlank()) {
+                TextButton(
+                    onClick = onRemoveClick,
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Icon(Icons.Default.Delete, null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("Remove")
+                }
+            }
+        }
+    }
+}
+
 @Preview
 @Composable
 fun EditBeneficiaryContentPreview() {
@@ -562,7 +660,7 @@ fun EditBeneficiaryContentPreview() {
             initialBeneficiary = PreviewMocks.mockBeneficiary,
             state = OnboardingState.Idle,
             onBack = {},
-            onSubmit = {}
+            onSubmit = { _, _ -> }
         )
     }
 }

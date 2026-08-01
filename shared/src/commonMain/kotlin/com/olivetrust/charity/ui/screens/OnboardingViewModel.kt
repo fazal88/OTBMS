@@ -16,13 +16,14 @@ import kotlin.time.Clock
 class OnboardingViewModel(
     private val authRepository: AuthRepository,
     private val beneficiaryRepository: BeneficiaryRepository,
-    private val locationService: LocationService
+    private val locationService: LocationService,
+    private val storageRepository: com.olivetrust.charity.domain.repository.StorageRepository
 ) : ScreenModel {
 
     private val _state = MutableStateFlow<OnboardingState>(OnboardingState.Idle)
     val state: StateFlow<OnboardingState> = _state
 
-    fun submit(beneficiary: Beneficiary, isEdit: Boolean = false) {
+    fun submit(beneficiary: Beneficiary, profilePhotoData: ByteArray? = null, isEdit: Boolean = false) {
         screenModelScope.launch {
             _state.value = OnboardingState.Loading
             val user = authRepository.currentUser.first()
@@ -32,9 +33,21 @@ class OnboardingViewModel(
             }
 
             val location = if (!isEdit) locationService.getCurrentLocation() else null
+            
+            var finalPhotoUrl = beneficiary.photoUrl
+            
+            if (profilePhotoData != null) {
+                val uploadResult = storageRepository.uploadPhoto(beneficiary.id, profilePhotoData)
+                if (uploadResult.isSuccess) {
+                    finalPhotoUrl = uploadResult.getOrNull() ?: ""
+                } else {
+                    _state.value = OnboardingState.Error("Failed to upload profile photo: ${uploadResult.exceptionOrNull()?.message}")
+                    return@launch
+                }
+            }
 
             val finalBeneficiary = if (isEdit) {
-                beneficiary
+                beneficiary.copy(photoUrl = finalPhotoUrl)
             } else {
                 val now = Clock.System.now().toEpochMilliseconds()
                 val currentDateTime = Instant.fromEpochMilliseconds(now).toLocalDateTime(TimeZone.currentSystemDefault())
@@ -46,7 +59,8 @@ class OnboardingViewModel(
                     latitude = location?.latitude ?: 0.0,
                     longitude = location?.longitude ?: 0.0,
                     startMonth = beneficiary.startMonth ?: currentDateTime.month.number,
-                    startYear = beneficiary.startYear ?: currentDateTime.year
+                    startYear = beneficiary.startYear ?: currentDateTime.year,
+                    photoUrl = finalPhotoUrl
                 )
             }
 

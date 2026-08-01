@@ -64,6 +64,11 @@ kotlin {
             // Maps
             implementation("com.google.maps.android:maps-compose:6.4.3")
             implementation("com.google.android.gms:play-services-maps:19.0.0")
+
+            implementation(libs.ktor.client.okhttp)
+        }
+        iosMain.dependencies {
+            implementation(libs.ktor.client.darwin)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -108,6 +113,14 @@ kotlin {
 
             // Crypto
             implementation(libs.kotlinCrypto.hash.sha2)
+
+            // Coil
+            implementation(libs.coil.compose)
+            implementation(libs.coil.network.ktor)
+
+            // Ktor
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.logging)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

@@ -17,6 +17,15 @@ enum class BeneficiaryStatus : CommonSerializable {
 }
 
 @Serializable
+data class Attachment(
+    val id: String = "",
+    val name: String = "",
+    val url: String = "",
+    val timestamp: Long = 0,
+    val uploadedBy: String = ""
+) : CommonSerializable
+
+@Serializable
 data class Beneficiary(
     val id: String = "",
     val headName: String = "",
@@ -35,6 +44,7 @@ data class Beneficiary(
     val reasonForAid: String = "",
     val numberOfDependants: Int = 0,
     val familyMembers: List<FamilyMember> = emptyList(),
+    val attachments: List<Attachment> = emptyList(),
     
     // Metadata
     val onboardingDate: Long = 0,

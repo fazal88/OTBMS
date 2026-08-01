@@ -27,6 +27,10 @@ expect fun sendSms(phoneNumber: String, message: String)
 
 expect fun openMaps(latitude: Double, longitude: Double, label: String = "")
 
+expect fun openUrl(url: String)
+
+expect fun shareUrl(url: String, title: String = "")
+
 /**
  * Platform-specific FCM token retrieval.
  * - Android: calls Firebase Messaging directly (token is available immediately)
@@ -36,4 +40,11 @@ expect fun openMaps(latitude: Double, longitude: Double, label: String = "")
 expect suspend fun getPlatformFcmToken(): String?
 
 expect fun setScreenshotProtection(enabled: Boolean)
+
+interface FilePicker {
+    suspend fun pickImage(): ByteArray?
+    suspend fun pickImageOrPdf(): ByteArray?
+}
+
+expect fun getFilePicker(): FilePicker
 

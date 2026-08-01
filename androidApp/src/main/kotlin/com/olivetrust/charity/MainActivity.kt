@@ -13,9 +13,48 @@ import com.olivetrust.charity.App
 import com.olivetrust.charity.AppConfig
 import com.olivetrust.charity.Environment
 
-class MainActivity : ComponentActivity() {
+class MainActivity : ComponentActivity(), ActivityHolder.FilePickerProvider {
     companion object {
         var instance: MainActivity? = null
+    }
+
+    private var filePickerCallback: ((ByteArray?) -> Unit)? = null
+
+    private val imagePickerLauncher = registerForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri ->
+        handlePickerResult(uri)
+    }
+
+    private val docPickerLauncher = registerForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        handlePickerResult(uri)
+    }
+
+    private fun handlePickerResult(uri: android.net.Uri?) {
+        if (uri != null) {
+            try {
+                val inputStream = contentResolver.openInputStream(uri)
+                val bytes = inputStream?.readBytes()
+                filePickerCallback?.invoke(bytes)
+            } catch (e: Exception) {
+                filePickerCallback?.invoke(null)
+            }
+        } else {
+            filePickerCallback?.invoke(null)
+        }
+        filePickerCallback = null
+    }
+
+    override fun pickImage(callback: (ByteArray?) -> Unit) {
+        this.filePickerCallback = callback
+        imagePickerLauncher.launch("image/*")
+    }
+
+    override fun pickImageOrPdf(callback: (ByteArray?) -> Unit) {
+        this.filePickerCallback = callback
+        docPickerLauncher.launch(arrayOf("image/*", "application/pdf"))
     }
 
     private val requestPermissionLauncher = registerForActivityResult(
@@ -31,6 +70,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         instance = this
         ActivityHolder.init(this)
+        ActivityHolder.setFilePickerProvider(this)
 
         requestPermissions()
 
@@ -60,6 +100,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        ActivityHolder.setFilePickerProvider(null)
         if (instance == this) instance = null
     }
 }

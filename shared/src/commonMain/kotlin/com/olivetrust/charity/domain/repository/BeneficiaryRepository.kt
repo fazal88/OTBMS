@@ -30,5 +30,7 @@ interface BeneficiaryRepository {
     suspend fun requestEdit(id: String, notes: String): Result<Unit>
     suspend fun updateStatus(id: String, status: BeneficiaryStatus): Result<Unit>
     suspend fun updateLastVisitDate(id: String, date: Long): Result<Unit>
+    suspend fun updatePhoto(id: String, photoUrl: String): Result<Unit>
+    suspend fun addAttachment(id: String, attachment: com.olivetrust.charity.domain.model.Attachment): Result<Unit>
     suspend fun deleteBeneficiary(id: String): Result<Unit>
 }

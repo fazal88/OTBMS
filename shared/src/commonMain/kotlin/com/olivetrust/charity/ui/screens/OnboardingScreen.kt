@@ -20,6 +20,15 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.*
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import coil3.compose.AsyncImage
+import com.olivetrust.charity.getFilePicker
+import kotlinx.coroutines.launch
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.koin.koinScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -46,7 +55,7 @@ class OnboardingScreen : Screen {
 
         OnboardingContent(
             state = state,
-            onSubmit = { viewModel.submit(it) }
+            onSubmit = { b, photo -> viewModel.submit(b, profilePhotoData = photo) }
         )
     }
 }
@@ -55,9 +64,13 @@ class OnboardingScreen : Screen {
 @Composable
 fun OnboardingContent(
     state: OnboardingState,
-    onSubmit: (Beneficiary) -> Unit
+    onSubmit: (Beneficiary, ByteArray?) -> Unit
 ) {
     val focusManager = LocalFocusManager.current
+    val scope = rememberCoroutineScope()
+
+    // Photo State
+    var photoBytes by remember { mutableStateOf<ByteArray?>(null) }
 
     // Main Beneficiary State
     var headName by remember { mutableStateOf("") }
@@ -135,6 +148,20 @@ fun OnboardingContent(
     ) { padding ->
         LazyColumn(modifier = Modifier.padding(padding).padding(16.dp)) {
             item {
+                ProfilePhotoSection(
+                    photoBytes = photoBytes,
+                    onAddClick = {
+                        scope.launch {
+                            val picked = getFilePicker().pickImage()
+                            if (picked != null) {
+                                photoBytes = picked
+                            }
+                        }
+                    },
+                    onRemoveClick = { photoBytes = null }
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+
                 Text("Personal Information", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Spacer(modifier = Modifier.height(8.dp))
                 
@@ -559,7 +586,7 @@ fun OnboardingContent(
                                 deviceUsed = "",
                                 status = BeneficiaryStatus.PENDING_APPROVAL
                             )
-                            onSubmit(beneficiary)
+                            onSubmit(beneficiary, photoBytes)
                         },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(8.dp)
@@ -581,13 +608,70 @@ fun OnboardingContent(
     }
 }
 
+@Composable
+fun ProfilePhotoSection(
+    photoBytes: ByteArray?,
+    onAddClick: () -> Unit,
+    onRemoveClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier
+                .size(100.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center
+        ) {
+            if (photoBytes != null) {
+                AsyncImage(
+                    model = photoBytes,
+                    contentDescription = "New Profile Photo",
+                    modifier = Modifier.fillMaxSize().clip(CircleShape),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                )
+            } else {
+                Icon(
+                    Icons.Default.AccountCircle,
+                    contentDescription = "Placeholder",
+                    modifier = Modifier.size(80.dp),
+                    tint = MaterialTheme.colorScheme.outline
+                )
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            TextButton(onClick = onAddClick) {
+                Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(4.dp))
+                Text(if (photoBytes == null) "Add Profile Pic" else "Change Photo")
+            }
+            
+            if (photoBytes != null) {
+                TextButton(
+                    onClick = onRemoveClick,
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Icon(Icons.Default.Delete, null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("Remove")
+                }
+            }
+        }
+    }
+}
+
 @Preview
 @Composable
 fun OnboardingContentPreview() {
     MaterialTheme {
         OnboardingContent(
             state = OnboardingState.Idle,
-            onSubmit = {}
+            onSubmit = { _, _ -> }
         )
     }
 }

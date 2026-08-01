@@ -251,6 +251,36 @@ class FirestoreBeneficiaryRepository(
         }
     }
 
+    override suspend fun updatePhoto(id: String, photoUrl: String): Result<Unit> {
+        return try {
+            val doc = collection.document(id).get()
+            val beneficiary = doc.data(Beneficiary.serializer())
+            val updated = beneficiary.copy(
+                photoUrl = photoUrl,
+                lastUpdated = kotlin.time.Clock.System.now().toEpochMilliseconds()
+            )
+            collection.document(id).set(Beneficiary.serializer(), updated)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun addAttachment(id: String, attachment: Attachment): Result<Unit> {
+        return try {
+            val doc = collection.document(id).get()
+            val beneficiary = doc.data(Beneficiary.serializer())
+            val updated = beneficiary.copy(
+                attachments = beneficiary.attachments + attachment,
+                lastUpdated = kotlin.time.Clock.System.now().toEpochMilliseconds()
+            )
+            collection.document(id).set(Beneficiary.serializer(), updated)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     override suspend fun deleteBeneficiary(id: String): Result<Unit> {
         return try {
             collection.document(id).delete()

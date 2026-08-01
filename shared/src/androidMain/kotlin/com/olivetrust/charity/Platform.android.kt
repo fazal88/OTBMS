@@ -9,6 +9,8 @@ import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.tasks.await
 import android.annotation.SuppressLint
 import android.view.WindowManager
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
 
 class AndroidPlatform : Platform {
     override val name: String = "Android ${Build.VERSION.SDK_INT}"
@@ -90,6 +92,37 @@ actual fun openMaps(latitude: Double, longitude: Double, label: String) {
     }
 }
 
+actual fun openUrl(url: String) {
+    val context = ContextHolder.get() ?: return
+    try {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(intent)
+    } catch (e: Exception) {
+        println("ANDROID_OPEN_URL_ERROR: ${e.message}")
+    }
+}
+
+actual fun shareUrl(url: String, title: String) {
+    val context = ContextHolder.get() ?: return
+    try {
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, url)
+            if (title.isNotBlank()) {
+                putExtra(Intent.EXTRA_SUBJECT, title)
+            }
+        }
+        val chooser = Intent.createChooser(intent, "Share Attachment").apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(chooser)
+    } catch (e: Exception) {
+        println("ANDROID_SHARE_URL_ERROR: ${e.message}")
+    }
+}
+
 actual suspend fun getPlatformFcmToken(): String? {
     return try {
         com.google.firebase.messaging.FirebaseMessaging.getInstance().token.await()
@@ -112,4 +145,30 @@ actual fun setScreenshotProtection(enabled: Boolean) {
         }
     }
 }
+
+class AndroidFilePicker : FilePicker {
+    override suspend fun pickImage(): ByteArray? = suspendCancellableCoroutine { continuation ->
+        val picker = ActivityHolder.getPicker()
+        if (picker != null) {
+            picker.pickImage { bytes ->
+                if (continuation.isActive) continuation.resume(bytes)
+            }
+        } else {
+            if (continuation.isActive) continuation.resume(null)
+        }
+    }
+
+    override suspend fun pickImageOrPdf(): ByteArray? = suspendCancellableCoroutine { continuation ->
+        val picker = ActivityHolder.getPicker()
+        if (picker != null) {
+            picker.pickImageOrPdf { bytes ->
+                if (continuation.isActive) continuation.resume(bytes)
+            }
+        } else {
+            if (continuation.isActive) continuation.resume(null)
+        }
+    }
+}
+
+actual fun getFilePicker(): FilePicker = AndroidFilePicker()
 

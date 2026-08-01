@@ -1,6 +1,7 @@
 package com.olivetrust.charity.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -17,6 +18,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.olivetrust.charity.domain.model.FamilyMember
 import com.olivetrust.charity.ui.previews.PreviewMocks
 import androidx.compose.ui.unit.dp
@@ -39,6 +42,7 @@ import kotlinx.coroutines.launch
 
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.ui.graphics.Color
+import coil3.compose.AsyncImage
 import com.olivetrust.charity.domain.model.*
 import com.olivetrust.charity.domain.repository.*
 import kotlinx.coroutines.flow.*
@@ -46,6 +50,10 @@ import kotlinx.datetime.*
 import androidx.compose.foundation.lazy.items
 import com.olivetrust.charity.domain.util.LocationUtil
 import com.olivetrust.charity.openMaps
+import com.olivetrust.charity.openUrl
+import com.olivetrust.charity.shareUrl
+import com.olivetrust.charity.getFilePicker
+import kotlin.time.Clock
 
 class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
 
@@ -58,10 +66,17 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
         val user by viewModel.currentUser.collectAsState()
         val visits by viewModel.visits.collectAsState()
         val distributions by viewModel.aidDistributions.collectAsState()
+        val scope = rememberCoroutineScope()
 
         var showDeleteDialog by remember { mutableStateOf(false) }
         var showRejectDialog by remember { mutableStateOf(false) }
         var rejectionReason by remember { mutableStateOf("") }
+        
+        var showAddAttachmentDialog by remember { mutableStateOf(false) }
+        var attachmentName by remember { mutableStateOf("") }
+        var attachmentUrl by remember { mutableStateOf("") }
+        
+        var showPhotoDialog by remember { mutableStateOf(false) }
 
         LaunchedEffect(beneficiaryId) {
             viewModel.loadBeneficiary(beneficiaryId)
@@ -85,7 +100,10 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
                     ) {
                         item {
                             Spacer(modifier = Modifier.height(8.dp))
-                            HeaderSection(b)
+                            HeaderSection(
+                                b, 
+                                onPhotoClick = { showPhotoDialog = true }
+                            )
                         }
 
                         item {
@@ -127,6 +145,13 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
                                 DetailRow("Reason for Aid", b.reasonForAid)
                                 DetailRow("Dependants", b.numberOfDependants.toString())
                             }
+                        }
+
+                        item {
+                            AttachmentsSection(
+                                attachments = b.attachments,
+                                onAddClick = { showAddAttachmentDialog = true }
+                            )
                         }
 
                         if (b.status == BeneficiaryStatus.APPROVED) {
@@ -318,6 +343,116 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
                     }
                 })
         }
+
+        if (showAddAttachmentDialog) {
+            AlertDialog(
+                onDismissRequest = { showAddAttachmentDialog = false },
+                title = { Text("Add Attachment") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            "Select a document or file to attach to this beneficiary's record.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.secondary
+                        )
+                        
+                        OutlinedTextField(
+                            value = attachmentName,
+                            onValueChange = { attachmentName = it },
+                            label = { Text("Document Name (e.g. Identity Proof)") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        
+                        Spacer(Modifier.height(8.dp))
+                        
+                        Button(
+                            onClick = { 
+                                scope.launch {
+                                    val picked = getFilePicker().pickImageOrPdf()
+                                    if (picked != null) {
+                                        viewModel.uploadAndAddAttachment(beneficiaryId, attachmentName, picked)
+                                        showAddAttachmentDialog = false
+                                        attachmentName = ""
+                                    }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer, 
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        ) {
+                            Icon(Icons.Default.Add, null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Select & Upload File")
+                        }
+
+                        if (attachmentUrl.isNotEmpty()) {
+                            Text(
+                                "File ready to upload: $attachmentName",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                },
+                confirmButton = {
+                    // Selection is handled by the "Select & Upload" button above
+                },
+                dismissButton = {
+                    TextButton(onClick = { showAddAttachmentDialog = false }) {
+                        Text("Close")
+                    }
+                }
+            )
+        }
+
+        if (showPhotoDialog) {
+            AlertDialog(
+                onDismissRequest = { showPhotoDialog = false },
+                title = { Text(if (beneficiary?.photoUrl.isNullOrBlank()) "Add Profile Photo" else "Update Profile Photo") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Text(
+                            "Capture or select a profile photo for the beneficiary.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.secondary
+                        )
+                        
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(
+                                onClick = { 
+                                    scope.launch {
+                                        val picked = getFilePicker().pickImage()
+                                        if (picked != null) {
+                                            viewModel.uploadAndSetPhoto(beneficiaryId, picked)
+                                            showPhotoDialog = false
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant, 
+                                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            ) {
+                                Icon(Icons.Default.AccountBox, null)
+                                Spacer(Modifier.width(4.dp))
+                                Text("Pick Photo", fontSize = 12.sp)
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    // Selection is handled by the "Pick Photo" button above
+                },
+                dismissButton = {
+                    TextButton(onClick = { showPhotoDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
     }
 
 }
@@ -367,7 +502,7 @@ private fun formatDate(timestamp: Long): String {
 }
 
 @Composable
-internal fun HeaderSection(b: Beneficiary) {
+internal fun HeaderSection(b: Beneficiary, onPhotoClick: () -> Unit = {}) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
@@ -376,16 +511,54 @@ internal fun HeaderSection(b: Beneficiary) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
-                    modifier = Modifier.size(48.dp).clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary),
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary)
+                        .clickable { onPhotoClick() },
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = b.headName.take(1).uppercase(),
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
+                    if (b.photoUrl.isNotBlank()) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            var isLoading by remember { mutableStateOf(true) }
+                            AsyncImage(
+                                model = b.photoUrl,
+                                contentDescription = "Profile Photo",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                onLoading = { isLoading = true },
+                                onSuccess = { isLoading = false },
+                                onError = { 
+                                    isLoading = false
+                                    println("COIL_ERROR: ${it.result.throwable.message}")
+                                }
+                            )
+                            if (isLoading) {
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                            }
+                        }
+                    } else {
+                        Text(
+                            text = b.headName.take(1).uppercase(),
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.2f)),
+                        contentAlignment = Alignment.BottomCenter
+                    ) {
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp).padding(bottom = 4.dp),
+                            tint = Color.White
+                        )
+                    }
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
@@ -397,6 +570,73 @@ internal fun HeaderSection(b: Beneficiary) {
                     StatusBadge(b.status)
                 }
             }
+        }
+    }
+}
+
+@Composable
+internal fun AttachmentsSection(
+    attachments: List<Attachment>,
+    onAddClick: () -> Unit
+) {
+    InfoCard("Attachments & Documents", Icons.Default.Add) {
+        if (attachments.isEmpty()) {
+            Text(
+                "No attachments added yet",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.outline,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+        } else {
+            attachments.forEach { attachment ->
+                AttachmentRow(attachment)
+                HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+            }
+        }
+        
+        Button(
+            onClick = onAddClick,
+            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+            shape = RoundedCornerShape(8.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer, contentColor = MaterialTheme.colorScheme.onSecondaryContainer)
+        ) {
+            Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("Add Attachment")
+        }
+    }
+}
+
+@Composable
+internal fun AttachmentRow(attachment: Attachment) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { openUrl(attachment.url) }
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            if (attachment.url.lowercase().endsWith(".pdf")) Icons.Default.Info else Icons.Default.Info, 
+            null, 
+            modifier = Modifier.size(24.dp), 
+            tint = MaterialTheme.colorScheme.primary
+        )
+        Spacer(Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                attachment.name,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium
+            )
+            Text(
+                "Uploaded by ${attachment.uploadedBy} on ${formatDate(attachment.timestamp)}",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.outline
+            )
+        }
+        IconButton(onClick = { shareUrl(attachment.url, attachment.name) }) {
+            Icon(Icons.Default.Share, "Share", tint = MaterialTheme.colorScheme.primary)
         }
     }
 }
@@ -538,7 +778,7 @@ internal fun ActionButtons(
 
 @Composable
 internal fun InfoCard(
-    title: String, icon: ImageVector, content: @Composable ColumnScope.() -> Unit
+    title: String, icon: ImageVector, content: @Composable () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -773,7 +1013,8 @@ class BeneficiaryDetailViewModel(
     private val repository: BeneficiaryRepository,
     private val authRepository: AuthRepository,
     private val visitRepository: VisitRepository,
-    private val aidRepository: AidRepository
+    private val aidRepository: AidRepository,
+    private val storageRepository: StorageRepository
 ) : ScreenModel {
     private val _beneficiary = MutableStateFlow<Beneficiary?>(null)
     val beneficiary: StateFlow<Beneficiary?> = _beneficiary.asStateFlow()
@@ -823,6 +1064,43 @@ class BeneficiaryDetailViewModel(
             val result = repository.rejectBeneficiary(id, userId, reason)
             if (result.isSuccess) {
                 onRejected()
+            }
+        }
+    }
+
+    fun updatePhoto(id: String, url: String) {
+        screenModelScope.launch {
+            repository.updatePhoto(id, url)
+        }
+    }
+
+    fun addAttachment(id: String, name: String, url: String) {
+        screenModelScope.launch {
+            val user = currentUser.value
+            val now = Clock.System.now().toEpochMilliseconds()
+            val attachment = Attachment(
+                id = "ATT_$now",
+                name = name,
+                url = url,
+                timestamp = now,
+                uploadedBy = user?.fullName ?: "Unknown"
+            )
+            repository.addAttachment(id, attachment)
+        }
+    }
+
+    fun uploadAndAddAttachment(beneficiaryId: String, name: String, data: ByteArray) {
+        screenModelScope.launch {
+            storageRepository.uploadFile("beneficiaries/$beneficiaryId", data, name).onSuccess { url ->
+                addAttachment(beneficiaryId, name, url)
+            }
+        }
+    }
+
+    fun uploadAndSetPhoto(beneficiaryId: String, data: ByteArray) {
+        screenModelScope.launch {
+            storageRepository.uploadPhoto(beneficiaryId, data).onSuccess { url ->
+                updatePhoto(beneficiaryId, url)
             }
         }
     }

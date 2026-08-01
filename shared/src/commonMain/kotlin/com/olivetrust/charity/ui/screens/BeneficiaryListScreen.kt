@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import coil3.compose.AsyncImage
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -462,49 +463,66 @@ fun BeneficiaryCard(
             Spacer(Modifier.height(8.dp))
 
             Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                Text(
-                    text = beneficiary.headName,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Surface(
-                        onClick = { 
-                            if (beneficiary.latitude != 0.0 || beneficiary.longitude != 0.0) {
-                                openMaps(beneficiary.latitude, beneficiary.longitude, beneficiary.headName)
-                            }
-                        },
-                        color = Color.Transparent,
-                        enabled = beneficiary.latitude != 0.0 || beneficiary.longitude != 0.0
-                    ) {
+                    if (beneficiary.photoUrl.isNotBlank()) {
+                        AsyncImage(
+                            model = beneficiary.photoUrl,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant),
+                            contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                        )
+                        Spacer(Modifier.width(16.dp))
+                    }
+                    
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = beneficiary.headName,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                Icons.Default.LocationOn, 
-                                null, 
-                                modifier = Modifier.size(14.dp), 
-                                tint = if (beneficiary.latitude != 0.0 || beneficiary.longitude != 0.0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
-                            )
+                            Surface(
+                                onClick = { 
+                                    if (beneficiary.latitude != 0.0 || beneficiary.longitude != 0.0) {
+                                        openMaps(beneficiary.latitude, beneficiary.longitude, beneficiary.headName)
+                                    }
+                                },
+                                color = Color.Transparent,
+                                enabled = beneficiary.latitude != 0.0 || beneficiary.longitude != 0.0
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        Icons.Default.LocationOn, 
+                                        null, 
+                                        modifier = Modifier.size(14.dp), 
+                                        tint = if (beneficiary.latitude != 0.0 || beneficiary.longitude != 0.0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+                                    )
+                                    Spacer(Modifier.width(4.dp))
+                                    Text(
+                                        text = beneficiary.areaCode,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = if (beneficiary.latitude != 0.0 || beneficiary.longitude != 0.0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.width(12.dp))
+                            Icon(Icons.Default.Person, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.outline)
                             Spacer(Modifier.width(4.dp))
                             Text(
-                                text = beneficiary.areaCode,
+                                text = "${beneficiary.headAge} yrs",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = if (beneficiary.latitude != 0.0 || beneficiary.longitude != 0.0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                                fontWeight = FontWeight.Medium
+                                color = MaterialTheme.colorScheme.outline
                             )
                         }
                     }
-                    Spacer(Modifier.width(12.dp))
-                    Icon(Icons.Default.Person, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.outline)
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        text = "${beneficiary.headAge} yrs • ${beneficiary.numberOfDependants} dependants",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline
-                    )
                 }
             }
 

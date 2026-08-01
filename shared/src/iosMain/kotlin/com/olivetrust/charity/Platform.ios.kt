@@ -112,6 +112,24 @@ actual fun openMaps(latitude: Double, longitude: Double, label: String) {
     }
 }
 
+actual fun openUrl(url: String) {
+    val nsUrl = NSURL.URLWithString(url)
+    if (nsUrl != null) {
+        UIApplication.sharedApplication.openURL(nsUrl, options = emptyMap<Any?, Any?>(), completionHandler = null)
+    }
+}
+
+@OptIn(ExperimentalForeignApi::class)
+actual fun shareUrl(url: String, title: String) {
+    val activityItems = listOf(url)
+    val activityViewController = platform.UIKit.UIActivityViewController(activityItems, null)
+    
+    val window = UIApplication.sharedApplication.keyWindow ?: UIApplication.sharedApplication.windows.firstOrNull() as? platform.UIKit.UIWindow
+    val rootViewController = window?.rootViewController
+    
+    rootViewController?.presentViewController(activityViewController, animated = true, completion = null)
+}
+
 actual suspend fun getPlatformFcmToken(): String? {
     // Delegates to the IosNotificationHelper bridge which waits for Swift's
     // MessagingDelegate to push the token, avoiding the timing race condition
@@ -124,4 +142,16 @@ actual fun setScreenshotProtection(enabled: Boolean) {
     // Common workarounds include overlaying the screen when backgrounded or using a hidden UITextField.
     println("IOS_SCREENSHOT_PROTECTION: ${if (enabled) "Enabled" else "Disabled"} (Not fully implemented on iOS)")
 }
+
+class IOSFilePicker : FilePicker {
+    override suspend fun pickImage(): ByteArray? {
+        return null
+    }
+
+    override suspend fun pickImageOrPdf(): ByteArray? {
+        return null
+    }
+}
+
+actual fun getFilePicker(): FilePicker = IOSFilePicker()
 

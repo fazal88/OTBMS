@@ -22,14 +22,15 @@ val appModule = module {
     singleOf(::FirestoreEventRepository) bind EventRepository::class
     single { FirestoreDonationBoxRepository(get(), get()) } bind DonationBoxRepository::class
     single { FirestoreNotificationRepository(get(), get()) } bind NotificationRepository::class
+    singleOf(::FirestoreStorageRepository) bind StorageRepository::class
     
     factory { LoginViewModel(get(), get()) }
     factory { DashboardViewModel(get(), get(), get(), get(), get(), get()) }
-    factory { OnboardingViewModel(get(), get(), get()) }
+    factory { OnboardingViewModel(get(), get(), get(), get()) }
     factory { AidDistributionViewModel(get(), get(), get(), get()) }
     factory { VerificationVisitViewModel(get(), get(), get(), get()) }
     factory { BeneficiaryListViewModel(get(), get()) }
-    factory { BeneficiaryDetailViewModel(get(), get(), get(), get()) }
+    factory { BeneficiaryDetailViewModel(get(), get(), get(), get(), get()) }
     factory { EmployeeManagementViewModel(get()) }
     factory { ApproveBeneficiaryViewModel(get(), get(), get()) }
     factory { VisitListViewModel(get()) }
