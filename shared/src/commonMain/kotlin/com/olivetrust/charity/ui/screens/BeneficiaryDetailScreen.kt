@@ -66,6 +66,7 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
         val user by viewModel.currentUser.collectAsState()
         val visits by viewModel.visits.collectAsState()
         val distributions by viewModel.aidDistributions.collectAsState()
+        val isUploading by viewModel.isUploading.collectAsState()
         val scope = rememberCoroutineScope()
 
         var showDeleteDialog by remember { mutableStateOf(false) }
@@ -280,6 +281,10 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
             } ?: Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
+        }
+
+        if (isUploading) {
+            LoadingOverlay("Uploading file...")
         }
 
         if (showDeleteDialog) {
@@ -1025,6 +1030,9 @@ class BeneficiaryDetailViewModel(
     private val _aidDistributions = MutableStateFlow<List<AidDistribution>>(emptyList())
     val aidDistributions: StateFlow<List<AidDistribution>> = _aidDistributions.asStateFlow()
 
+    private val _isUploading = MutableStateFlow(false)
+    val isUploading: StateFlow<Boolean> = _isUploading.asStateFlow()
+
     val currentUser = authRepository.currentUser.stateIn(
             screenModelScope,
             SharingStarted.WhileSubscribed(5000),
@@ -1091,16 +1099,24 @@ class BeneficiaryDetailViewModel(
 
     fun uploadAndAddAttachment(beneficiaryId: String, name: String, data: ByteArray) {
         screenModelScope.launch {
+            _isUploading.value = true
             storageRepository.uploadFile("beneficiaries/$beneficiaryId", data, name).onSuccess { url ->
                 addAttachment(beneficiaryId, name, url)
+                _isUploading.value = false
+            }.onFailure {
+                _isUploading.value = false
             }
         }
     }
 
     fun uploadAndSetPhoto(beneficiaryId: String, data: ByteArray) {
         screenModelScope.launch {
+            _isUploading.value = true
             storageRepository.uploadPhoto(beneficiaryId, data).onSuccess { url ->
                 updatePhoto(beneficiaryId, url)
+                _isUploading.value = false
+            }.onFailure {
+                _isUploading.value = false
             }
         }
     }

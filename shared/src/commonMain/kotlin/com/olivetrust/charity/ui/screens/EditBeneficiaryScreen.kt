@@ -59,6 +59,10 @@ data class EditBeneficiaryScreen(private val initialBeneficiary: Beneficiary) : 
             onBack = { navigator.pop() },
             onSubmit = { b, photo -> viewModel.submit(b, profilePhotoData = photo, isEdit = true) }
         )
+
+        if (state is OnboardingState.Loading) {
+            LoadingOverlay("Updating & Saving...")
+        }
     }
 }
 

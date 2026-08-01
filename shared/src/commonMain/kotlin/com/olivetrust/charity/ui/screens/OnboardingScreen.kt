@@ -57,6 +57,10 @@ class OnboardingScreen : Screen {
             state = state,
             onSubmit = { b, photo -> viewModel.submit(b, profilePhotoData = photo) }
         )
+
+        if (state is OnboardingState.Loading) {
+            LoadingOverlay("Uploading & Saving...")
+        }
     }
 }
 
