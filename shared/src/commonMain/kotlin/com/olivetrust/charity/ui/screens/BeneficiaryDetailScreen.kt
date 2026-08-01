@@ -370,26 +370,50 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
                         
                         Spacer(Modifier.height(8.dp))
                         
-                        Button(
-                            onClick = { 
-                                scope.launch {
-                                    val picked = getFilePicker().pickImageOrPdf()
-                                    if (picked != null) {
-                                        viewModel.uploadAndAddAttachment(beneficiaryId, attachmentName, picked)
-                                        showAddAttachmentDialog = false
-                                        attachmentName = ""
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(
+                                onClick = { 
+                                    scope.launch {
+                                        val picked = getFilePicker().takePhoto()
+                                        if (picked != null) {
+                                            viewModel.uploadAndAddAttachment(beneficiaryId, attachmentName, picked)
+                                            showAddAttachmentDialog = false
+                                            attachmentName = ""
+                                        }
                                     }
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.secondaryContainer, 
-                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                            )
-                        ) {
-                            Icon(Icons.Default.Add, null)
-                            Spacer(Modifier.width(8.dp))
-                            Text("Select & Upload File")
+                                },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant, 
+                                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            ) {
+                                Icon(Icons.Default.AccountBox, null)
+                                Spacer(Modifier.width(4.dp))
+                                Text("Camera", fontSize = 12.sp)
+                            }
+
+                            Button(
+                                onClick = { 
+                                    scope.launch {
+                                        val picked = getFilePicker().pickImageOrPdf()
+                                        if (picked != null) {
+                                            viewModel.uploadAndAddAttachment(beneficiaryId, attachmentName, picked)
+                                            showAddAttachmentDialog = false
+                                            attachmentName = ""
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.secondaryContainer, 
+                                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                            ) {
+                                Icon(Icons.Default.Add, null)
+                                Spacer(Modifier.width(4.dp))
+                                Text("Files/Gallery", fontSize = 12.sp)
+                            }
                         }
 
                         if (attachmentUrl.isNotEmpty()) {
@@ -428,7 +452,7 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
                             Button(
                                 onClick = { 
                                     scope.launch {
-                                        val picked = getFilePicker().pickImage()
+                                        val picked = getFilePicker().takePhoto()
                                         if (picked != null) {
                                             viewModel.uploadAndSetPhoto(beneficiaryId, picked)
                                             showPhotoDialog = false
@@ -443,7 +467,28 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
                             ) {
                                 Icon(Icons.Default.AccountBox, null)
                                 Spacer(Modifier.width(4.dp))
-                                Text("Pick Photo", fontSize = 12.sp)
+                                Text("Camera", fontSize = 12.sp)
+                            }
+
+                            Button(
+                                onClick = { 
+                                    scope.launch {
+                                        val picked = getFilePicker().pickImage()
+                                        if (picked != null) {
+                                            viewModel.uploadAndSetPhoto(beneficiaryId, picked)
+                                            showPhotoDialog = false
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant, 
+                                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            ) {
+                                Icon(Icons.Default.AccountCircle, null)
+                                Spacer(Modifier.width(4.dp))
+                                Text("Gallery", fontSize = 12.sp)
                             }
                         }
                     }

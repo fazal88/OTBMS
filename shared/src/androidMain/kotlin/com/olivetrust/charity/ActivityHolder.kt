@@ -10,6 +10,7 @@ object ActivityHolder {
     interface FilePickerProvider {
         fun pickImage(callback: (ByteArray?) -> Unit)
         fun pickImageOrPdf(callback: (ByteArray?) -> Unit)
+        fun takePhoto(callback: (ByteArray?) -> Unit)
     }
 
     fun init(activity: Activity) {

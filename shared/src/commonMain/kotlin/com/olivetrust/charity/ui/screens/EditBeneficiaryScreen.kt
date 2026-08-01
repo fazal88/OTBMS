@@ -146,6 +146,14 @@ fun EditBeneficiaryContent(
                             }
                         }
                     },
+                    onCameraClick = {
+                        scope.launch {
+                            val captured = getFilePicker().takePhoto()
+                            if (captured != null) {
+                                photoBytes = captured
+                            }
+                        }
+                    },
                     onRemoveClick = { 
                         photoBytes = null
                         photoUrl = "" 
@@ -586,71 +594,6 @@ fun EditBeneficiaryContent(
                     )
                 }
                 Spacer(modifier = Modifier.height(32.dp))
-            }
-        }
-    }
-}
-
-@Composable
-fun ProfilePhotoSection(
-    photoUrl: String?,
-    photoBytes: ByteArray?,
-    onAddClick: () -> Unit,
-    onRemoveClick: () -> Unit
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Box(
-            modifier = Modifier
-                .size(100.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.Center
-        ) {
-            if (photoBytes != null) {
-                AsyncImage(
-                    model = photoBytes,
-                    contentDescription = "New Profile Photo",
-                    modifier = Modifier.fillMaxSize().clip(CircleShape),
-                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                )
-            } else if (!photoUrl.isNullOrBlank()) {
-                AsyncImage(
-                    model = photoUrl,
-                    contentDescription = "Existing Profile Photo",
-                    modifier = Modifier.fillMaxSize().clip(CircleShape),
-                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                )
-            } else {
-                Icon(
-                    Icons.Default.AccountCircle,
-                    contentDescription = "Placeholder",
-                    modifier = Modifier.size(80.dp),
-                    tint = MaterialTheme.colorScheme.outline
-                )
-            }
-        }
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TextButton(onClick = onAddClick) {
-                Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(4.dp))
-                Text(if (photoBytes == null && photoUrl.isNullOrBlank()) "Add Profile Pic" else "Change Photo")
-            }
-            
-            if (photoBytes != null || !photoUrl.isNullOrBlank()) {
-                TextButton(
-                    onClick = onRemoveClick,
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                ) {
-                    Icon(Icons.Default.Delete, null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text("Remove")
-                }
             }
         }
     }

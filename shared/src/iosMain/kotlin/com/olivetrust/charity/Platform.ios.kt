@@ -151,6 +151,10 @@ class IOSFilePicker : FilePicker {
     override suspend fun pickImageOrPdf(): ByteArray? {
         return null
     }
+
+    override suspend fun takePhoto(): ByteArray? {
+        return null
+    }
 }
 
 actual fun getFilePicker(): FilePicker = IOSFilePicker()

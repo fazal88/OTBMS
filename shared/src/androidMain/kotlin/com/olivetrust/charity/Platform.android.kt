@@ -168,6 +168,17 @@ class AndroidFilePicker : FilePicker {
             if (continuation.isActive) continuation.resume(null)
         }
     }
+
+    override suspend fun takePhoto(): ByteArray? = suspendCancellableCoroutine { continuation ->
+        val picker = ActivityHolder.getPicker()
+        if (picker != null) {
+            picker.takePhoto { bytes ->
+                if (continuation.isActive) continuation.resume(bytes)
+            }
+        } else {
+            if (continuation.isActive) continuation.resume(null)
+        }
+    }
 }
 
 actual fun getFilePicker(): FilePicker = AndroidFilePicker()

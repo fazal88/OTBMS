@@ -44,6 +44,7 @@ expect fun setScreenshotProtection(enabled: Boolean)
 interface FilePicker {
     suspend fun pickImage(): ByteArray?
     suspend fun pickImageOrPdf(): ByteArray?
+    suspend fun takePhoto(): ByteArray?
 }
 
 expect fun getFilePicker(): FilePicker

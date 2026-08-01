@@ -6,12 +6,14 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import android.Manifest
+import android.graphics.Bitmap
 import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.olivetrust.charity.App
 import com.olivetrust.charity.AppConfig
 import com.olivetrust.charity.Environment
+import java.io.ByteArrayOutputStream
 
 class MainActivity : ComponentActivity(), ActivityHolder.FilePickerProvider {
     companion object {
@@ -30,6 +32,19 @@ class MainActivity : ComponentActivity(), ActivityHolder.FilePickerProvider {
         ActivityResultContracts.OpenDocument()
     ) { uri ->
         handlePickerResult(uri)
+    }
+
+    private val cameraLauncher = registerForActivityResult(
+        ActivityResultContracts.TakePicturePreview()
+    ) { bitmap ->
+        if (bitmap != null) {
+            val stream = ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, stream)
+            filePickerCallback?.invoke(stream.toByteArray())
+        } else {
+            filePickerCallback?.invoke(null)
+        }
+        filePickerCallback = null
     }
 
     private fun handlePickerResult(uri: android.net.Uri?) {
@@ -55,6 +70,11 @@ class MainActivity : ComponentActivity(), ActivityHolder.FilePickerProvider {
     override fun pickImageOrPdf(callback: (ByteArray?) -> Unit) {
         this.filePickerCallback = callback
         docPickerLauncher.launch(arrayOf("image/*", "application/pdf"))
+    }
+
+    override fun takePhoto(callback: (ByteArray?) -> Unit) {
+        this.filePickerCallback = callback
+        cameraLauncher.launch(null)
     }
 
     private val requestPermissionLauncher = registerForActivityResult(
@@ -88,7 +108,8 @@ class MainActivity : ComponentActivity(), ActivityHolder.FilePickerProvider {
         val permissions = mutableListOf(
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.ACCESS_COARSE_LOCATION,
-            Manifest.permission.SEND_SMS
+            Manifest.permission.SEND_SMS,
+            Manifest.permission.CAMERA
         )
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
