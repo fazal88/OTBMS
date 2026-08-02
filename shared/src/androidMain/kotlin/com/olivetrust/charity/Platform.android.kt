@@ -12,11 +12,110 @@ import android.view.WindowManager
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
+import android.media.MediaRecorder
+import android.media.MediaPlayer
+import java.io.File
+
 class AndroidPlatform : Platform {
     override val name: String = "Android ${Build.VERSION.SDK_INT}"
 }
 
 actual fun getPlatform(): Platform = AndroidPlatform()
+
+class AndroidAudioRecorder : AudioRecorder {
+    private var mediaRecorder: MediaRecorder? = null
+    private var audioFile: File? = null
+
+    override fun startRecording() {
+        val context = ContextHolder.get() ?: return
+        try {
+            audioFile = File(context.cacheDir, "temp_recording.m4a")
+            mediaRecorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                MediaRecorder(context)
+            } else {
+                @Suppress("DEPRECATION")
+                MediaRecorder()
+            }.apply {
+                setAudioSource(MediaRecorder.AudioSource.MIC)
+                setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+                setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                setOutputFile(audioFile?.absolutePath)
+                prepare()
+                start()
+            }
+        } catch (e: Exception) {
+            println("ANDROID_AUDIO_RECORDER_ERROR: ${e.message}")
+        }
+    }
+
+    override fun stopRecording(): ByteArray? {
+        return try {
+            mediaRecorder?.apply {
+                stop()
+                release()
+            }
+            mediaRecorder = null
+            val bytes = audioFile?.readBytes()
+            audioFile?.delete()
+            bytes
+        } catch (e: Exception) {
+            println("ANDROID_AUDIO_RECORDER_STOP_ERROR: ${e.message}")
+            null
+        }
+    }
+
+    override fun isRecording(): Boolean = mediaRecorder != null
+}
+
+actual fun getAudioRecorder(): AudioRecorder = AndroidAudioRecorder()
+
+class AndroidAudioPlayer : AudioPlayer {
+    private var mediaPlayer: MediaPlayer? = null
+    private var onComplete: (() -> Unit)? = null
+    private var currentUrl: String? = null
+
+    override fun play(url: String) {
+        if (currentUrl == url && mediaPlayer != null) {
+            mediaPlayer?.start()
+            return
+        }
+        
+        stop()
+        currentUrl = url
+        mediaPlayer = MediaPlayer().apply {
+            setDataSource(url)
+            prepareAsync()
+            setOnPreparedListener { start() }
+            setOnCompletionListener { 
+                onComplete?.invoke()
+                stop()
+            }
+        }
+    }
+
+    override fun pause() {
+        mediaPlayer?.pause()
+    }
+
+    override fun resume() {
+        mediaPlayer?.start()
+    }
+
+    override fun stop() {
+        mediaPlayer?.stop()
+        mediaPlayer?.release()
+        mediaPlayer = null
+        currentUrl = null
+    }
+
+    override fun isPlaying(): Boolean = mediaPlayer?.isPlaying ?: false
+
+    override fun setCompletionListener(callback: () -> Unit) {
+        onComplete = callback
+    }
+}
+
+actual fun getAudioPlayer(): AudioPlayer = AndroidAudioPlayer()
 
 class AndroidDeviceInfo : DeviceInfo {
     override val id: String = Build.FINGERPRINT

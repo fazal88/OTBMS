@@ -9,7 +9,7 @@ import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.firestore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 class FirestoreBeneficiaryRepository(
     private val auditRepository: AuditRepository,
@@ -58,7 +58,7 @@ class FirestoreBeneficiaryRepository(
     }
 
     private suspend fun log(beneficiary: Beneficiary, action: String, userId: String) {
-        val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
+        val now = Clock.System.now().toEpochMilliseconds()
         auditRepository.logAction(AuditLog(
             auditId = "A_$now",
             userId = userId,
@@ -73,7 +73,7 @@ class FirestoreBeneficiaryRepository(
 
     override suspend fun createBeneficiary(beneficiary: Beneficiary): Result<String> {
         return try {
-            val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
+            val now = Clock.System.now().toEpochMilliseconds()
             val finalBeneficiary = beneficiary.copy(
                 onboardingDate = now, 
                 lastUpdated = now
@@ -96,7 +96,7 @@ class FirestoreBeneficiaryRepository(
 
     override suspend fun updateBeneficiary(beneficiary: Beneficiary): Result<Unit> {
         return try {
-            val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
+            val now = Clock.System.now().toEpochMilliseconds()
             val updated = beneficiary.copy(lastUpdated = now)
             collection.document(updated.id).set(Beneficiary.serializer(), updated)
             Result.success(Unit)
@@ -135,7 +135,7 @@ class FirestoreBeneficiaryRepository(
                 if (monitorDoc.exists) monitorDoc.data(User.serializer()).fullName else "Unknown Monitor"
             } else "Unknown Monitor"
 
-            val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
+            val now = Clock.System.now().toEpochMilliseconds()
             
             // 1. Update Beneficiary
             val updated = beneficiary.copy(
@@ -189,7 +189,7 @@ class FirestoreBeneficiaryRepository(
         return try {
             val doc = collection.document(id).get()
             val beneficiary = doc.data(Beneficiary.serializer())
-            val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
+            val now = Clock.System.now().toEpochMilliseconds()
             val updated = beneficiary.copy(
                 status = BeneficiaryStatus.REJECTED,
                 rejectionReason = reason,
@@ -212,7 +212,7 @@ class FirestoreBeneficiaryRepository(
             val updated = beneficiary.copy(
                 status = BeneficiaryStatus.EDIT_REQUESTED,
                 editRequestNotes = notes,
-                lastUpdated = kotlin.time.Clock.System.now().toEpochMilliseconds()
+                lastUpdated = Clock.System.now().toEpochMilliseconds()
             )
             collection.document(id).set(Beneficiary.serializer(), updated)
             Result.success(Unit)
@@ -227,7 +227,7 @@ class FirestoreBeneficiaryRepository(
             val beneficiary = doc.data(Beneficiary.serializer())
             val updated = beneficiary.copy(
                 status = status,
-                lastUpdated = kotlin.time.Clock.System.now().toEpochMilliseconds()
+                lastUpdated = Clock.System.now().toEpochMilliseconds()
             )
             collection.document(id).set(Beneficiary.serializer(), updated)
             Result.success(Unit)
@@ -242,7 +242,7 @@ class FirestoreBeneficiaryRepository(
             val beneficiary = doc.data(Beneficiary.serializer())
             val updated = beneficiary.copy(
                 lastVisitDate = date,
-                lastUpdated = kotlin.time.Clock.System.now().toEpochMilliseconds()
+                lastUpdated = Clock.System.now().toEpochMilliseconds()
             )
             collection.document(id).set(Beneficiary.serializer(), updated)
             Result.success(Unit)
@@ -257,7 +257,7 @@ class FirestoreBeneficiaryRepository(
             val beneficiary = doc.data(Beneficiary.serializer())
             val updated = beneficiary.copy(
                 photoUrl = photoUrl,
-                lastUpdated = kotlin.time.Clock.System.now().toEpochMilliseconds()
+                lastUpdated = Clock.System.now().toEpochMilliseconds()
             )
             collection.document(id).set(Beneficiary.serializer(), updated)
             Result.success(Unit)
@@ -272,9 +272,54 @@ class FirestoreBeneficiaryRepository(
             val beneficiary = doc.data(Beneficiary.serializer())
             val updated = beneficiary.copy(
                 attachments = beneficiary.attachments + attachment,
-                lastUpdated = kotlin.time.Clock.System.now().toEpochMilliseconds()
+                lastUpdated = Clock.System.now().toEpochMilliseconds()
             )
             collection.document(id).set(Beneficiary.serializer(), updated)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun deleteAttachment(beneficiaryId: String, attachmentId: String): Result<Unit> {
+        return try {
+            val doc = collection.document(beneficiaryId).get()
+            val beneficiary = doc.data(Beneficiary.serializer())
+            val updated = beneficiary.copy(
+                attachments = beneficiary.attachments.filter { it.id != attachmentId },
+                lastUpdated = Clock.System.now().toEpochMilliseconds()
+            )
+            collection.document(beneficiaryId).set(Beneficiary.serializer(), updated)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun addDiscussionNote(id: String, note: DiscussionNote): Result<Unit> {
+        return try {
+            val doc = collection.document(id).get()
+            val beneficiary = doc.data(Beneficiary.serializer())
+            val updated = beneficiary.copy(
+                discussions = beneficiary.discussions + note,
+                lastUpdated = Clock.System.now().toEpochMilliseconds()
+            )
+            collection.document(id).set(Beneficiary.serializer(), updated)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun deleteDiscussionNote(beneficiaryId: String, noteId: String): Result<Unit> {
+        return try {
+            val doc = collection.document(beneficiaryId).get()
+            val beneficiary = doc.data(Beneficiary.serializer())
+            val updated = beneficiary.copy(
+                discussions = beneficiary.discussions.filter { it.id != noteId },
+                lastUpdated = Clock.System.now().toEpochMilliseconds()
+            )
+            collection.document(beneficiaryId).set(Beneficiary.serializer(), updated)
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)

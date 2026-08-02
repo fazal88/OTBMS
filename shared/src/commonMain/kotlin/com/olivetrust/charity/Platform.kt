@@ -49,3 +49,22 @@ interface FilePicker {
 
 expect fun getFilePicker(): FilePicker
 
+interface AudioRecorder {
+    fun startRecording()
+    fun stopRecording(): ByteArray?
+    fun isRecording(): Boolean
+}
+
+expect fun getAudioRecorder(): AudioRecorder
+
+interface AudioPlayer {
+    fun play(url: String)
+    fun pause()
+    fun resume()
+    fun stop()
+    fun isPlaying(): Boolean
+    fun setCompletionListener(callback: () -> Unit)
+}
+
+expect fun getAudioPlayer(): AudioPlayer
+

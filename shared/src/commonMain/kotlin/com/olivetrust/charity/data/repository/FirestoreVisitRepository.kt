@@ -11,6 +11,7 @@ import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.firestore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlin.time.Clock
 
 class FirestoreVisitRepository(
     private val auditRepository: AuditRepository,
@@ -18,7 +19,7 @@ class FirestoreVisitRepository(
     private val beneficiaryRepository: BeneficiaryRepository
 ) : VisitRepository {
     private val firestore by lazy { Firebase.firestore }
-    private val collection by lazy { firestore.collection("verificationVisits") }
+    private val collection by lazy { firestore.collection("visits") }
 
     override fun getVisits(): Flow<List<VerificationVisit>> {
         return collection.snapshots().map { snapshot ->
@@ -48,33 +49,31 @@ class FirestoreVisitRepository(
 
     override suspend fun recordVisit(visit: VerificationVisit): Result<String> {
         return try {
-            println("FIRESTORE: Recording visit ${visit.visitId} for ${visit.beneficiaryId}")
             collection.document(visit.visitId).set(VerificationVisit.serializer(), visit)
-            val now = kotlin.time.Clock.System.now().toEpochMilliseconds()
+            
+            val now = Clock.System.now().toEpochMilliseconds()
             auditRepository.logAction(AuditLog(
                 auditId = "A_$now",
                 userId = visit.employeeId,
                 role = com.olivetrust.charity.domain.model.UserRole.EMPLOYEE,
                 actionType = "VISIT",
-                entityType = "VERIFICATION",
-                entityId = visit.visitId,
+                entityType = "BENEFICIARY",
+                entityId = visit.beneficiaryId,
                 timestamp = now,
                 deviceId = ""
             ))
 
-            // Update beneficiary's last visit date
+            // Update last visit date on beneficiary
             beneficiaryRepository.updateLastVisitDate(visit.beneficiaryId, visit.date)
 
             notificationRepository.sendNotification(
                 topicName = SystemTopics.VERIFY_VISIT,
                 title = "Verification Visit Recorded",
-                body = "Visit for beneficiary ${visit.beneficiaryName} recorded with status: ${visit.visitStatus}."
+                body = "Visit recorded for beneficiary ${visit.beneficiaryName} by ${visit.employeeId}."
             )
 
-            println("FIRESTORE: Visit recorded successfully")
             Result.success(visit.visitId)
         } catch (e: Exception) {
-            println("FIRESTORE_ERROR: Failed to record visit: ${e.message}")
             Result.failure(e)
         }
     }

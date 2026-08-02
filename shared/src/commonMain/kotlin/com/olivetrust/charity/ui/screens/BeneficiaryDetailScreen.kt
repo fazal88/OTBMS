@@ -45,6 +45,7 @@ import androidx.compose.ui.graphics.Color
 import coil3.compose.AsyncImage
 import com.olivetrust.charity.domain.model.*
 import com.olivetrust.charity.domain.repository.*
+import com.olivetrust.charity.*
 import kotlinx.coroutines.flow.*
 import kotlinx.datetime.*
 import androidx.compose.foundation.lazy.items
@@ -79,11 +80,18 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
         
         var showPhotoDialog by remember { mutableStateOf(false) }
 
+        val snackbarHostState = remember { SnackbarHostState() }
+
+        var isRecording by remember { mutableStateOf(false) }
+        val recorder = remember { getAudioRecorder() }
+        var recordingStartTime by remember { mutableStateOf(0L) }
+
         LaunchedEffect(beneficiaryId) {
             viewModel.loadBeneficiary(beneficiaryId)
         }
 
         Scaffold(
+            snackbarHost = { SnackbarHost(snackbarHostState) },
             topBar = {
                 TopAppBar(
                     title = { Text("Beneficiary Details", fontWeight = FontWeight.Bold) },
@@ -92,7 +100,55 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
                             Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                         }
                     })
-            }) { padding ->
+            },
+            floatingActionButton = {
+                FloatingActionButton(
+                    onClick = {
+                        if (isUploading) return@FloatingActionButton
+                        if (isRecording) {
+                            isRecording = false
+                            val data = recorder.stopRecording()
+                            val duration = Clock.System.now().toEpochMilliseconds() - recordingStartTime
+                            if (data != null) {
+                                beneficiary?.let { b ->
+                                    scope.launch {
+                                        viewModel.uploadAndAddDiscussionNote(b.id, data, duration)
+                                        snackbarHostState.showSnackbar("Voice note uploaded")
+                                    }
+                                }
+                            }
+                        } else {
+                            isRecording = true
+                            recordingStartTime = Clock.System.now().toEpochMilliseconds()
+                            recorder.startRecording()
+                        }
+                    },
+                    containerColor = when {
+                        isUploading -> MaterialTheme.colorScheme.surfaceVariant
+                        isRecording -> MaterialTheme.colorScheme.error
+                        else -> MaterialTheme.colorScheme.primary
+                    },
+                    contentColor = when {
+                        isUploading -> MaterialTheme.colorScheme.onSurfaceVariant
+                        isRecording -> MaterialTheme.colorScheme.onError
+                        else -> MaterialTheme.colorScheme.onPrimary
+                    }
+                ) {
+                    if (isUploading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    } else {
+                        Icon(
+                            imageVector = if (isRecording) Icons.Default.Close else Icons.Default.Call,
+                            contentDescription = if (isRecording) "Stop Recording" else "Record Voice Note"
+                        )
+                    }
+                }
+            }
+        ) { padding ->
             beneficiary?.let { b ->
                 Column(modifier = Modifier.fillMaxSize().padding(padding)) {
                     LazyColumn(
@@ -151,7 +207,18 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
                         item {
                             AttachmentsSection(
                                 attachments = b.attachments,
-                                onAddClick = { showAddAttachmentDialog = true }
+                                onAddClick = { showAddAttachmentDialog = true },
+                                onDelete = { attachmentId -> viewModel.deleteAttachment(b.id, attachmentId) },
+                                showDelete = user?.role == UserRole.APPROVER || user?.role == UserRole.SUPER_ADMIN
+                            )
+                        }
+
+                        item {
+                            DiscussionSection(
+                                discussions = b.discussions,
+                                onDelete = { noteId -> viewModel.deleteDiscussionNote(b.id, noteId) },
+                                showDelete = user?.role == UserRole.APPROVER || user?.role == UserRole.SUPER_ADMIN,
+                                isRecording = isRecording
                             )
                         }
 
@@ -627,7 +694,9 @@ internal fun HeaderSection(b: Beneficiary, onPhotoClick: () -> Unit = {}) {
 @Composable
 internal fun AttachmentsSection(
     attachments: List<Attachment>,
-    onAddClick: () -> Unit
+    onAddClick: () -> Unit,
+    onDelete: (String) -> Unit,
+    showDelete: Boolean
 ) {
     InfoCard("Attachments & Documents", Icons.Default.Add) {
         if (attachments.isEmpty()) {
@@ -639,7 +708,7 @@ internal fun AttachmentsSection(
             )
         } else {
             attachments.forEach { attachment ->
-                AttachmentRow(attachment)
+                AttachmentRow(attachment, onDelete = { onDelete(attachment.id) }, showDelete = showDelete)
                 HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
             }
         }
@@ -658,7 +727,7 @@ internal fun AttachmentsSection(
 }
 
 @Composable
-internal fun AttachmentRow(attachment: Attachment) {
+internal fun AttachmentRow(attachment: Attachment, onDelete: () -> Unit, showDelete: Boolean) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -685,8 +754,105 @@ internal fun AttachmentRow(attachment: Attachment) {
                 color = MaterialTheme.colorScheme.outline
             )
         }
-        IconButton(onClick = { shareUrl(attachment.url, attachment.name) }) {
-            Icon(Icons.Default.Share, "Share", tint = MaterialTheme.colorScheme.primary)
+        Row {
+            IconButton(onClick = { shareUrl(attachment.url, attachment.name) }) {
+                Icon(Icons.Default.Share, "Share", tint = MaterialTheme.colorScheme.primary)
+            }
+            if (showDelete) {
+                IconButton(onClick = onDelete) {
+                    Icon(Icons.Default.Delete, "Delete", tint = MaterialTheme.colorScheme.error)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+internal fun DiscussionSection(
+    discussions: List<DiscussionNote>,
+    onDelete: (String) -> Unit,
+    showDelete: Boolean,
+    isRecording: Boolean = false
+) {
+    InfoCard("Discussion (Voice Notes)", Icons.Default.Call) {
+        if (discussions.isEmpty()) {
+            Text(
+                "No discussion recorded yet",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.outline,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+        } else {
+            discussions.sortedByDescending { it.timestamp }.forEach { note ->
+                DiscussionRow(note, onDelete = { onDelete(note.id) }, showDelete = showDelete)
+                HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+            }
+        }
+
+        if (isRecording) {
+            Spacer(Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.1f), RoundedCornerShape(8.dp)).padding(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.error)
+                Spacer(Modifier.width(8.dp))
+                Text("Recording in progress...", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+            }
+        }
+    }
+}
+
+@Composable
+internal fun DiscussionRow(note: DiscussionNote, onDelete: () -> Unit, showDelete: Boolean) {
+    val player = remember { getAudioPlayer() }
+    var isPlaying by remember { mutableStateOf(false) }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            player.stop()
+        }
+    }
+
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(onClick = {
+            if (isPlaying) {
+                player.pause()
+                isPlaying = false
+            } else {
+                player.play(note.audioUrl)
+                isPlaying = true
+                player.setCompletionListener { isPlaying = false }
+            }
+        }) {
+            Icon(
+                if (isPlaying) Icons.Default.Close else Icons.Default.PlayArrow,
+                contentDescription = if (isPlaying) "Pause" else "Play",
+                tint = MaterialTheme.colorScheme.primary
+            )
+        }
+
+        Column(modifier = Modifier.weight(1f).padding(horizontal = 8.dp)) {
+            Text(
+                "Voice Note - ${note.durationMs / 1000}s",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium
+            )
+            Text(
+                "By ${note.senderName} on ${formatDate(note.timestamp)}",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.outline
+            )
+        }
+
+        if (showDelete) {
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Default.Delete, "Delete", tint = MaterialTheme.colorScheme.error)
+            }
         }
     }
 }
@@ -1151,6 +1317,41 @@ class BeneficiaryDetailViewModel(
             }.onFailure {
                 _isUploading.value = false
             }
+        }
+    }
+
+    fun deleteAttachment(beneficiaryId: String, attachmentId: String) {
+        screenModelScope.launch {
+            repository.deleteAttachment(beneficiaryId, attachmentId)
+        }
+    }
+
+    fun uploadAndAddDiscussionNote(beneficiaryId: String, audioData: ByteArray, durationMs: Long) {
+        screenModelScope.launch {
+            _isUploading.value = true
+            val fileName = "discussion_${Clock.System.now().toEpochMilliseconds()}.m4a"
+            storageRepository.uploadFile("beneficiaries/$beneficiaryId/discussion", audioData, fileName).onSuccess { url ->
+                val user = currentUser.value
+                val now = Clock.System.now().toEpochMilliseconds()
+                val note = DiscussionNote(
+                    id = "NOTE_$now",
+                    audioUrl = url,
+                    durationMs = durationMs,
+                    senderId = user?.userId ?: "",
+                    senderName = user?.fullName ?: "Unknown",
+                    timestamp = now
+                )
+                repository.addDiscussionNote(beneficiaryId, note)
+                _isUploading.value = false
+            }.onFailure {
+                _isUploading.value = false
+            }
+        }
+    }
+
+    fun deleteDiscussionNote(beneficiaryId: String, noteId: String) {
+        screenModelScope.launch {
+            repository.deleteDiscussionNote(beneficiaryId, noteId)
         }
     }
 

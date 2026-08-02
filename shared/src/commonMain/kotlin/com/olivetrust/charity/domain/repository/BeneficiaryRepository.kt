@@ -32,5 +32,8 @@ interface BeneficiaryRepository {
     suspend fun updateLastVisitDate(id: String, date: Long): Result<Unit>
     suspend fun updatePhoto(id: String, photoUrl: String): Result<Unit>
     suspend fun addAttachment(id: String, attachment: com.olivetrust.charity.domain.model.Attachment): Result<Unit>
+    suspend fun deleteAttachment(beneficiaryId: String, attachmentId: String): Result<Unit>
+    suspend fun addDiscussionNote(id: String, note: com.olivetrust.charity.domain.model.DiscussionNote): Result<Unit>
+    suspend fun deleteDiscussionNote(beneficiaryId: String, noteId: String): Result<Unit>
     suspend fun deleteBeneficiary(id: String): Result<Unit>
 }

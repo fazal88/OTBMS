@@ -11,11 +11,15 @@ class FirestoreStorageRepository : StorageRepository {
 
     override suspend fun uploadFile(path: String, data: ByteArray, fileName: String): Result<String> {
         return try {
+            println("FIRESTORE_STORAGE: Uploading $fileName to $path (${data.size} bytes)")
             val ref = storage.reference("$path/$fileName")
             ref.putData(toFirebaseData(data))
             val url = ref.getDownloadUrl()
+            println("FIRESTORE_STORAGE: Upload successful. URL: $url")
             Result.success(url)
         } catch (e: Exception) {
+            println("FIRESTORE_STORAGE_ERROR: Failed to upload $fileName: ${e.message}")
+            e.printStackTrace()
             Result.failure(e)
         }
     }

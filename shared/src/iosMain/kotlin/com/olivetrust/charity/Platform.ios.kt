@@ -159,3 +159,22 @@ class IOSFilePicker : FilePicker {
 
 actual fun getFilePicker(): FilePicker = IOSFilePicker()
 
+class IOSAudioRecorder : AudioRecorder {
+    override fun startRecording() {}
+    override fun stopRecording(): ByteArray? = null
+    override fun isRecording(): Boolean = false
+}
+
+actual fun getAudioRecorder(): AudioRecorder = IOSAudioRecorder()
+
+class IOSAudioPlayer : AudioPlayer {
+    override fun play(url: String) {}
+    override fun pause() {}
+    override fun resume() {}
+    override fun stop() {}
+    override fun isPlaying(): Boolean = false
+    override fun setCompletionListener(callback: () -> Unit) {}
+}
+
+actual fun getAudioPlayer(): AudioPlayer = IOSAudioPlayer()
+

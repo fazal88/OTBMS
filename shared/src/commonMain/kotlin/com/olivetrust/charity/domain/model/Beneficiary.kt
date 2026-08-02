@@ -26,6 +26,16 @@ data class Attachment(
 ) : CommonSerializable
 
 @Serializable
+data class DiscussionNote(
+    val id: String = "",
+    val audioUrl: String = "",
+    val durationMs: Long = 0,
+    val senderId: String = "",
+    val senderName: String = "",
+    val timestamp: Long = 0
+) : CommonSerializable
+
+@Serializable
 data class Beneficiary(
     val id: String = "",
     val headName: String = "",
@@ -45,6 +55,7 @@ data class Beneficiary(
     val numberOfDependants: Int = 0,
     val familyMembers: List<FamilyMember> = emptyList(),
     val attachments: List<Attachment> = emptyList(),
+    val discussions: List<DiscussionNote> = emptyList(),
     
     // Metadata
     val onboardingDate: Long = 0,

@@ -8,6 +8,7 @@ import com.olivetrust.charity.domain.model.NotificationTopic
 import com.olivetrust.charity.domain.repository.NotificationRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlin.time.Clock
 
 data class NotificationTopicsState(
     val topics: List<NotificationTopic> = emptyList(),
@@ -106,7 +107,7 @@ class NotificationTopicsViewModel(
 
     fun createTopic(name: String, displayName: String, description: String) {
         screenModelScope.launch {
-            val topicId = "topic_${kotlin.time.Clock.System.now().toEpochMilliseconds()}"
+            val topicId = "topic_${Clock.System.now().toEpochMilliseconds()}"
             val topic = NotificationTopic(
                 topicId = topicId,
                 name = name,
