@@ -71,20 +71,33 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
         val scope = rememberCoroutineScope()
 
         var showDeleteDialog by remember { mutableStateOf(false) }
+        var noteToDelete by remember { mutableStateOf<String?>(null) }
+        var attachmentToDelete by remember { mutableStateOf<String?>(null) }
         var showRejectDialog by remember { mutableStateOf(false) }
         var rejectionReason by remember { mutableStateOf("") }
-        
+
         var showAddAttachmentDialog by remember { mutableStateOf(false) }
         var attachmentName by remember { mutableStateOf("") }
         var attachmentUrl by remember { mutableStateOf("") }
-        
+
         var showPhotoDialog by remember { mutableStateOf(false) }
+
+        // Voice Note Recording Review
+        var showReviewRecordingDialog by remember { mutableStateOf(false) }
+        var pendingAudioData by remember { mutableStateOf<ByteArray?>(null) }
+        var pendingAudioDuration by remember { mutableStateOf(0L) }
+        var isPlayingReview by remember { mutableStateOf(false) }
+        val reviewPlayer = remember { getAudioPlayer() }
 
         val snackbarHostState = remember { SnackbarHostState() }
 
         var isRecording by remember { mutableStateOf(false) }
         val recorder = remember { getAudioRecorder() }
         var recordingStartTime by remember { mutableStateOf(0L) }
+
+        // Shared player for discussions
+        val sharedPlayer = remember { getAudioPlayer() }
+        var currentlyPlayingNoteId by remember { mutableStateOf<String?>(null) }
 
         LaunchedEffect(beneficiaryId) {
             viewModel.loadBeneficiary(beneficiaryId)
@@ -108,14 +121,12 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
                         if (isRecording) {
                             isRecording = false
                             val data = recorder.stopRecording()
-                            val duration = Clock.System.now().toEpochMilliseconds() - recordingStartTime
+                            val duration =
+                                Clock.System.now().toEpochMilliseconds() - recordingStartTime
                             if (data != null) {
-                                beneficiary?.let { b ->
-                                    scope.launch {
-                                        viewModel.uploadAndAddDiscussionNote(b.id, data, duration)
-                                        snackbarHostState.showSnackbar("Voice note uploaded")
-                                    }
-                                }
+                                pendingAudioData = data
+                                pendingAudioDuration = duration
+                                showReviewRecordingDialog = true
                             }
                         } else {
                             isRecording = true
@@ -142,7 +153,7 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
                         )
                     } else {
                         Icon(
-                            imageVector = if (isRecording) Icons.Default.Close else Icons.Default.Call,
+                            imageVector = if (isRecording) Icons.Default.Close else Icons.Default.Mic,
                             contentDescription = if (isRecording) "Stop Recording" else "Record Voice Note"
                         )
                     }
@@ -158,7 +169,7 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
                         item {
                             Spacer(modifier = Modifier.height(8.dp))
                             HeaderSection(
-                                b, 
+                                b,
                                 onPhotoClick = { showPhotoDialog = true }
                             )
                         }
@@ -169,7 +180,14 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
                                 user,
                                 onEdit = { navigator.push(EditBeneficiaryScreen(b)) },
                                 onDelete = { showDeleteDialog = true },
-                                onApprove = { navigator.push(ApproveBeneficiaryScreen(b.id, b.headName)) },
+                                onApprove = {
+                                    navigator.push(
+                                        ApproveBeneficiaryScreen(
+                                            b.id,
+                                            b.headName
+                                        )
+                                    )
+                                },
                                 onReject = { showRejectDialog = true },
                                 onAid = { navigator.push(AidDistributionScreen(b.id, b.headName)) },
                                 onVisit = {
@@ -208,7 +226,9 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
                             AttachmentsSection(
                                 attachments = b.attachments,
                                 onAddClick = { showAddAttachmentDialog = true },
-                                onDelete = { attachmentId -> viewModel.deleteAttachment(b.id, attachmentId) },
+                                onDelete = { attachmentId ->
+                                    attachmentToDelete = attachmentId
+                                },
                                 showDelete = user?.role == UserRole.APPROVER || user?.role == UserRole.SUPER_ADMIN
                             )
                         }
@@ -216,9 +236,23 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
                         item {
                             DiscussionSection(
                                 discussions = b.discussions,
-                                onDelete = { noteId -> viewModel.deleteDiscussionNote(b.id, noteId) },
+                                onDelete = { noteId -> noteToDelete = noteId },
                                 showDelete = user?.role == UserRole.APPROVER || user?.role == UserRole.SUPER_ADMIN,
-                                isRecording = isRecording
+                                isRecording = isRecording,
+                                sharedPlayer = sharedPlayer,
+                                currentlyPlayingNoteId = currentlyPlayingNoteId,
+                                onTogglePlay = { noteId, url ->
+                                    if (currentlyPlayingNoteId == noteId) {
+                                        sharedPlayer.pause()
+                                        currentlyPlayingNoteId = null
+                                    } else {
+                                        sharedPlayer.play(url)
+                                        currentlyPlayingNoteId = noteId
+                                        sharedPlayer.setCompletionListener { 
+                                            currentlyPlayingNoteId = null 
+                                        }
+                                    }
+                                }
                             )
                         }
 
@@ -228,7 +262,12 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
                                     b.natureOfAid?.let { DetailRow("Nature of Aid", it) }
                                     b.monthlyRation?.let { DetailRow("Monthly Ration", it) }
                                     b.packetCount?.let { DetailRow("Packet Count", it.toString()) }
-                                    b.monetaryAidAmount?.let { DetailRow("Monetary Aid", it.toString()) }
+                                    b.monetaryAidAmount?.let {
+                                        DetailRow(
+                                            "Monetary Aid",
+                                            it.toString()
+                                        )
+                                    }
                                     b.assignedMonitor?.let { DetailRow("Assigned Monitor", it) }
                                     b.approvalNotes?.let { DetailRow("Notes", it) }
                                 }
@@ -288,8 +327,15 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
                                         )
                                         if (b.latitude != 0.0 || b.longitude != 0.0) {
                                             IconButton(
-                                                onClick = { openMaps(b.latitude, b.longitude, b.headName) },
-                                                modifier = Modifier.size(32.dp).padding(start = 4.dp)
+                                                onClick = {
+                                                    openMaps(
+                                                        b.latitude,
+                                                        b.longitude,
+                                                        b.headName
+                                                    )
+                                                },
+                                                modifier = Modifier.size(32.dp)
+                                                    .padding(start = 4.dp)
                                             ) {
                                                 Icon(
                                                     Icons.Default.LocationOn,
@@ -312,7 +358,14 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     SectionHeader("Recent Visit", Icons.Default.Refresh)
-                                    TextButton(onClick = { navigator.push(VisitHistoryScreen(b.headName, visits)) }) {
+                                    TextButton(onClick = {
+                                        navigator.push(
+                                            VisitHistoryScreen(
+                                                b.headName,
+                                                visits
+                                            )
+                                        )
+                                    }) {
                                         Text("View All")
                                     }
                                 }
@@ -330,7 +383,14 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     SectionHeader("Last Aid", Icons.AutoMirrored.Filled.List)
-                                    TextButton(onClick = { navigator.push(AidHistoryScreen(b.headName, distributions)) }) {
+                                    TextButton(onClick = {
+                                        navigator.push(
+                                            AidHistoryScreen(
+                                                b.headName,
+                                                distributions
+                                            )
+                                        )
+                                    }) {
                                         Text("View All")
                                     }
                                 }
@@ -427,23 +487,30 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.secondary
                         )
-                        
+
                         OutlinedTextField(
                             value = attachmentName,
                             onValueChange = { attachmentName = it },
                             label = { Text("Document Name (e.g. Identity Proof)") },
                             modifier = Modifier.fillMaxWidth()
                         )
-                        
+
                         Spacer(Modifier.height(8.dp))
-                        
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
                             Button(
-                                onClick = { 
+                                onClick = {
                                     scope.launch {
                                         val picked = getFilePicker().takePhoto()
                                         if (picked != null) {
-                                            viewModel.uploadAndAddAttachment(beneficiaryId, attachmentName, picked)
+                                            viewModel.uploadAndAddAttachment(
+                                                beneficiaryId,
+                                                attachmentName,
+                                                picked
+                                            )
                                             showAddAttachmentDialog = false
                                             attachmentName = ""
                                         }
@@ -451,7 +518,7 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
                                 },
                                 modifier = Modifier.weight(1f),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceVariant, 
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
                                     contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             ) {
@@ -461,11 +528,15 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
                             }
 
                             Button(
-                                onClick = { 
+                                onClick = {
                                     scope.launch {
                                         val picked = getFilePicker().pickImageOrPdf()
                                         if (picked != null) {
-                                            viewModel.uploadAndAddAttachment(beneficiaryId, attachmentName, picked)
+                                            viewModel.uploadAndAddAttachment(
+                                                beneficiaryId,
+                                                attachmentName,
+                                                picked
+                                            )
                                             showAddAttachmentDialog = false
                                             attachmentName = ""
                                         }
@@ -473,7 +544,7 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
                                 },
                                 modifier = Modifier.weight(1f),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.secondaryContainer, 
+                                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
                                     contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                                 )
                             ) {
@@ -514,10 +585,13 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.secondary
                         )
-                        
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
                             Button(
-                                onClick = { 
+                                onClick = {
                                     scope.launch {
                                         val picked = getFilePicker().takePhoto()
                                         if (picked != null) {
@@ -528,7 +602,7 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
                                 },
                                 modifier = Modifier.weight(1f),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceVariant, 
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
                                     contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             ) {
@@ -538,7 +612,7 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
                             }
 
                             Button(
-                                onClick = { 
+                                onClick = {
                                     scope.launch {
                                         val picked = getFilePicker().pickImage()
                                         if (picked != null) {
@@ -549,7 +623,7 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
                                 },
                                 modifier = Modifier.weight(1f),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceVariant, 
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
                                     contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             ) {
@@ -570,8 +644,940 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
                 }
             )
         }
+
+        if (attachmentToDelete != null) {
+            AlertDialog(
+                onDismissRequest = { attachmentToDelete = null },
+                title = { Text("Delete Attachment") },
+                text = { Text("Are you sure you want to delete this attachment? This action cannot be undone.") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            attachmentToDelete?.let { id ->
+                                beneficiary?.let { b ->
+                                    viewModel.deleteAttachment(b.id, id)
+                                }
+                            }
+                            attachmentToDelete = null
+                        },
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("Delete")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { attachmentToDelete = null }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        if (noteToDelete != null) {
+            AlertDialog(
+                onDismissRequest = { noteToDelete = null },
+                title = { Text("Delete Voice Note") },
+                text = { Text("Are you sure you want to delete this voice note? This action cannot be undone.") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            noteToDelete?.let { id ->
+                                beneficiary?.let { b ->
+                                    viewModel.deleteDiscussionNote(b.id, id)
+                                }
+                            }
+                            noteToDelete = null
+                        },
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("Delete")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { noteToDelete = null }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        if (showReviewRecordingDialog && pendingAudioData != null) {
+            AlertDialog(
+                onDismissRequest = {
+                    showReviewRecordingDialog = false
+                    reviewPlayer.stop()
+                    isPlayingReview = false
+                },
+                title = { Text("Review Recording") },
+                text = {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Length: ${pendingAudioDuration / 1000} seconds")
+                        Spacer(Modifier.height(16.dp))
+                        IconButton(
+                            onClick = {
+                                if (isPlayingReview) {
+                                    reviewPlayer.pause()
+                                    isPlayingReview = false
+                                } else {
+                                    pendingAudioData?.let {
+                                        reviewPlayer.play(it)
+                                        isPlayingReview = true
+                                        reviewPlayer.setCompletionListener { isPlayingReview = false }
+                                    }
+                                }
+                            },
+                            modifier = Modifier.size(64.dp).background(
+                                MaterialTheme.colorScheme.primaryContainer,
+                                CircleShape
+                            )
+                        ) {
+                            Icon(
+                                if (isPlayingReview) Icons.Default.Close else Icons.Default.PlayArrow,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        beneficiary?.let { b ->
+                            pendingAudioData?.let { data ->
+                                scope.launch {
+                                    viewModel.uploadAndAddDiscussionNote(
+                                        b.id,
+                                        data,
+                                        pendingAudioDuration
+                                    )
+                                    snackbarHostState.showSnackbar("Voice note uploaded")
+                                }
+                            }
+                        }
+                        showReviewRecordingDialog = false
+                        pendingAudioData = null
+                        reviewPlayer.stop()
+                        isPlayingReview = false
+                    }) {
+                        Text("Upload")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            showReviewRecordingDialog = false
+                            pendingAudioData = null
+                            reviewPlayer.stop()
+                            isPlayingReview = false
+                        },
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("Discard")
+                    }
+                }
+            )
+        }
+
     }
 
+    @Composable
+    internal fun HeaderSection(b: Beneficiary, onPhotoClick: () -> Unit = {}) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(64.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary)
+                            .clickable { onPhotoClick() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (b.photoUrl.isNotBlank()) {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                var isLoading by remember { mutableStateOf(true) }
+                                AsyncImage(
+                                    model = b.photoUrl,
+                                    contentDescription = "Profile Photo",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                    onLoading = { isLoading = true },
+                                    onSuccess = { isLoading = false },
+                                    onError = {
+                                        isLoading = false
+                                        println("COIL_ERROR: ${it.result.throwable.message}")
+                                    }
+                                )
+                                if (isLoading) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(24.dp),
+                                        strokeWidth = 2.dp
+                                    )
+                                }
+                            }
+                        } else {
+                            Text(
+                                text = b.headName.take(1).uppercase(),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.2f)),
+                            contentAlignment = Alignment.BottomCenter
+                        ) {
+                            Icon(
+                                Icons.Default.Edit,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp).padding(bottom = 4.dp),
+                                tint = Color.White
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column {
+                        Text(
+                            b.headName,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                        StatusBadge(b.status)
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
+    internal fun AttachmentsSection(
+        attachments: List<Attachment>,
+        onAddClick: () -> Unit,
+        onDelete: (String) -> Unit,
+        showDelete: Boolean
+    ) {
+        InfoCard("Attachments & Documents", Icons.Default.Add) {
+            if (attachments.isEmpty()) {
+                Text(
+                    "No attachments added yet",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            } else {
+                attachments.forEach { attachment ->
+                    AttachmentRow(
+                        attachment,
+                        onDelete = { onDelete(attachment.id) },
+                        showDelete = showDelete
+                    )
+                    HorizontalDivider(
+                        thickness = 0.5.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant
+                    )
+                }
+            }
+
+            Button(
+                onClick = onAddClick,
+                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            ) {
+                Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Add Attachment")
+            }
+        }
+    }
+
+    @Composable
+    internal fun AttachmentRow(attachment: Attachment, onDelete: () -> Unit, showDelete: Boolean) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { openUrl(attachment.url) }
+                .padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                if (attachment.url.lowercase()
+                        .endsWith(".pdf")
+                ) Icons.Default.Info else Icons.Default.Info,
+                null,
+                modifier = Modifier.size(24.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    attachment.name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium
+                )
+                Text(
+                    "Uploaded by ${attachment.uploadedBy} on ${formatDate(attachment.timestamp)}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.outline
+                )
+            }
+            Row {
+                IconButton(onClick = { shareUrl(attachment.url, attachment.name) }) {
+                    Icon(Icons.Default.Share, "Share", tint = MaterialTheme.colorScheme.primary)
+                }
+                if (showDelete) {
+                    IconButton(onClick = onDelete) {
+                        Icon(Icons.Default.Delete, "Delete", tint = MaterialTheme.colorScheme.error)
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
+    internal fun DiscussionSection(
+        discussions: List<DiscussionNote>,
+        onDelete: (String) -> Unit,
+        showDelete: Boolean,
+        isRecording: Boolean = false,
+        sharedPlayer: AudioPlayer,
+        currentlyPlayingNoteId: String?,
+        onTogglePlay: (String, String) -> Unit
+    ) {
+        InfoCard("Discussion (Voice Notes)", Icons.Default.Call) {
+            if (discussions.isEmpty()) {
+                Text(
+                    "No discussion recorded yet",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            } else {
+                discussions.sortedByDescending { it.timestamp }.forEach { note ->
+                    DiscussionRow(
+                        note = note,
+                        onDelete = { onDelete(note.id) },
+                        showDelete = showDelete,
+                        isPlaying = currentlyPlayingNoteId == note.id,
+                        onTogglePlay = { onTogglePlay(note.id, note.audioUrl) }
+                    )
+                    HorizontalDivider(
+                        thickness = 0.5.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant
+                    )
+                }
+            }
+
+            if (isRecording) {
+                Spacer(Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth().background(
+                        MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.1f),
+                        RoundedCornerShape(8.dp)
+                    ).padding(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "Recording in progress...",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+        }
+    }
+
+    @Composable
+    internal fun DiscussionRow(
+        note: DiscussionNote,
+        onDelete: () -> Unit,
+        showDelete: Boolean,
+        isPlaying: Boolean,
+        onTogglePlay: () -> Unit
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onTogglePlay) {
+                Icon(
+                    if (isPlaying) Icons.Default.Close else Icons.Default.PlayArrow,
+                    contentDescription = if (isPlaying) "Pause" else "Play",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            Column(modifier = Modifier.weight(1f).padding(horizontal = 8.dp)) {
+                Text(
+                    "Voice Note - ${note.durationMs / 1000}s",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium
+                )
+                Text(
+                    "By ${note.senderName} on ${formatDate(note.timestamp)}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.outline
+                )
+            }
+
+            if (showDelete) {
+                IconButton(onClick = onDelete) {
+                    Icon(Icons.Default.Delete, "Delete", tint = MaterialTheme.colorScheme.error)
+                }
+            }
+        }
+    }
+
+    @Composable
+    internal fun ActionButtons(
+        b: Beneficiary,
+        user: User?,
+        onEdit: () -> Unit,
+        onDelete: () -> Unit,
+        onApprove: () -> Unit,
+        onReject: () -> Unit,
+        onAid: () -> Unit,
+        onVisit: () -> Unit
+    ) {
+        val isEmployee = user?.role == UserRole.EMPLOYEE
+        val isApprover = user?.role == UserRole.APPROVER
+        val isSuperAdmin = user?.role == UserRole.SUPER_ADMIN
+
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Edit/Delete Section - Restricted to Employee/Admin
+            if (isEmployee || isSuperAdmin) {
+                if (b.status == BeneficiaryStatus.PENDING_APPROVAL ||
+                    b.status == BeneficiaryStatus.REAPPROVAL_PENDING ||
+                    b.status == BeneficiaryStatus.MISUSE_REPORTED ||
+                    b.status == BeneficiaryStatus.EDIT_REQUESTED ||
+                    b.status == BeneficiaryStatus.DRAFT
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = onEdit,
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(12.dp),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Edit,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Edit")
+                        }
+
+                        OutlinedButton(
+                            onClick = onDelete,
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(12.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                        ) {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Delete")
+                        }
+                    }
+                }
+            }
+
+            // Approval Section - Restricted to Approver/Admin
+            if (isApprover || isSuperAdmin) {
+                if (b.status == BeneficiaryStatus.PENDING_APPROVAL ||
+                    b.status == BeneficiaryStatus.REAPPROVAL_PENDING ||
+                    b.status == BeneficiaryStatus.MISUSE_REPORTED ||
+                    b.status == BeneficiaryStatus.EDIT_REQUESTED
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = onApprove,
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Icon(Icons.Default.CheckCircle, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                when (b.status) {
+                                    BeneficiaryStatus.REAPPROVAL_PENDING -> "Re-approve"
+                                    BeneficiaryStatus.MISUSE_REPORTED -> "Clear & Approve"
+                                    BeneficiaryStatus.EDIT_REQUESTED -> "Update & Approve"
+                                    else -> "Approve"
+                                }
+                            )
+                        }
+
+                        OutlinedButton(
+                            onClick = onReject,
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Icon(Icons.Default.Close, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Reject")
+                        }
+                    }
+                }
+            }
+
+            // Aid/Visit Section - Restricted to Employee/Admin
+            if (isEmployee || isSuperAdmin) {
+                if (b.status == BeneficiaryStatus.APPROVED) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = onAid,
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Give Aid")
+                        }
+
+                        Button(
+                            onClick = onVisit,
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                        ) {
+                            Icon(Icons.Default.Check, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Verify Visit")
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
+    internal fun InfoCard(
+        title: String, icon: ImageVector, content: @Composable () -> Unit
+    ) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        icon,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 12.dp),
+                    thickness = 0.5.dp,
+                    color = MaterialTheme.colorScheme.outlineVariant
+                )
+                content()
+            }
+        }
+    }
+
+    @Composable
+    internal fun FamilyMemberCard(member: FamilyMember) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            border = androidx.compose.foundation.BorderStroke(
+                1.dp, MaterialTheme.colorScheme.outlineVariant
+            ),
+            shape = RoundedCornerShape(8.dp)
+        ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        member.name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Surface(
+                        color = MaterialTheme.colorScheme.secondaryContainer, shape = CircleShape
+                    ) {
+                        Text(
+                            text = member.relation,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    "Age: ${member.age} | Gender: ${member.gender}",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Text("Occupation: ${member.occupation}", style = MaterialTheme.typography.bodySmall)
+                member.diseaseInability?.let {
+                    if (it.isNotBlank()) Text(
+                        "Disease: $it",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+        }
+    }
+
+    @Composable
+    internal fun SectionHeader(title: String, icon: ImageVector) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(top = 8.dp)
+        ) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        }
+    }
+
+    @Composable
+    internal fun DetailRow(label: String, value: String) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                textAlign = TextAlign.End,
+                modifier = Modifier.widthIn(min = 0.dp, max = 200.dp)
+            )
+        }
+    }
+
+    @Composable
+    internal fun StatusBadge(status: BeneficiaryStatus) {
+        val (color, icon) = when (status) {
+            BeneficiaryStatus.APPROVED -> Color(0xFF4CAF50) to Icons.Default.CheckCircle
+            BeneficiaryStatus.PENDING_APPROVAL -> Color(0xFFFF9800) to Icons.Default.Refresh
+            BeneficiaryStatus.REJECTED -> MaterialTheme.colorScheme.error to Icons.Default.Close
+            BeneficiaryStatus.REAPPROVAL_PENDING -> Color(0xFF2196F3) to Icons.Default.Refresh
+            BeneficiaryStatus.MISUSE_REPORTED -> MaterialTheme.colorScheme.error to Icons.Default.Warning
+            BeneficiaryStatus.EDIT_REQUESTED -> Color(0xFF9C27B0) to Icons.Default.Edit
+            else -> MaterialTheme.colorScheme.outline to Icons.Default.Info
+        }
+        Surface(
+            color = color.copy(alpha = 0.1f),
+            shape = RoundedCornerShape(16.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, color.copy(alpha = 0.5f))
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Icon(icon, contentDescription = null, modifier = Modifier.size(14.dp), tint = color)
+                Text(
+                    text = when (status) {
+                        BeneficiaryStatus.PENDING_APPROVAL -> "PENDING"
+                        else -> status.name.replace("_", " ")
+                    },
+                    style = MaterialTheme.typography.labelMedium,
+                    color = color,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+
+    @Preview
+    @Composable
+    fun HeaderSectionPreview() {
+        MaterialTheme {
+            Box(Modifier.padding(16.dp)) {
+                HeaderSection(PreviewMocks.mockBeneficiary)
+            }
+        }
+    }
+
+    @Preview
+    @Composable
+    fun ActionButtonsPreview() {
+        MaterialTheme {
+            Box(Modifier.padding(16.dp)) {
+                ActionButtons(
+                    b = PreviewMocks.mockBeneficiary,
+                    user = PreviewMocks.mockUser,
+                    onEdit = {},
+                    onDelete = {},
+                    onApprove = {},
+                    onReject = {},
+                    onAid = {},
+                    onVisit = {})
+            }
+        }
+    }
+
+    @Preview
+    @Composable
+    fun FamilyMemberCardPreview() {
+        MaterialTheme {
+            Box(Modifier.padding(16.dp)) {
+                FamilyMemberCard(PreviewMocks.mockBeneficiary.familyMembers.first())
+            }
+        }
+    }
+
+    @Preview
+    @Composable
+    fun SectionHeaderPreview() {
+        MaterialTheme {
+            Box(Modifier.padding(16.dp)) {
+                SectionHeader("Personal Information", Icons.Default.Person)
+            }
+        }
+    }
+
+    @Preview
+    @Composable
+    fun InfoCardPreview() {
+        MaterialTheme {
+            Box(Modifier.padding(16.dp)) {
+                InfoCard("Personal Information", Icons.Default.Person) {
+                    DetailRow("Age", "45")
+                    DetailRow("Gender", "Male")
+                }
+            }
+        }
+    }
+
+    @Preview
+    @Composable
+    fun DetailRowPreview() {
+        MaterialTheme {
+            Box(Modifier.padding(16.dp).background(MaterialTheme.colorScheme.surface)) {
+                DetailRow("Label", "2205, Growmore Emerald, Malwani, Malad, Mumbai 400095")
+            }
+        }
+    }
+
+    @Preview
+    @Composable
+    fun StatusBadgePreview() {
+        MaterialTheme {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                StatusBadge(BeneficiaryStatus.PENDING_APPROVAL)
+                StatusBadge(BeneficiaryStatus.APPROVED)
+                StatusBadge(BeneficiaryStatus.REJECTED)
+            }
+        }
+    }
+
+    class BeneficiaryDetailViewModel(
+        private val repository: BeneficiaryRepository,
+        private val authRepository: AuthRepository,
+        private val visitRepository: VisitRepository,
+        private val aidRepository: AidRepository,
+        private val storageRepository: StorageRepository
+    ) : ScreenModel {
+        private val _beneficiary = MutableStateFlow<Beneficiary?>(null)
+        val beneficiary: StateFlow<Beneficiary?> = _beneficiary.asStateFlow()
+
+        private val _visits = MutableStateFlow<List<VerificationVisit>>(emptyList())
+        val visits: StateFlow<List<VerificationVisit>> = _visits.asStateFlow()
+
+        private val _aidDistributions = MutableStateFlow<List<AidDistribution>>(emptyList())
+        val aidDistributions: StateFlow<List<AidDistribution>> = _aidDistributions.asStateFlow()
+
+        private val _isUploading = MutableStateFlow(false)
+        val isUploading: StateFlow<Boolean> = _isUploading.asStateFlow()
+
+        val currentUser = authRepository.currentUser.stateIn(
+            screenModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            null
+        )
+
+        fun loadBeneficiary(id: String) {
+            screenModelScope.launch {
+                repository.getBeneficiaryById(id).collect {
+                    _beneficiary.value = it
+                }
+            }
+            screenModelScope.launch {
+                visitRepository.getVisits().collect { allVisits ->
+                    _visits.value =
+                        allVisits.filter { it.beneficiaryId == id }.sortedByDescending { it.date }
+                }
+            }
+            screenModelScope.launch {
+                aidRepository.getDistributionsByBeneficiary(id).collect { distributions ->
+                    _aidDistributions.value = distributions.sortedByDescending { it.date }
+                }
+            }
+        }
+
+        fun deleteBeneficiary(id: String, onDeleted: () -> Unit) {
+            screenModelScope.launch {
+                val result = repository.deleteBeneficiary(id)
+                if (result.isSuccess) {
+                    onDeleted()
+                }
+            }
+        }
+
+        fun rejectBeneficiary(id: String, reason: String, onRejected: () -> Unit) {
+            screenModelScope.launch {
+                val userId = currentUser.value?.userId ?: ""
+                val result = repository.rejectBeneficiary(id, userId, reason)
+                if (result.isSuccess) {
+                    onRejected()
+                }
+            }
+        }
+
+        fun updatePhoto(id: String, url: String) {
+            screenModelScope.launch {
+                repository.updatePhoto(id, url)
+            }
+        }
+
+        fun addAttachment(id: String, name: String, url: String) {
+            screenModelScope.launch {
+                val user = currentUser.value
+                val now = Clock.System.now().toEpochMilliseconds()
+                val attachment = Attachment(
+                    id = "ATT_$now",
+                    name = name,
+                    url = url,
+                    timestamp = now,
+                    uploadedBy = user?.fullName ?: "Unknown"
+                )
+                repository.addAttachment(id, attachment)
+            }
+        }
+
+        fun uploadAndAddAttachment(beneficiaryId: String, name: String, data: ByteArray) {
+            screenModelScope.launch {
+                _isUploading.value = true
+                storageRepository.uploadFile("beneficiaries/$beneficiaryId", data, name)
+                    .onSuccess { url ->
+                        addAttachment(beneficiaryId, name, url)
+                        _isUploading.value = false
+                    }.onFailure {
+                    _isUploading.value = false
+                }
+            }
+        }
+
+        fun deleteAttachment(beneficiaryId: String, attachmentId: String) {
+            screenModelScope.launch {
+                repository.deleteAttachment(beneficiaryId, attachmentId)
+            }
+        }
+
+        fun uploadAndAddDiscussionNote(
+            beneficiaryId: String,
+            audioData: ByteArray,
+            durationMs: Long
+        ) {
+            screenModelScope.launch {
+                _isUploading.value = true
+                val fileName = "discussion_${Clock.System.now().toEpochMilliseconds()}.m4a"
+                storageRepository.uploadFile(
+                    "beneficiaries/$beneficiaryId/discussion",
+                    audioData,
+                    fileName
+                ).onSuccess { url ->
+                    val user = currentUser.value
+                    val now = Clock.System.now().toEpochMilliseconds()
+                    val note = DiscussionNote(
+                        id = "NOTE_$now",
+                        audioUrl = url,
+                        durationMs = durationMs,
+                        senderId = user?.userId ?: "",
+                        senderName = user?.fullName ?: "Unknown",
+                        timestamp = now
+                    )
+                    repository.addDiscussionNote(beneficiaryId, note)
+                    _isUploading.value = false
+                }.onFailure {
+                    _isUploading.value = false
+                }
+            }
+        }
+
+        fun deleteDiscussionNote(beneficiaryId: String, noteId: String) {
+            screenModelScope.launch {
+                repository.deleteDiscussionNote(beneficiaryId, noteId)
+            }
+        }
+
+        fun uploadAndSetPhoto(beneficiaryId: String, data: ByteArray) {
+            screenModelScope.launch {
+                _isUploading.value = true
+                storageRepository.uploadPhoto(beneficiaryId, data).onSuccess { url ->
+                    updatePhoto(beneficiaryId, url)
+                    _isUploading.value = false
+                }.onFailure {
+                    _isUploading.value = false
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -582,14 +1588,27 @@ internal fun DistributionCard(dist: AidDistribution) {
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(formatDate(dist.date), style = MaterialTheme.typography.labelMedium)
-                    Text(dist.natureOfAid, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                    Text(
+                        dist.natureOfAid,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
                 Column(horizontalAlignment = Alignment.End) {
-                    if (dist.aidAmount > 0) Text("₹ ${dist.aidAmount}", fontWeight = FontWeight.Bold)
-                    if (dist.packetCount > 0) Text("${dist.packetCount} Packets", style = MaterialTheme.typography.bodySmall)
+                    if (dist.aidAmount > 0) Text(
+                        "₹ ${dist.aidAmount}",
+                        fontWeight = FontWeight.Bold
+                    )
+                    if (dist.packetCount > 0) Text(
+                        "${dist.packetCount} Packets",
+                        style = MaterialTheme.typography.bodySmall
+                    )
                 }
             }
             if (dist.distributionLocationLat != 0.0 || dist.distributionLocationLng != 0.0) {
@@ -598,7 +1617,13 @@ internal fun DistributionCard(dist: AidDistribution) {
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(
-                        onClick = { openMaps(dist.distributionLocationLat, dist.distributionLocationLng, "Aid: ${dist.beneficiaryName}") },
+                        onClick = {
+                            openMaps(
+                                dist.distributionLocationLat,
+                                dist.distributionLocationLng,
+                                "Aid: ${dist.beneficiaryName}"
+                            )
+                        },
                         contentPadding = PaddingValues(0.dp),
                         modifier = Modifier.height(24.dp)
                     ) {
@@ -616,754 +1641,4 @@ private fun formatDate(timestamp: Long): String {
     val instant = Instant.fromEpochMilliseconds(timestamp)
     val dateTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())
     return "${dateTime.dayOfMonth}/${dateTime.month.number}/${dateTime.year}"
-}
-
-@Composable
-internal fun HeaderSection(b: Beneficiary, onPhotoClick: () -> Unit = {}) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-        shape = RoundedCornerShape(16.dp)
-    ) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(64.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary)
-                        .clickable { onPhotoClick() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (b.photoUrl.isNotBlank()) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            var isLoading by remember { mutableStateOf(true) }
-                            AsyncImage(
-                                model = b.photoUrl,
-                                contentDescription = "Profile Photo",
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                                onLoading = { isLoading = true },
-                                onSuccess = { isLoading = false },
-                                onError = { 
-                                    isLoading = false
-                                    println("COIL_ERROR: ${it.result.throwable.message}")
-                                }
-                            )
-                            if (isLoading) {
-                                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-                            }
-                        }
-                    } else {
-                        Text(
-                            text = b.headName.take(1).uppercase(),
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color.Black.copy(alpha = 0.2f)),
-                        contentAlignment = Alignment.BottomCenter
-                    ) {
-                        Icon(
-                            Icons.Default.Edit,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp).padding(bottom = 4.dp),
-                            tint = Color.White
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.width(16.dp))
-                Column {
-                    Text(
-                        b.headName,
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                    StatusBadge(b.status)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-internal fun AttachmentsSection(
-    attachments: List<Attachment>,
-    onAddClick: () -> Unit,
-    onDelete: (String) -> Unit,
-    showDelete: Boolean
-) {
-    InfoCard("Attachments & Documents", Icons.Default.Add) {
-        if (attachments.isEmpty()) {
-            Text(
-                "No attachments added yet",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.outline,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
-        } else {
-            attachments.forEach { attachment ->
-                AttachmentRow(attachment, onDelete = { onDelete(attachment.id) }, showDelete = showDelete)
-                HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
-            }
-        }
-        
-        Button(
-            onClick = onAddClick,
-            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-            shape = RoundedCornerShape(8.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer, contentColor = MaterialTheme.colorScheme.onSecondaryContainer)
-        ) {
-            Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.width(8.dp))
-            Text("Add Attachment")
-        }
-    }
-}
-
-@Composable
-internal fun AttachmentRow(attachment: Attachment, onDelete: () -> Unit, showDelete: Boolean) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { openUrl(attachment.url) }
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            if (attachment.url.lowercase().endsWith(".pdf")) Icons.Default.Info else Icons.Default.Info, 
-            null, 
-            modifier = Modifier.size(24.dp), 
-            tint = MaterialTheme.colorScheme.primary
-        )
-        Spacer(Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                attachment.name,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium
-            )
-            Text(
-                "Uploaded by ${attachment.uploadedBy} on ${formatDate(attachment.timestamp)}",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.outline
-            )
-        }
-        Row {
-            IconButton(onClick = { shareUrl(attachment.url, attachment.name) }) {
-                Icon(Icons.Default.Share, "Share", tint = MaterialTheme.colorScheme.primary)
-            }
-            if (showDelete) {
-                IconButton(onClick = onDelete) {
-                    Icon(Icons.Default.Delete, "Delete", tint = MaterialTheme.colorScheme.error)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-internal fun DiscussionSection(
-    discussions: List<DiscussionNote>,
-    onDelete: (String) -> Unit,
-    showDelete: Boolean,
-    isRecording: Boolean = false
-) {
-    InfoCard("Discussion (Voice Notes)", Icons.Default.Call) {
-        if (discussions.isEmpty()) {
-            Text(
-                "No discussion recorded yet",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.outline,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
-        } else {
-            discussions.sortedByDescending { it.timestamp }.forEach { note ->
-                DiscussionRow(note, onDelete = { onDelete(note.id) }, showDelete = showDelete)
-                HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
-            }
-        }
-
-        if (isRecording) {
-            Spacer(Modifier.height(12.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.1f), RoundedCornerShape(8.dp)).padding(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.error)
-                Spacer(Modifier.width(8.dp))
-                Text("Recording in progress...", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
-            }
-        }
-    }
-}
-
-@Composable
-internal fun DiscussionRow(note: DiscussionNote, onDelete: () -> Unit, showDelete: Boolean) {
-    val player = remember { getAudioPlayer() }
-    var isPlaying by remember { mutableStateOf(false) }
-
-    DisposableEffect(Unit) {
-        onDispose {
-            player.stop()
-        }
-    }
-
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        IconButton(onClick = {
-            if (isPlaying) {
-                player.pause()
-                isPlaying = false
-            } else {
-                player.play(note.audioUrl)
-                isPlaying = true
-                player.setCompletionListener { isPlaying = false }
-            }
-        }) {
-            Icon(
-                if (isPlaying) Icons.Default.Close else Icons.Default.PlayArrow,
-                contentDescription = if (isPlaying) "Pause" else "Play",
-                tint = MaterialTheme.colorScheme.primary
-            )
-        }
-
-        Column(modifier = Modifier.weight(1f).padding(horizontal = 8.dp)) {
-            Text(
-                "Voice Note - ${note.durationMs / 1000}s",
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium
-            )
-            Text(
-                "By ${note.senderName} on ${formatDate(note.timestamp)}",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.outline
-            )
-        }
-
-        if (showDelete) {
-            IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, "Delete", tint = MaterialTheme.colorScheme.error)
-            }
-        }
-    }
-}
-
-@Composable
-internal fun ActionButtons(
-    b: Beneficiary,
-    user: User?,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit,
-    onApprove: () -> Unit,
-    onReject: () -> Unit,
-    onAid: () -> Unit,
-    onVisit: () -> Unit
-) {
-    val isEmployee = user?.role == UserRole.EMPLOYEE
-    val isApprover = user?.role == UserRole.APPROVER
-    val isSuperAdmin = user?.role == UserRole.SUPER_ADMIN
-
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        // Edit/Delete Section - Restricted to Employee/Admin
-        if (isEmployee || isSuperAdmin) {
-            if (b.status == BeneficiaryStatus.PENDING_APPROVAL || 
-                b.status == BeneficiaryStatus.REAPPROVAL_PENDING ||
-                b.status == BeneficiaryStatus.MISUSE_REPORTED ||
-                b.status == BeneficiaryStatus.EDIT_REQUESTED ||
-                b.status == BeneficiaryStatus.DRAFT) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Button(
-                        onClick = onEdit,
-                        modifier = Modifier.weight(1f),
-                        contentPadding = PaddingValues(12.dp),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.Edit,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Edit")
-                    }
-
-                    OutlinedButton(
-                        onClick = onDelete,
-                        modifier = Modifier.weight(1f),
-                        contentPadding = PaddingValues(12.dp),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                    ) {
-                        Icon(
-                            Icons.Default.Delete,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Delete")
-                    }
-                }
-            }
-        }
-
-        // Approval Section - Restricted to Approver/Admin
-        if (isApprover || isSuperAdmin) {
-            if (b.status == BeneficiaryStatus.PENDING_APPROVAL || 
-                b.status == BeneficiaryStatus.REAPPROVAL_PENDING ||
-                b.status == BeneficiaryStatus.MISUSE_REPORTED ||
-                b.status == BeneficiaryStatus.EDIT_REQUESTED) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Button(
-                        onClick = onApprove,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Icon(Icons.Default.CheckCircle, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            when (b.status) {
-                                BeneficiaryStatus.REAPPROVAL_PENDING -> "Re-approve"
-                                BeneficiaryStatus.MISUSE_REPORTED -> "Clear & Approve"
-                                BeneficiaryStatus.EDIT_REQUESTED -> "Update & Approve"
-                                else -> "Approve"
-                            }
-                        )
-                    }
-
-                    OutlinedButton(
-                        onClick = onReject,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Icon(Icons.Default.Close, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Reject")
-                    }
-                }
-            }
-        }
-
-        // Aid/Visit Section - Restricted to Employee/Admin
-        if (isEmployee || isSuperAdmin) {
-            if (b.status == BeneficiaryStatus.APPROVED) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Button(
-                        onClick = onAid,
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Give Aid")
-                    }
-
-                    Button(
-                        onClick = onVisit,
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
-                    ) {
-                        Icon(Icons.Default.Check, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Verify Visit")
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-internal fun InfoCard(
-    title: String, icon: ImageVector, content: @Composable () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(12.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-            HorizontalDivider(
-                modifier = Modifier.padding(vertical = 12.dp),
-                thickness = 0.5.dp,
-                color = MaterialTheme.colorScheme.outlineVariant
-            )
-            content()
-        }
-    }
-}
-
-@Composable
-internal fun FamilyMemberCard(member: FamilyMember) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = androidx.compose.foundation.BorderStroke(
-            1.dp, MaterialTheme.colorScheme.outlineVariant
-        ),
-        shape = RoundedCornerShape(8.dp)
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    member.name,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Bold
-                )
-                Surface(
-                    color = MaterialTheme.colorScheme.secondaryContainer, shape = CircleShape
-                ) {
-                    Text(
-                        text = member.relation,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                        style = MaterialTheme.typography.labelSmall
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                "Age: ${member.age} | Gender: ${member.gender}",
-                style = MaterialTheme.typography.bodySmall
-            )
-            Text("Occupation: ${member.occupation}", style = MaterialTheme.typography.bodySmall)
-            member.diseaseInability?.let {
-                if (it.isNotBlank()) Text(
-                    "Disease: $it",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
-        }
-    }
-}
-
-@Composable
-internal fun SectionHeader(title: String, icon: ImageVector) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
-        Icon(
-            icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(20.dp)
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-    }
-}
-
-@Composable
-internal fun DetailRow(label: String, value: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-            textAlign = TextAlign.End,
-            modifier = Modifier.widthIn(min = 0.dp, max = 200.dp)
-        )
-    }
-}
-
-@Composable
-internal fun StatusBadge(status: BeneficiaryStatus) {
-    val (color, icon) = when (status) {
-        BeneficiaryStatus.APPROVED -> Color(0xFF4CAF50) to Icons.Default.CheckCircle
-        BeneficiaryStatus.PENDING_APPROVAL -> Color(0xFFFF9800) to Icons.Default.Refresh
-        BeneficiaryStatus.REJECTED -> MaterialTheme.colorScheme.error to Icons.Default.Close
-        BeneficiaryStatus.REAPPROVAL_PENDING -> Color(0xFF2196F3) to Icons.Default.Refresh
-        BeneficiaryStatus.MISUSE_REPORTED -> MaterialTheme.colorScheme.error to Icons.Default.Warning
-        BeneficiaryStatus.EDIT_REQUESTED -> Color(0xFF9C27B0) to Icons.Default.Edit
-        else -> MaterialTheme.colorScheme.outline to Icons.Default.Info
-    }
-    Surface(
-        color = color.copy(alpha = 0.1f),
-        shape = RoundedCornerShape(16.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, color.copy(alpha = 0.5f))
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Icon(icon, contentDescription = null, modifier = Modifier.size(14.dp), tint = color)
-            Text(
-                text = when (status) {
-                    BeneficiaryStatus.PENDING_APPROVAL -> "PENDING"
-                    else -> status.name.replace("_", " ")
-                },
-                style = MaterialTheme.typography.labelMedium,
-                color = color,
-                fontWeight = FontWeight.Bold
-            )
-        }
-    }
-}
-
-@Preview
-@Composable
-fun HeaderSectionPreview() {
-    MaterialTheme {
-        Box(Modifier.padding(16.dp)) {
-            HeaderSection(PreviewMocks.mockBeneficiary)
-        }
-    }
-}
-
-@Preview
-@Composable
-fun ActionButtonsPreview() {
-    MaterialTheme {
-        Box(Modifier.padding(16.dp)) {
-            ActionButtons(
-                b = PreviewMocks.mockBeneficiary,
-                user = PreviewMocks.mockUser,
-                onEdit = {},
-                onDelete = {},
-                onApprove = {},
-                onReject = {},
-                onAid = {},
-                onVisit = {})
-        }
-    }
-}
-
-@Preview
-@Composable
-fun FamilyMemberCardPreview() {
-    MaterialTheme {
-        Box(Modifier.padding(16.dp)) {
-            FamilyMemberCard(PreviewMocks.mockBeneficiary.familyMembers.first())
-        }
-    }
-}
-
-@Preview
-@Composable
-fun SectionHeaderPreview() {
-    MaterialTheme {
-        Box(Modifier.padding(16.dp)) {
-            SectionHeader("Personal Information", Icons.Default.Person)
-        }
-    }
-}
-
-@Preview
-@Composable
-fun InfoCardPreview() {
-    MaterialTheme {
-        Box(Modifier.padding(16.dp)) {
-            InfoCard("Personal Information", Icons.Default.Person) {
-                DetailRow("Age", "45")
-                DetailRow("Gender", "Male")
-            }
-        }
-    }
-}
-
-@Preview
-@Composable
-fun DetailRowPreview() {
-    MaterialTheme {
-        Box(Modifier.padding(16.dp).background(MaterialTheme.colorScheme.surface)) {
-            DetailRow("Label", "2205, Growmore Emerald, Malwani, Malad, Mumbai 400095")
-        }
-    }
-}
-
-@Preview
-@Composable
-fun StatusBadgePreview() {
-    MaterialTheme {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            StatusBadge(BeneficiaryStatus.PENDING_APPROVAL)
-            StatusBadge(BeneficiaryStatus.APPROVED)
-            StatusBadge(BeneficiaryStatus.REJECTED)
-        }
-    }
-}
-
-class BeneficiaryDetailViewModel(
-    private val repository: BeneficiaryRepository,
-    private val authRepository: AuthRepository,
-    private val visitRepository: VisitRepository,
-    private val aidRepository: AidRepository,
-    private val storageRepository: StorageRepository
-) : ScreenModel {
-    private val _beneficiary = MutableStateFlow<Beneficiary?>(null)
-    val beneficiary: StateFlow<Beneficiary?> = _beneficiary.asStateFlow()
-
-    private val _visits = MutableStateFlow<List<VerificationVisit>>(emptyList())
-    val visits: StateFlow<List<VerificationVisit>> = _visits.asStateFlow()
-
-    private val _aidDistributions = MutableStateFlow<List<AidDistribution>>(emptyList())
-    val aidDistributions: StateFlow<List<AidDistribution>> = _aidDistributions.asStateFlow()
-
-    private val _isUploading = MutableStateFlow(false)
-    val isUploading: StateFlow<Boolean> = _isUploading.asStateFlow()
-
-    val currentUser = authRepository.currentUser.stateIn(
-            screenModelScope,
-            SharingStarted.WhileSubscribed(5000),
-            null
-        )
-
-    fun loadBeneficiary(id: String) {
-        screenModelScope.launch {
-            repository.getBeneficiaryById(id).collect {
-                _beneficiary.value = it
-            }
-        }
-        screenModelScope.launch {
-            visitRepository.getVisits().collect { allVisits ->
-                _visits.value = allVisits.filter { it.beneficiaryId == id }.sortedByDescending { it.date }
-            }
-        }
-        screenModelScope.launch {
-            aidRepository.getDistributionsByBeneficiary(id).collect { distributions ->
-                _aidDistributions.value = distributions.sortedByDescending { it.date }
-            }
-        }
-    }
-
-    fun deleteBeneficiary(id: String, onDeleted: () -> Unit) {
-        screenModelScope.launch {
-            val result = repository.deleteBeneficiary(id)
-            if (result.isSuccess) {
-                onDeleted()
-            }
-        }
-    }
-
-    fun rejectBeneficiary(id: String, reason: String, onRejected: () -> Unit) {
-        screenModelScope.launch {
-            val userId = currentUser.value?.userId ?: ""
-            val result = repository.rejectBeneficiary(id, userId, reason)
-            if (result.isSuccess) {
-                onRejected()
-            }
-        }
-    }
-
-    fun updatePhoto(id: String, url: String) {
-        screenModelScope.launch {
-            repository.updatePhoto(id, url)
-        }
-    }
-
-    fun addAttachment(id: String, name: String, url: String) {
-        screenModelScope.launch {
-            val user = currentUser.value
-            val now = Clock.System.now().toEpochMilliseconds()
-            val attachment = Attachment(
-                id = "ATT_$now",
-                name = name,
-                url = url,
-                timestamp = now,
-                uploadedBy = user?.fullName ?: "Unknown"
-            )
-            repository.addAttachment(id, attachment)
-        }
-    }
-
-    fun uploadAndAddAttachment(beneficiaryId: String, name: String, data: ByteArray) {
-        screenModelScope.launch {
-            _isUploading.value = true
-            storageRepository.uploadFile("beneficiaries/$beneficiaryId", data, name).onSuccess { url ->
-                addAttachment(beneficiaryId, name, url)
-                _isUploading.value = false
-            }.onFailure {
-                _isUploading.value = false
-            }
-        }
-    }
-
-    fun deleteAttachment(beneficiaryId: String, attachmentId: String) {
-        screenModelScope.launch {
-            repository.deleteAttachment(beneficiaryId, attachmentId)
-        }
-    }
-
-    fun uploadAndAddDiscussionNote(beneficiaryId: String, audioData: ByteArray, durationMs: Long) {
-        screenModelScope.launch {
-            _isUploading.value = true
-            val fileName = "discussion_${Clock.System.now().toEpochMilliseconds()}.m4a"
-            storageRepository.uploadFile("beneficiaries/$beneficiaryId/discussion", audioData, fileName).onSuccess { url ->
-                val user = currentUser.value
-                val now = Clock.System.now().toEpochMilliseconds()
-                val note = DiscussionNote(
-                    id = "NOTE_$now",
-                    audioUrl = url,
-                    durationMs = durationMs,
-                    senderId = user?.userId ?: "",
-                    senderName = user?.fullName ?: "Unknown",
-                    timestamp = now
-                )
-                repository.addDiscussionNote(beneficiaryId, note)
-                _isUploading.value = false
-            }.onFailure {
-                _isUploading.value = false
-            }
-        }
-    }
-
-    fun deleteDiscussionNote(beneficiaryId: String, noteId: String) {
-        screenModelScope.launch {
-            repository.deleteDiscussionNote(beneficiaryId, noteId)
-        }
-    }
-
-    fun uploadAndSetPhoto(beneficiaryId: String, data: ByteArray) {
-        screenModelScope.launch {
-            _isUploading.value = true
-            storageRepository.uploadPhoto(beneficiaryId, data).onSuccess { url ->
-                updatePhoto(beneficiaryId, url)
-                _isUploading.value = false
-            }.onFailure {
-                _isUploading.value = false
-            }
-        }
-    }
 }

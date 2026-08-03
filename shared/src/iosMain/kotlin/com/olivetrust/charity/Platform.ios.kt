@@ -169,6 +169,7 @@ actual fun getAudioRecorder(): AudioRecorder = IOSAudioRecorder()
 
 class IOSAudioPlayer : AudioPlayer {
     override fun play(url: String) {}
+    override fun play(data: ByteArray) {}
     override fun pause() {}
     override fun resume() {}
     override fun stop() {}

@@ -30,7 +30,15 @@ val appModule = module {
     factory { AidDistributionViewModel(get(), get(), get(), get()) }
     factory { VerificationVisitViewModel(get(), get(), get(), get()) }
     factory { BeneficiaryListViewModel(get(), get()) }
-    factory { BeneficiaryDetailViewModel(get(), get(), get(), get(), get()) }
+    factory {
+        BeneficiaryDetailScreen.BeneficiaryDetailViewModel(
+            get(),
+            get(),
+            get(),
+            get(),
+            get()
+        )
+    }
     factory { EmployeeManagementViewModel(get()) }
     factory { ApproveBeneficiaryViewModel(get(), get(), get()) }
     factory { VisitListViewModel(get()) }

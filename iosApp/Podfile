@@ -4,13 +4,6 @@ target 'iosApp' do
   use_frameworks! :linkage => :static
 
   pod 'shared', :path => '../shared'
-
-#  pod 'FirebaseCore'
-#  pod 'FirebaseFirestore'
-#  pod 'FirebaseAuth'
-#  pod 'FirebaseStorage'
-#  pod 'FirebaseFunctions'
-#  pod 'FirebaseMessaging'
 end
 
 post_install do |installer|

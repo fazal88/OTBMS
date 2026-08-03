@@ -10,6 +10,9 @@ plugins {
 }
 
 kotlin {
+    applyDefaultHierarchyTemplate()
+
+    // iosX64() // Removing iosX64 as it seems to lack variants in the libraries being used
     iosArm64()
     iosSimulatorArm64()
 
@@ -23,6 +26,7 @@ kotlin {
             baseName = "shared"
             isStatic = true
         }
+        pod("FirebaseCore") { linkOnly = true }
         pod("FirebaseFirestore") { linkOnly = true }
         pod("FirebaseAuth") { linkOnly = true }
         pod("FirebaseStorage") { linkOnly = true }
@@ -47,42 +51,19 @@ kotlin {
     }
 
     sourceSets {
-        androidMain.dependencies {
-            implementation(libs.compose.uiToolingPreview)
-            implementation(libs.compose.uiTooling)
-            
-            // Firebase Android (Transitive for GitLive)
-            implementation("com.google.firebase:firebase-common-ktx:21.0.0")
-            implementation("com.google.firebase:firebase-firestore-ktx:25.1.2")
-            implementation("com.google.firebase:firebase-auth-ktx:23.2.0")
-            implementation("com.google.firebase:firebase-storage-ktx:21.0.1")
-            implementation("com.google.firebase:firebase-functions-ktx:21.0.0")
-            implementation("com.google.firebase:firebase-messaging-ktx:24.1.0")
-            implementation("com.google.android.gms:play-services-location:21.3.0")
-            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.1")
-
-            // Maps
-            implementation("com.google.maps.android:maps-compose:6.4.3")
-            implementation("com.google.android.gms:play-services-maps:19.0.0")
-
-            implementation(libs.ktor.client.okhttp)
-        }
-        iosMain.dependencies {
-            implementation(libs.ktor.client.darwin)
-        }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)
             implementation(libs.compose.ui)
-            implementation(libs.compose.components.resources)
             implementation(libs.compose.uiToolingPreview)
+            implementation(libs.compose.components.resources)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
             
             // Icons
             implementation(libs.compose.materialIconsCore)
-            // implementation(libs.compose.materialIconsExtended) // Skipping due to sync error
+            implementation(libs.compose.materialIconsExtended)
 
             // Firebase
             implementation(libs.firebase.common)
@@ -108,8 +89,8 @@ kotlin {
             implementation(libs.voyager.transitions)
 
             // Multiplatform Settings
-            implementation("com.russhwolf:multiplatform-settings-no-arg:1.3.0")
-            implementation("com.russhwolf:multiplatform-settings-coroutines:1.3.0")
+            implementation(libs.multiplatform.settings)
+            implementation(libs.multiplatform.settings.coroutines)
 
             // Crypto
             implementation(libs.kotlinCrypto.hash.sha2)
@@ -122,6 +103,32 @@ kotlin {
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.logging)
         }
+        
+        androidMain.dependencies {
+            implementation(libs.compose.uiToolingPreview)
+            implementation(libs.compose.uiTooling)
+            
+            // Firebase Android (Transitive for GitLive)
+            implementation("com.google.firebase:firebase-common-ktx:21.0.0")
+            implementation("com.google.firebase:firebase-firestore-ktx:25.1.2")
+            implementation("com.google.firebase:firebase-auth-ktx:23.2.0")
+            implementation("com.google.firebase:firebase-storage-ktx:21.0.1")
+            implementation("com.google.firebase:firebase-functions-ktx:21.0.0")
+            implementation("com.google.firebase:firebase-messaging-ktx:24.1.0")
+            implementation("com.google.android.gms:play-services-location:21.3.0")
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.1")
+
+            // Maps
+            implementation("com.google.maps.android:maps-compose:6.4.3")
+            implementation("com.google.android.gms:play-services-maps:19.0.0")
+
+            implementation(libs.ktor.client.okhttp)
+        }
+        
+        iosMain.dependencies {
+            implementation(libs.ktor.client.darwin)
+        }
+        
         commonTest.dependencies {
             implementation(libs.kotlin.test)
         }

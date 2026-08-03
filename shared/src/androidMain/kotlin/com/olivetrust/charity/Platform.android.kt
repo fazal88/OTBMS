@@ -49,17 +49,22 @@ class AndroidAudioRecorder : AudioRecorder {
     }
 
     override fun stopRecording(): ByteArray? {
+        val recorder = mediaRecorder
+        mediaRecorder = null
+        try {
+            recorder?.stop()
+        } catch (e: Exception) {
+            println("ANDROID_AUDIO_RECORDER_STOP_ERROR: ${e.message}")
+        } finally {
+            recorder?.release()
+        }
+
         return try {
-            mediaRecorder?.apply {
-                stop()
-                release()
-            }
-            mediaRecorder = null
             val bytes = audioFile?.readBytes()
             audioFile?.delete()
             bytes
         } catch (e: Exception) {
-            println("ANDROID_AUDIO_RECORDER_STOP_ERROR: ${e.message}")
+            println("ANDROID_AUDIO_RECORDER_FILE_ERROR: ${e.message}")
             null
         }
     }
@@ -75,40 +80,92 @@ class AndroidAudioPlayer : AudioPlayer {
     private var currentUrl: String? = null
 
     override fun play(url: String) {
-        if (currentUrl == url && mediaPlayer != null) {
-            mediaPlayer?.start()
-            return
+        playInternal(url, null)
+    }
+
+    override fun play(data: ByteArray) {
+        playInternal(null, data)
+    }
+
+    private fun playInternal(url: String?, data: ByteArray?) {
+        val identifier = url ?: data.hashCode().toString()
+        if (currentUrl == identifier && mediaPlayer != null) {
+            try {
+                mediaPlayer?.start()
+                return
+            } catch (e: Exception) {
+                println("ANDROID_AUDIO_PLAYER_PLAY_REUSE_ERROR: ${e.message}")
+                stop()
+            }
         }
         
         stop()
-        currentUrl = url
-        mediaPlayer = MediaPlayer().apply {
-            setDataSource(url)
-            prepareAsync()
-            setOnPreparedListener { start() }
-            setOnCompletionListener { 
-                onComplete?.invoke()
-                stop()
+        currentUrl = identifier
+        try {
+            mediaPlayer = MediaPlayer().apply {
+                if (url != null) {
+                    setDataSource(url)
+                } else if (data != null) {
+                    val tempFile = File.createTempFile("temp_play", ".m4a", ContextHolder.get()?.cacheDir)
+                    tempFile.writeBytes(data)
+                    setDataSource(tempFile.absolutePath)
+                    tempFile.deleteOnExit()
+                }
+                setOnPreparedListener { it.start() }
+                setOnCompletionListener { 
+                    onComplete?.invoke()
+                    this@AndroidAudioPlayer.stop()
+                }
+                setOnErrorListener { _, what, extra ->
+                    println("ANDROID_AUDIO_PLAYER_ERROR: what=$what, extra=$extra")
+                    onComplete?.invoke()
+                    this@AndroidAudioPlayer.stop()
+                    true
+                }
+                prepareAsync()
             }
+        } catch (e: Exception) {
+            println("ANDROID_AUDIO_PLAYER_SETUP_ERROR: ${e.message}")
+            stop()
         }
     }
 
     override fun pause() {
-        mediaPlayer?.pause()
+        try {
+            mediaPlayer?.pause()
+        } catch (e: Exception) {
+            println("ANDROID_AUDIO_PLAYER_PAUSE_ERROR: ${e.message}")
+        }
     }
 
     override fun resume() {
-        mediaPlayer?.start()
+        try {
+            mediaPlayer?.start()
+        } catch (e: Exception) {
+            println("ANDROID_AUDIO_PLAYER_RESUME_ERROR: ${e.message}")
+        }
     }
 
     override fun stop() {
-        mediaPlayer?.stop()
-        mediaPlayer?.release()
+        mediaPlayer?.let { player ->
+            try {
+                // Calling release() directly is safer across all states
+                player.release()
+            } catch (e: Exception) {
+                println("ANDROID_AUDIO_PLAYER_RELEASE_ERROR: ${e.message}")
+            }
+        }
         mediaPlayer = null
         currentUrl = null
     }
 
-    override fun isPlaying(): Boolean = mediaPlayer?.isPlaying ?: false
+    override fun isPlaying(): Boolean {
+        return try {
+            mediaPlayer?.isPlaying ?: false
+        } catch (e: Exception) {
+            false
+        }
+    }
 
     override fun setCompletionListener(callback: () -> Unit) {
         onComplete = callback

@@ -104,7 +104,7 @@ fun ProfilePhotoSection(
             
             if (photoBytes != null || !photoUrl.isNullOrBlank()) {
                 TextButton(
-                    onClick = onRemoveClick,
+                    onClick = { onRemoveClick() },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                 ) {
                     Icon(Icons.Default.Delete, null, modifier = Modifier.size(18.dp))

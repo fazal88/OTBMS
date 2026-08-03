@@ -59,6 +59,7 @@ expect fun getAudioRecorder(): AudioRecorder
 
 interface AudioPlayer {
     fun play(url: String)
+    fun play(data: ByteArray)
     fun pause()
     fun resume()
     fun stop()
