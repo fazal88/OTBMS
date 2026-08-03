@@ -98,6 +98,7 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
         // Shared player for discussions
         val sharedPlayer = remember { getAudioPlayer() }
         var currentlyPlayingNoteId by remember { mutableStateOf<String?>(null) }
+        var bufferingNoteId by remember { mutableStateOf<String?>(null) }
 
         LaunchedEffect(beneficiaryId) {
             viewModel.loadBeneficiary(beneficiaryId)
@@ -239,15 +240,26 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
                                 onDelete = { noteId -> noteToDelete = noteId },
                                 showDelete = user?.role == UserRole.APPROVER || user?.role == UserRole.SUPER_ADMIN,
                                 isRecording = isRecording,
-                                sharedPlayer = sharedPlayer,
                                 currentlyPlayingNoteId = currentlyPlayingNoteId,
+                                bufferingNoteId = bufferingNoteId,
                                 onTogglePlay = { noteId, url ->
                                     if (currentlyPlayingNoteId == noteId) {
                                         sharedPlayer.pause()
                                         currentlyPlayingNoteId = null
                                     } else {
+                                        bufferingNoteId = noteId
+                                        sharedPlayer.setOnPreparedListener {
+                                            bufferingNoteId = null
+                                            currentlyPlayingNoteId = noteId
+                                        }
+                                        sharedPlayer.setOnErrorListener { error ->
+                                            bufferingNoteId = null
+                                            currentlyPlayingNoteId = null
+                                            scope.launch {
+                                                snackbarHostState.showSnackbar("Error: $error")
+                                            }
+                                        }
                                         sharedPlayer.play(url)
-                                        currentlyPlayingNoteId = noteId
                                         sharedPlayer.setCompletionListener { 
                                             currentlyPlayingNoteId = null 
                                         }
@@ -956,8 +968,8 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
         onDelete: (String) -> Unit,
         showDelete: Boolean,
         isRecording: Boolean = false,
-        sharedPlayer: AudioPlayer,
         currentlyPlayingNoteId: String?,
+        bufferingNoteId: String?,
         onTogglePlay: (String, String) -> Unit
     ) {
         InfoCard("Discussion (Voice Notes)", Icons.Default.Call) {
@@ -975,6 +987,7 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
                         onDelete = { onDelete(note.id) },
                         showDelete = showDelete,
                         isPlaying = currentlyPlayingNoteId == note.id,
+                        isBuffering = bufferingNoteId == note.id,
                         onTogglePlay = { onTogglePlay(note.id, note.audioUrl) }
                     )
                     HorizontalDivider(
@@ -1016,18 +1029,28 @@ class BeneficiaryDetailScreen(private val beneficiaryId: String) : Screen {
         onDelete: () -> Unit,
         showDelete: Boolean,
         isPlaying: Boolean,
+        isBuffering: Boolean,
         onTogglePlay: () -> Unit
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onTogglePlay) {
-                Icon(
-                    if (isPlaying) Icons.Default.Close else Icons.Default.PlayArrow,
-                    contentDescription = if (isPlaying) "Pause" else "Play",
-                    tint = MaterialTheme.colorScheme.primary
-                )
+            Box(contentAlignment = Alignment.Center) {
+                IconButton(onClick = onTogglePlay, enabled = !isBuffering) {
+                    Icon(
+                        if (isPlaying) Icons.Default.Close else Icons.Default.PlayArrow,
+                        contentDescription = if (isPlaying) "Pause" else "Play",
+                        tint = if (isBuffering) MaterialTheme.colorScheme.primary.copy(alpha = 0.3f) else MaterialTheme.colorScheme.primary
+                    )
+                }
+                if (isBuffering) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(32.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
 
             Column(modifier = Modifier.weight(1f).padding(horizontal = 8.dp)) {

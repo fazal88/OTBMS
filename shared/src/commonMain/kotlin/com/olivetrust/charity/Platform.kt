@@ -65,6 +65,8 @@ interface AudioPlayer {
     fun stop()
     fun isPlaying(): Boolean
     fun setCompletionListener(callback: () -> Unit)
+    fun setOnPreparedListener(callback: () -> Unit)
+    fun setOnErrorListener(callback: (String) -> Unit)
 }
 
 expect fun getAudioPlayer(): AudioPlayer

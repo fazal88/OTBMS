@@ -77,6 +77,8 @@ actual fun getAudioRecorder(): AudioRecorder = AndroidAudioRecorder()
 class AndroidAudioPlayer : AudioPlayer {
     private var mediaPlayer: MediaPlayer? = null
     private var onComplete: (() -> Unit)? = null
+    private var onPrepared: (() -> Unit)? = null
+    private var onError: ((String) -> Unit)? = null
     private var currentUrl: String? = null
 
     override fun play(url: String) {
@@ -92,6 +94,7 @@ class AndroidAudioPlayer : AudioPlayer {
         if (currentUrl == identifier && mediaPlayer != null) {
             try {
                 mediaPlayer?.start()
+                onPrepared?.invoke()
                 return
             } catch (e: Exception) {
                 println("ANDROID_AUDIO_PLAYER_PLAY_REUSE_ERROR: ${e.message}")
@@ -111,13 +114,18 @@ class AndroidAudioPlayer : AudioPlayer {
                     setDataSource(tempFile.absolutePath)
                     tempFile.deleteOnExit()
                 }
-                setOnPreparedListener { it.start() }
+                setOnPreparedListener { 
+                    it.start()
+                    onPrepared?.invoke()
+                }
                 setOnCompletionListener { 
                     onComplete?.invoke()
                     this@AndroidAudioPlayer.stop()
                 }
                 setOnErrorListener { _, what, extra ->
-                    println("ANDROID_AUDIO_PLAYER_ERROR: what=$what, extra=$extra")
+                    val errorMsg = "what=$what, extra=$extra"
+                    println("ANDROID_AUDIO_PLAYER_ERROR: $errorMsg")
+                    onError?.invoke(errorMsg)
                     onComplete?.invoke()
                     this@AndroidAudioPlayer.stop()
                     true
@@ -125,7 +133,9 @@ class AndroidAudioPlayer : AudioPlayer {
                 prepareAsync()
             }
         } catch (e: Exception) {
-            println("ANDROID_AUDIO_PLAYER_SETUP_ERROR: ${e.message}")
+            val errorMsg = e.message ?: "Unknown error"
+            println("ANDROID_AUDIO_PLAYER_SETUP_ERROR: $errorMsg")
+            onError?.invoke(errorMsg)
             stop()
         }
     }
@@ -169,6 +179,14 @@ class AndroidAudioPlayer : AudioPlayer {
 
     override fun setCompletionListener(callback: () -> Unit) {
         onComplete = callback
+    }
+
+    override fun setOnPreparedListener(callback: () -> Unit) {
+        onPrepared = callback
+    }
+
+    override fun setOnErrorListener(callback: (String) -> Unit) {
+        onError = callback
     }
 }
 
